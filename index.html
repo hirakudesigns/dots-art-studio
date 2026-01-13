@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DOTS ART STUDIO - Professional</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        :root { --primary-color: #6c5ce7; --bg-color: #f0f2f5; --card-bg: #ffffff; }
+        body { font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; background-color: var(--bg-color); margin: 0; padding: 10px; overflow-x: hidden; }
+        h1 { margin: 10px 0; font-size: 1rem; color: var(--primary-color); font-weight: 800; letter-spacing: 1px; }
+        
+        .app-container { position: relative; width: 100%; display: flex; justify-content: center; align-items: flex-start; gap: 10px; }
+        .canvas-wrapper { position: relative; }
+        canvas { 
+            border: 4px solid var(--card-bg); border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            image-rendering: pixelated; 
+            background-image: linear-gradient(45deg, #eee 25%, transparent 25%, transparent 75%, #eee 75%), linear-gradient(45deg, #eee 25%, #fff 25%, #fff 75%, #eee 75%);
+            background-size: 20px 20px; background-position: 0 0, 10px 10px; cursor: crosshair;
+            max-width: 80vw; max-height: 80vw;
+        }
+
+        #gridOverlay {
+            position: absolute; top: 4px; left: 4px; width: 320px; height: 320px;
+            pointer-events: none; display: none;
+            background-image: linear-gradient(to right, rgba(0,0,0,0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.1) 1px, transparent 1px);
+            background-size: 10px 10px;
+        }
+
+        .quick-toolbar { display: flex; flex-direction: column; gap: 8px; }
+        .btn-round { width: 45px; height: 45px; border-radius: 50%; border: none; background: var(--card-bg); color: #57606f; box-shadow: 0 3px 10px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+
+        .sidebar { position: fixed; top: 0; right: -250px; width: 220px; height: 100%; background: var(--card-bg); z-index: 1000; padding: 60px 20px 20px; box-shadow: -5px 0 15px rgba(0,0,0,0.1); transition: 0.3s; display: flex; flex-direction: column; gap: 15px; }
+        .sidebar.open { right: 0; }
+        .sidebar .btn-text { width: 100%; height: 45px; font-weight: bold; display: flex; align-items: center; gap: 10px; border: none; background: #f1f2f6; border-radius: 10px; padding-left: 15px; cursor: pointer; }
+
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 999; display: none; }
+        .overlay.active { display: block; }
+
+        .bottom-controls { margin-top: 15px; width: 100%; max-width: 500px; display: flex; flex-direction: column; gap: 12px; background: var(--card-bg); padding: 15px; border-radius: 20px; box-sizing: border-box; }
+        .row { display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; align-items: center; }
+        .btn { width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; border-radius: 10px; background: #f1f2f6; color: #57606f; }
+        .btn.active { background: var(--primary-color); color: white; }
+        
+        .section-label { width: 100%; font-size: 0.65rem; color: #a1a1a1; font-weight: bold; margin-bottom: -5px; padding-left: 5px; }
+        
+        /* パレット削除機能のためのスタイル */
+        .palette-container { display: flex; flex-wrap: wrap; gap: 12px; max-height: 80px; overflow-y: auto; padding: 10px; background: #f9f9f9; border-radius: 10px; }
+        .palette-item { position: relative; width: 28px; height: 28px; flex-shrink: 0; }
+        .palette-color { width: 100%; height: 100%; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer; }
+        .btn-del-color { 
+            position: absolute; top: -6px; right: -6px; width: 16px; height: 16px; 
+            background: #ff7675; color: white; border-radius: 50%; border: none; 
+            font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        
+        input[type="color"] { width: 40px; height: 40px; border: none; background: none; cursor: pointer; }
+        input[type="text"], select { height: 40px; border-radius: 8px; border: 1px solid #dfe4ea; font-size: 0.8rem; padding: 0 10px; }
+        .switch-row { display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; font-weight: bold; color: #57606f; padding: 0 5px; }
+        .library-item { display: flex; align-items: center; justify-content: space-between; background: #fdfdfd; padding: 5px 8px; border-radius: 8px; border: 1px solid #eee; margin-bottom: 4px; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+
+    <h1>DOTS ART STUDIO</h1>
+
+    <div class="app-container">
+        <div class="canvas-wrapper">
+            <canvas id="dotCanvas" width="32" height="32" style="width: 320px; height: 320px;"></canvas>
+            <div id="gridOverlay"></div>
+        </div>
+
+        <div class="quick-toolbar">
+            <button class="btn-round" id="openSidebar" title="メニュー"><span class="material-icons">menu</span></button>
+            <button class="btn-round" id="btn-undo" title="戻る"><span class="material-icons">undo</span></button>
+            <button class="btn-round" id="btn-redo" title="進む"><span class="material-icons">redo</span></button>
+        </div>
+
+        <div class="sidebar" id="sidebar">
+            <div class="section-label">DISPLAY</div>
+            <div class="switch-row">
+                <span>グリッド線を表示</span>
+                <input type="checkbox" id="gridSwitch">
+            </div>
+            <hr style="width:100%; border:0; border-top:1px solid #eee;">
+            <div class="section-label">TRANSFORM</div>
+            <button class="btn-text" id="btn-flip-h"><span class="material-icons">flip</span> 左右反転</button>
+            <button class="btn-text" id="btn-flip-v"><span class="material-icons">swap_vert</span> 上下反転</button>
+            <button class="btn-text" id="btn-rotate"><span class="material-icons">rotate_right</span> 90度回転</button>
+            <hr style="width:100%; border:0; border-top:1px solid #eee;">
+            <button class="btn-text" id="btn-clear" style="color:#ff7675"><span class="material-icons">delete_outline</span> 全消去</button>
+        </div>
+        <div class="overlay" id="overlay"></div>
+    </div>
+
+    <div class="bottom-controls">
+        <div class="section-label">TOOLS</div>
+        <div class="row">
+            <input type="color" id="colorPicker" value="#6c5ce7">
+            <button class="btn active" id="btn-pen"><span class="material-icons">edit</span></button>
+            <button class="btn" id="btn-eraser"><span class="material-icons">auto_fix_high</span></button> 
+            <button class="btn" id="btn-bucket"><span class="material-icons">format_color_fill</span></button>
+            <button class="btn" id="btn-picker"><span class="material-icons">colorize</span></button>
+        </div>
+
+        <div class="section-label">PALETTE (Tap color to use / Tap × to delete)</div>
+        <div class="row">
+            <button class="btn" id="btn-add-palette" style="background:#55efc4; color:#00b894; width:auto; padding:0 12px; font-weight:bold;">COLORS +</button>
+        </div>
+        <div class="palette-container" id="paletteContainer"></div>
+
+        <div class="section-label">EXPORT (SIZE & FORMAT)</div>
+        <div class="row">
+            <select id="sizeSelect">
+                <option value="32">S (32x32px)</option>
+                <option value="256" selected>M (256x256px)</option>
+                <option value="512">L (512x512px)</option>
+            </select>
+            <button onclick="exportImage('png')" class="btn" style="background:var(--primary-color); color:white; width:55px; font-weight:bold;">PNG</button>
+            <button onclick="exportImage('jpg')" class="btn" style="background:#0984e3; color:white; width:55px; font-weight:bold;">JPG</button>
+        </div>
+
+        <div class="section-label">LIBRARY STOCK</div>
+        <div class="row">
+            <input type="text" id="artName" placeholder="作品名..." style="flex:1;">
+            <button class="btn" id="btn-save-lib" style="background:#55efc4; color:#00b894; width:70px; font-weight:bold;">SAVE</button>
+        </div>
+        <div class="library-list" id="libraryList"></div>
+    </div>
+
+    <script>
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+        const gridOverlay = document.getElementById('gridOverlay');
+        const gridSwitch = document.getElementById('gridSwitch');
+
+        document.getElementById('openSidebar').onclick = () => { sidebar.classList.add('open'); overlay.classList.add('active'); };
+        overlay.onclick = () => { sidebar.classList.remove('open'); overlay.classList.remove('active'); };
+        gridSwitch.onchange = () => { gridOverlay.style.display = gridSwitch.checked ? 'block' : 'none'; };
+
+        const canvas = document.getElementById('dotCanvas');
+        const ctx = canvas.getContext('2d');
+        const colorPicker = document.getElementById('colorPicker');
+        const paletteContainer = document.getElementById('paletteContainer');
+        const libraryList = document.getElementById('libraryList');
+        const artNameInput = document.getElementById('artName');
+        let currentMode = 'pen', isDrawing = false, colorPalette = [], library = [], historyStack = [], redoStack = [];
+
+        window.onload = () => {
+            const savedImg = localStorage.getItem('dotsAppData'), savedPalette = localStorage.getItem('dotsAppPalette'), savedLib = localStorage.getItem('dotsAppLibrary');
+            if (savedImg) loadImg(savedImg);
+            if (savedPalette) { colorPalette = JSON.parse(savedPalette); renderPalette(); }
+            if (savedLib) { library = JSON.parse(savedLib); renderLibrary(); }
+            saveHistory();
+        };
+
+        function transform(action) {
+            const temp = document.createElement('canvas'); temp.width = 32; temp.height = 32; const tCtx = temp.getContext('2d');
+            if (action === 'flip-h') { tCtx.scale(-1, 1); tCtx.drawImage(canvas, -32, 0); }
+            else if (action === 'flip-v') { tCtx.scale(1, -1); tCtx.drawImage(canvas, 0, -32); }
+            else if (action === 'rotate') { tCtx.translate(16, 16); tCtx.rotate(Math.PI / 2); tCtx.drawImage(canvas, -16, -16); }
+            ctx.clearRect(0, 0, 32, 32); ctx.drawImage(temp, 0, 0); saveHistory();
+        }
+        document.getElementById('btn-flip-h').onclick = () => transform('flip-h');
+        document.getElementById('btn-flip-v').onclick = () => transform('flip-v');
+        document.getElementById('btn-rotate').onclick = () => transform('rotate');
+
+        // --- パレット機能（修正：削除ボタンを追加） ---
+        function renderPalette() {
+            paletteContainer.innerHTML = '';
+            colorPalette.forEach((c, i) => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'palette-item';
+                
+                const colorDiv = document.createElement('div');
+                colorDiv.className = 'palette-color';
+                colorDiv.style.background = c;
+                colorDiv.onclick = () => colorPicker.value = c;
+                
+                // 長押し/右クリックでも消せるように
+                colorDiv.oncontextmenu = (e) => { e.preventDefault(); deletePaletteColor(i); };
+
+                const delBtn = document.createElement('button');
+                delBtn.className = 'btn-del-color';
+                delBtn.innerText = '×';
+                delBtn.onclick = (e) => { e.stopPropagation(); deletePaletteColor(i); };
+
+                wrapper.appendChild(colorDiv);
+                wrapper.appendChild(delBtn);
+                paletteContainer.appendChild(wrapper);
+            });
+        }
+        
+        function deletePaletteColor(index) {
+            colorPalette.splice(index, 1);
+            localStorage.setItem('dotsAppPalette', JSON.stringify(colorPalette));
+            renderPalette();
+        }
+
+        document.getElementById('btn-add-palette').onclick = () => {
+            const c = colorPicker.value.toLowerCase();
+            if (!colorPalette.includes(c)) { 
+                colorPalette.push(c); 
+                localStorage.setItem('dotsAppPalette', JSON.stringify(colorPalette)); 
+                renderPalette(); 
+            }
+        };
+
+        // --- ライブラリ・描画・履歴（機能維持） ---
+        document.getElementById('btn-save-lib').onclick = () => {
+            const name = artNameInput.value.trim() || `No.${library.length + 1}`;
+            library.push({ name, data: canvas.toDataURL() });
+            localStorage.setItem('dotsAppLibrary', JSON.stringify(library));
+            artNameInput.value = ""; renderLibrary();
+        };
+        function renderLibrary() {
+            libraryList.innerHTML = '';
+            library.forEach((item, i) => {
+                const div = document.createElement('div'); div.className = 'library-item';
+                div.innerHTML = `<img src="${item.data}" style="width:24px; height:24px; image-rendering:pixelated;"><span>${item.name}</span><div>
+                    <button onclick="loadFromLib(${i})">開く</button>
+                    <button onclick="deleteFromLib(${i})" style="color:red">消</button></div>`;
+                libraryList.appendChild(div);
+            });
+        }
+        window.loadFromLib = (i) => { if (confirm(`読み込みますか？`)) { loadImg(library[i].data); setTimeout(saveHistory, 100); } };
+        window.deleteFromLib = (i) => { if (confirm("削除しますか？")) { library.splice(i, 1); localStorage.setItem('dotsAppLibrary', JSON.stringify(library)); renderLibrary(); } };
+
+        const btns = { pen: 'btn-pen', eraser: 'btn-eraser', bucket: 'btn-bucket', picker: 'btn-picker' };
+        Object.keys(btns).forEach(m => { document.getElementById(btns[m]).onclick = () => { currentMode = m; Object.values(btns).forEach(id => document.getElementById(id).classList.remove('active')); document.getElementById(btns[m]).classList.add('active'); }; });
+
+        function handleAction(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.clientX || (e.touches ? e.touches[0].clientX : 0);
+            const clientY = e.clientY || (e.touches ? e.touches[0].clientY : 0);
+            const x = Math.floor((clientX - rect.left) / (rect.width / 32));
+            const y = Math.floor((clientY - rect.top) / (rect.height / 32));
+            if (x < 0 || x >= 32 || y < 0 || y >= 32) return;
+            if (currentMode === 'pen') { ctx.fillStyle = colorPicker.value; ctx.fillRect(x, y, 1, 1); }
+            else if (currentMode === 'eraser') { ctx.clearRect(x, y, 1, 1); }
+            else if (currentMode === 'picker') { const d = ctx.getImageData(x, y, 1, 1).data; if (d[3] !== 0) colorPicker.value = "#" + [d[0], d[1], d[2]].map(x => x.toString(16).padStart(2, '0')).join(''); }
+            else if (currentMode === 'bucket') { floodFill(x, y, colorPicker.value); }
+        }
+
+        function floodFill(startX, startY, fillColor) {
+            const targetData = ctx.getImageData(startX, startY, 1, 1).data;
+            const targetColor = `rgba(${targetData[0]},${targetData[1]},${targetData[2]},${targetData[3]})`;
+            ctx.fillStyle = fillColor; const stack = [[startX, startY]]; const visited = new Set();
+            while(stack.length) {
+                const [x, y] = stack.pop(); const key = `${x},${y}`;
+                if (x < 0 || x >= 32 || y < 0 || y >= 32 || visited.has(key)) continue;
+                const d = ctx.getImageData(x, y, 1, 1).data;
+                if (`rgba(${d[0]},${d[1]},${d[2]},${d[3]})` === targetColor) { ctx.fillRect(x, y, 1, 1); visited.add(key); stack.push([x+1, y], [x-1, y], [x, y+1], [x, y-1]); }
+            }
+        }
+
+        function saveHistory() { historyStack.push(canvas.toDataURL()); if (historyStack.length > 50) historyStack.shift(); redoStack = []; localStorage.setItem('dotsAppData', canvas.toDataURL()); }
+        function loadImg(u) { const i = new Image(); i.src = u; i.onload = () => { ctx.clearRect(0, 0, 32, 32); ctx.drawImage(i, 0, 0); }; }
+        document.getElementById('btn-undo').onclick = () => { if (historyStack.length > 1) { redoStack.push(historyStack.pop()); loadImg(historyStack[historyStack.length - 1]); } };
+        document.getElementById('btn-redo').onclick = () => { if (redoStack.length) { const s = redoStack.pop(); historyStack.push(s); loadImg(s); } };
+        document.getElementById('btn-clear').onclick = () => { if(confirm("全消去？")) { ctx.clearRect(0, 0, 32, 32); saveHistory(); } };
+
+        canvas.onmousedown = (e) => { isDrawing = true; handleAction(e); };
+        canvas.onmousemove = (e) => { if (isDrawing && currentMode !== 'bucket') handleAction(e); };
+        window.onmouseup = () => { if (isDrawing) { isDrawing = false; saveHistory(); } };
+        canvas.ontouchstart = (e) => { e.preventDefault(); isDrawing = true; handleAction(e); };
+        canvas.ontouchmove = (e) => { e.preventDefault(); if (isDrawing && currentMode !== 'bucket') handleAction(e); };
+        canvas.ontouchend = () => { if (isDrawing) { isDrawing = false; saveHistory(); } };
+
+        function exportImage(format) {
+            const s = parseInt(document.getElementById('sizeSelect').value);
+            const tc = document.createElement('canvas'); tc.width = tc.height = s;
+            const tx = tc.getContext('2d'); tx.imageSmoothingEnabled = false;
+            if (format === 'jpg') {
+                tx.fillStyle = "#ffffff"; tx.fillRect(0, 0, s, s);
+                tx.drawImage(canvas, 0, 0, s, s);
+                const a = document.createElement('a'); a.download = `art-${s}px.jpg`;
+                a.href = tc.toDataURL("image/jpeg", 0.9); a.click();
+            } else {
+                tx.drawImage(canvas, 0, 0, s, s);
+                const a = document.createElement('a'); a.download = `art-${s}px.png`;
+                a.href = tc.toDataURL("image/png"); a.click();
+            }
+        }
+    </script>
+</body>
+</html>
