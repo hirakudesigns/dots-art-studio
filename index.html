@@ -7,16 +7,33 @@
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
         :root { --primary-color: #6c5ce7; --bg-color: #f0f2f5; --card-bg: #ffffff; --accent-color: #ff7675; }
-        body { font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; background-color: var(--bg-color); margin: 0; padding: 10px; overflow-x: hidden; touch-action: none; }
+        
+        /* ① スクロール修正：bodyのtouch-actionを解除し、スクロールを有効化 */
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            background-color: var(--bg-color); 
+            margin: 0; 
+            padding: 10px; 
+            overflow-x: hidden; 
+            overflow-y: auto; /* 縦スクロールを許可 */
+        }
+
         h1 { margin: 10px 0; font-size: 1rem; color: var(--primary-color); font-weight: 800; letter-spacing: 1px; }
         
         /* キャンバスエリア */
         .app-container { position: relative; width: 100%; display: flex; justify-content: center; align-items: flex-start; gap: 10px; }
+        
+        /* ① キャンバス内だけ操作を固定（描画中に画面が動かないようにする） */
         .canvas-area { 
             position: relative; width: 320px; height: 320px; 
             overflow: hidden; border: 4px solid var(--card-bg); border-radius: 8px; 
             box-shadow: 0 5px 15px rgba(0,0,0,0.1); background: #fff;
+            touch-action: none; 
         }
+
         .canvas-wrapper { 
             position: absolute; transform-origin: 0 0; 
             background-image: linear-gradient(45deg, #eee 25%, transparent 25%, transparent 75%, #eee 75%), linear-gradient(45deg, #eee 25%, #fff 25%, #fff 75%, #eee 75%);
@@ -75,7 +92,6 @@
         input[type="range"] { flex: 1; }
         select { height: 42px; border-radius: 10px; border: 1px solid #dfe4ea; padding: 0 5px; font-size: 0.8rem; }
 
-        /* 特大アップロードボタン */
         .btn-upload { background: var(--primary-color); color: white; width: 100%; height: 55px; font-weight: 900; font-size: 1.1rem; border-radius: 15px; margin-top: 5px; letter-spacing: 2px; box-shadow: 0 4px 15px rgba(108, 92, 231, 0.4); border: none; cursor: pointer; }
         .btn-upload:active { transform: scale(0.98); }
     </style>
@@ -183,56 +199,57 @@
         let colorPalette = [], library = [], historyStack = [], redoStack = [];
 
         // --- ワークショップ連携設定 ---
-        const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbwyB3_xEQoWg45dGDNyW7Ghf76eMLZCa5tDv9lRrirMx-hy-5JiV5RxR35y01AP-Q0q0Q/exec"; // 【重要】ここにデプロイ後のGAS URLを貼る
-        const LOCATION_CODE = "T"; // 26TのT
-async function uploadImage() {
-    const artNameField = document.getElementById('artName');
-    const artName = artNameField.value.trim();
-    if (!artName) { alert("作品名を入力してから提出してください！"); artNameField.focus(); return; }
-    if (!confirm(`「${artName}」を公式作品として提出しますか？`)) return;
+        const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbwyB3_xEQoWg45dGDNyW7Ghf76eMLZCa5tDv9lRrirMx-hy-5JiV5RxR35y01AP-Q0q0Q/exec";
 
-    const overlay = document.getElementById('loadingOverlay');
-    overlay.style.display = 'flex';
+        // ② 流入元判定を含めた送信処理
+        async function uploadImage() {
+            const artNameField = document.getElementById('artName');
+            const artName = artNameField.value.trim();
+            if (!artName) { alert("作品名を入力してから提出してください！"); artNameField.focus(); return; }
+            if (!confirm(`「${artName}」を公式作品として提出しますか？`)) return;
 
-    // --- 【修正1】高画質化（Lサイズ/512pxに拡大） ---
-    const exportSize = 512; 
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = tempCanvas.height = exportSize;
-    const tempCtx = tempCanvas.getContext('2d');
-    
-    // ドットをぼかさず、くっきり拡大する設定
-    tempCtx.imageSmoothingEnabled = false;
-    tempCtx.drawImage(canvas, 0, 0, exportSize, exportSize);
-    
-    const imageData = tempCanvas.toDataURL('image/png');
+            // URLの?from=...を読み取る
+            const urlParams = new URLSearchParams(window.location.search);
+            const fromSource = urlParams.get('from') || 'T'; // デフォルトは現場用のT
 
-    try {
-        // GASへの送信
-        await fetch(GAS_ENDPOINT, {
-            method: 'POST',
-            mode: 'no-cors',
-            body: JSON.stringify({ image: imageData, name: artName, location: LOCATION_CODE })
-        });
+            const overlay = document.getElementById('loadingOverlay');
+            overlay.style.display = 'flex';
 
-        overlay.style.display = 'none';
-        alert(`作品を送信しました！\n続いてアンケートと証明書発行の手続きに移ります。`);
-        
-        // --- 【修正2】作品名を質問4（entry.46158305）に自動入力するURL ---
-        const formBaseUrl = "https://docs.google.com/forms/d/e/1FAIpQLSfNwyTLJ_-3FJx5oBbgzULdlWZ8TrVfyH6eHv5V4pXlAhP34Q/viewform";
-        const question4Id = "46158305"; // 作品名の入力欄ID
-        
-        // URLを構築
-        const formUrl = `${formBaseUrl}?usp=pp_url&entry.${question4Id}=${encodeURIComponent(artName)}`;
-        
-        // フォームへ移動
-        window.location.href = formUrl;
+            // 高画質化処理（512px）
+            const exportSize = 512; 
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = tempCanvas.height = exportSize;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.imageSmoothingEnabled = false;
+            tempCtx.drawImage(canvas, 0, 0, exportSize, exportSize);
+            const imageData = tempCanvas.toDataURL('image/png');
 
-    } catch (e) {
-        overlay.style.display = 'none';
-        alert("送信に失敗しました。ネット接続を確認してください。");
-        console.error(e);
-    }
-}
+            try {
+                await fetch(GAS_ENDPOINT, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: JSON.stringify({ 
+                        image: imageData, 
+                        name: artName, 
+                        location: fromSource // GASへ流入元を送信
+                    })
+                });
+
+                overlay.style.display = 'none';
+                alert(`作品を送信しました！\n続いてアンケートと証明書発行の手続きに移ります。`);
+                
+                const formBaseUrl = "https://docs.google.com/forms/d/e/1FAIpQLSfNwyTLJ_-3FJx5oBbgzULdlWZ8TrVfyH6eHv5V4pXlAhP34Q/viewform";
+                const question4Id = "46158305"; 
+                const formUrl = `${formBaseUrl}?usp=pp_url&entry.${question4Id}=${encodeURIComponent(artName)}`;
+                
+                window.location.href = formUrl;
+
+            } catch (e) {
+                overlay.style.display = 'none';
+                alert("送信に失敗しました。ネット接続を確認してください。");
+                console.error(e);
+            }
+        }
 
         // --- 描画・基本操作 ---
         function updateTransform() { wrapper.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`; }
