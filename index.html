@@ -8,7 +8,6 @@
     <style>
         :root { --primary-color: #6c5ce7; --bg-color: #f0f2f5; --card-bg: #ffffff; --accent-color: #ff7675; }
         
-        /* スクロール修正：bodyのスクロールを有効化 */
         body { 
             font-family: 'Segoe UI', sans-serif; 
             display: flex; 
@@ -21,9 +20,36 @@
             overflow-y: auto; 
         }
 
-        h1 { margin: 10px 0; font-size: 1rem; color: var(--primary-color); font-weight: 800; letter-spacing: 1px; }
+        /* タイトルエリアを1行に整える */
+        .header-area {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        h1 { margin: 0; font-size: 1rem; color: var(--primary-color); font-weight: 800; letter-spacing: 1px; }
+
+        /* メニューボタンを右上に配置 */
+        #openSidebar {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
         
-        /* キャンバスエリア：操作を固定 */
+        /* キャンバスとボタンを分けるコンテナ */
+        .app-container { 
+            width: 100%; 
+            display: flex; 
+            flex-direction: column; /* 縦に並べる */
+            align-items: center; 
+            gap: 15px; 
+        }
+        
         .canvas-area { 
             position: relative; width: 320px; height: 320px; 
             overflow: hidden; border: 4px solid var(--card-bg); border-radius: 8px; 
@@ -49,8 +75,14 @@
             background-size: 80px 80px, 80px 80px, 10px 10px, 10px 10px;
         }
 
-        /* ツールバー */
-        .quick-toolbar { display: flex; flex-direction: column; gap: 8px; }
+        /* 戻る・進む・移動ボタンを横並びにする */
+        .quick-toolbar { 
+            display: flex; 
+            flex-direction: row; /* 横並び */
+            justify-content: center;
+            gap: 20px; 
+            width: 100%;
+        }
         .btn-round { width: 45px; height: 45px; border-radius: 50%; border: none; background: var(--card-bg); color: #57606f; box-shadow: 0 3px 10px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; cursor: pointer; }
 
         /* サイドバー */
@@ -66,7 +98,7 @@
             justify-content: space-around;
             align-items: center;
             border-top: 1px solid #eee;
-            gap: 10px;
+            gap: 5px;
         }
         .sns-link {
             text-decoration: none;
@@ -74,7 +106,7 @@
             flex-direction: column;
             align-items: center;
             gap: 4px;
-            font-size: 0.6rem;
+            font-size: 0.55rem; /* テキストサイズを少し調整 */
             font-weight: bold;
             color: #57606f;
             transition: 0.2s;
@@ -93,7 +125,6 @@
         .bg-x { background-color: #000000; }
         .bg-insta { background-image: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); }
 
-        /* 送信中オーバーレイ */
         #loadingOverlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(108, 92, 231, 0.95); z-index: 2000;
@@ -102,7 +133,6 @@
         .spinner { width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.3); border-top: 5px solid #fff; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* 下部コントロール */
         .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 999; display: none; }
         .overlay.active { display: block; }
         .bottom-controls { margin-top: 15px; width: 100%; max-width: 500px; display: flex; flex-direction: column; gap: 10px; background: var(--card-bg); padding: 15px; border-radius: 20px; box-sizing: border-box; }
@@ -115,13 +145,20 @@
         .palette-item { position: relative; width: 30px; height: 30px; }
         .palette-color { width: 100%; height: 100%; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer; }
         .btn-del-color { position: absolute; top: -5px; right: -5px; width: 16px; height: 16px; background: var(--accent-color); color: white; border-radius: 50%; border: none; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-
         .btn-upload { background: var(--primary-color); color: white; width: 100%; height: 55px; font-weight: 900; font-size: 1.1rem; border-radius: 15px; margin-top: 5px; letter-spacing: 2px; box-shadow: 0 4px 15px rgba(108, 92, 231, 0.4); border: none; cursor: pointer; }
+        .zoom-row { display: flex; align-items: center; gap: 10px; width: 100%; background: #f1f2f6; padding: 5px 15px; border-radius: 10px; box-sizing: border-box; }
+        input[type="range"] { flex: 1; }
+        select { height: 42px; border-radius: 10px; border: 1px solid #dfe4ea; padding: 0 5px; font-size: 0.8rem; }
+        .library-item { display: flex; align-items: center; gap: 10px; background: #f9f9f9; padding: 8px; border-radius: 10px; margin-bottom: 5px; }
+        .library-thumb { width: 40px; height: 40px; border: 1px solid #ddd; background: white; image-rendering: pixelated; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <h1>DOTS ART STUDIO</h1>
+    <div class="header-area">
+        <h1>DOTS ART STUDIO</h1>
+        <button class="btn-round" id="openSidebar"><span class="material-icons">menu</span></button>
+    </div>
 
     <div id="loadingOverlay">
         <div class="spinner"></div>
@@ -138,7 +175,6 @@
         </div>
 
         <div class="quick-toolbar">
-            <button class="btn-round" id="openSidebar"><span class="material-icons">menu</span></button>
             <button class="btn-round" id="btn-undo"><span class="material-icons">undo</span></button>
             <button class="btn-round" id="btn-redo"><span class="material-icons">redo</span></button>
             <button class="btn-round" id="btn-move" title="移動"><span class="material-icons">pan_tool</span></button>
@@ -159,7 +195,7 @@
             <div class="sns-button-container">
                 <a href="https://lin.ee/CkQNe7q" class="sns-link" target="_blank">
                     <div class="sns-icon bg-line"><span class="material-icons">chat</span></div>
-                    LINE
+                    公式LINE
                 </a>
                 <a href="https://www.instagram.com/dots_projects/" class="sns-link" target="_blank">
                     <div class="sns-icon bg-insta"><span class="material-icons">camera_alt</span></div>
@@ -220,6 +256,7 @@
     </div>
 
     <script>
+        // --- 以前のスクリプトをそのまま使用 ---
         const canvas = document.getElementById('dotCanvas');
         const ctx = canvas.getContext('2d');
         const wrapper = document.getElementById('canvasWrapper');
@@ -270,7 +307,6 @@
             }
         }
 
-        // 描画ロジック等は以前と同じため省略（そのまま残してください）
         function updateTransform() { wrapper.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`; }
         zoomRange.oninput = () => { scale = parseFloat(zoomRange.value); updateTransform(); };
         document.getElementById('btn-reset-zoom').onclick = () => { scale = 1; offsetX = 0; offsetY = 0; zoomRange.value = 1; updateTransform(); };
