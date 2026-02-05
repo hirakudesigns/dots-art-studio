@@ -8,7 +8,7 @@
     <style>
         :root { --primary-color: #6c5ce7; --bg-color: #f0f2f5; --card-bg: #ffffff; --accent-color: #ff7675; }
         
-        /* ① スクロール修正：bodyのtouch-actionを解除し、スクロールを有効化 */
+        /* スクロール修正：bodyのスクロールを有効化 */
         body { 
             font-family: 'Segoe UI', sans-serif; 
             display: flex; 
@@ -18,15 +18,12 @@
             margin: 0; 
             padding: 10px; 
             overflow-x: hidden; 
-            overflow-y: auto; /* 縦スクロールを許可 */
+            overflow-y: auto; 
         }
 
         h1 { margin: 10px 0; font-size: 1rem; color: var(--primary-color); font-weight: 800; letter-spacing: 1px; }
         
-        /* キャンバスエリア */
-        .app-container { position: relative; width: 100%; display: flex; justify-content: center; align-items: flex-start; gap: 10px; }
-        
-        /* ① キャンバス内だけ操作を固定（描画中に画面が動かないようにする） */
+        /* キャンバスエリア：操作を固定 */
         .canvas-area { 
             position: relative; width: 320px; height: 320px; 
             overflow: hidden; border: 4px solid var(--card-bg); border-radius: 8px; 
@@ -60,7 +57,41 @@
         .sidebar { position: fixed; top: 0; right: -280px; width: 240px; height: 100%; background: var(--card-bg); z-index: 1000; padding: 40px 15px 20px; box-shadow: -5px 0 15px rgba(0,0,0,0.1); transition: 0.3s; display: flex; flex-direction: column; gap: 12px; box-sizing: border-box; }
         .sidebar.open { right: 0; }
         .sidebar .btn-text { width: 100%; min-height: 45px; font-weight: bold; display: flex; align-items: center; gap: 10px; border: none; background: #f1f2f6; border-radius: 10px; padding-left: 15px; cursor: pointer; color: #57606f; }
-        .line-button-container { margin-top: auto; padding: 10px 0; display: flex; justify-content: center; align-items: center; border-top: 1px solid #eee; }
+
+        /* SNSボタンのスタイル */
+        .sns-button-container {
+            margin-top: auto;
+            padding: 15px 0;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 1px solid #eee;
+            gap: 10px;
+        }
+        .sns-link {
+            text-decoration: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.6rem;
+            font-weight: bold;
+            color: #57606f;
+            transition: 0.2s;
+        }
+        .sns-link:active { transform: scale(0.9); }
+        .sns-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        .bg-line { background-color: #06C755; }
+        .bg-x { background-color: #000000; }
+        .bg-insta { background-image: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); }
 
         /* 送信中オーバーレイ */
         #loadingOverlay {
@@ -85,15 +116,7 @@
         .palette-color { width: 100%; height: 100%; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer; }
         .btn-del-color { position: absolute; top: -5px; right: -5px; width: 16px; height: 16px; background: var(--accent-color); color: white; border-radius: 50%; border: none; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
-        .library-item { display: flex; align-items: center; gap: 10px; background: #f9f9f9; padding: 8px; border-radius: 10px; margin-bottom: 5px; }
-        .library-thumb { width: 40px; height: 40px; border: 1px solid #ddd; background: white; image-rendering: pixelated; cursor: pointer; }
-
-        .zoom-row { display: flex; align-items: center; gap: 10px; width: 100%; background: #f1f2f6; padding: 5px 15px; border-radius: 10px; box-sizing: border-box; }
-        input[type="range"] { flex: 1; }
-        select { height: 42px; border-radius: 10px; border: 1px solid #dfe4ea; padding: 0 5px; font-size: 0.8rem; }
-
         .btn-upload { background: var(--primary-color); color: white; width: 100%; height: 55px; font-weight: 900; font-size: 1.1rem; border-radius: 15px; margin-top: 5px; letter-spacing: 2px; box-shadow: 0 4px 15px rgba(108, 92, 231, 0.4); border: none; cursor: pointer; }
-        .btn-upload:active { transform: scale(0.98); }
     </style>
 </head>
 <body>
@@ -133,8 +156,19 @@
             <button class="btn-text" id="btn-rotate"><span class="material-icons">rotate_right</span> 90度回転</button>
             <button class="btn-text" id="btn-clear" style="color:var(--accent-color)"><span class="material-icons">delete_outline</span> 全消去</button>
             
-            <div class="line-button-container">
-                <a href="https://lin.ee/CkQNe7q"><img src="https://scdn.line-apps.com/n/line_add_friends/btn/ja.png" alt="友だち追加" height="36" border="0"></a>
+            <div class="sns-button-container">
+                <a href="https://lin.ee/CkQNe7q" class="sns-link" target="_blank">
+                    <div class="sns-icon bg-line"><span class="material-icons">chat</span></div>
+                    LINE
+                </a>
+                <a href="https://www.instagram.com/dots_projects/" class="sns-link" target="_blank">
+                    <div class="sns-icon bg-insta"><span class="material-icons">camera_alt</span></div>
+                    Insta
+                </a>
+                <a href="https://x.com/hiraku_designs" class="sns-link" target="_blank">
+                    <div class="sns-icon bg-x"><span class="material-icons">close</span></div>
+                    X
+                </a>
             </div>
         </div>
         <div class="overlay" id="overlay"></div>
@@ -183,7 +217,6 @@
 
         <div class="section-label">WORKSHOP SUBMISSION (OFFICIAL)</div>
         <button class="btn btn-upload" onclick="uploadImage()">UPLOAD 作品を提出する</button>
-        <p style="font-size:0.6rem; color:#a1a1a1; text-align:center; margin-top:5px;">※提出後、アンケートと証明書発行へ進みます</p>
     </div>
 
     <script>
@@ -198,24 +231,20 @@
         let currentMode = 'pen', isDrawing = false;
         let colorPalette = [], library = [], historyStack = [], redoStack = [];
 
-        // --- ワークショップ連携設定 ---
         const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbwyB3_xEQoWg45dGDNyW7Ghf76eMLZCa5tDv9lRrirMx-hy-5JiV5RxR35y01AP-Q0q0Q/exec";
 
-        // ② 流入元判定を含めた送信処理
         async function uploadImage() {
             const artNameField = document.getElementById('artName');
             const artName = artNameField.value.trim();
             if (!artName) { alert("作品名を入力してから提出してください！"); artNameField.focus(); return; }
             if (!confirm(`「${artName}」を公式作品として提出しますか？`)) return;
 
-            // URLの?from=...を読み取る
             const urlParams = new URLSearchParams(window.location.search);
-            const fromSource = urlParams.get('from') || 'T'; // デフォルトは現場用のT
+            const fromSource = urlParams.get('from') || 'T';
 
             const overlay = document.getElementById('loadingOverlay');
             overlay.style.display = 'flex';
 
-            // 高画質化処理（512px）
             const exportSize = 512; 
             const tempCanvas = document.createElement('canvas');
             tempCanvas.width = tempCanvas.height = exportSize;
@@ -228,30 +257,20 @@
                 await fetch(GAS_ENDPOINT, {
                     method: 'POST',
                     mode: 'no-cors',
-                    body: JSON.stringify({ 
-                        image: imageData, 
-                        name: artName, 
-                        location: fromSource // GASへ流入元を送信
-                    })
+                    body: JSON.stringify({ image: imageData, name: artName, location: fromSource })
                 });
-
                 overlay.style.display = 'none';
-                alert(`作品を送信しました！\n続いてアンケートと証明書発行の手続きに移ります。`);
-                
+                alert(`作品を送信しました！`);
                 const formBaseUrl = "https://docs.google.com/forms/d/e/1FAIpQLSfNwyTLJ_-3FJx5oBbgzULdlWZ8TrVfyH6eHv5V4pXlAhP34Q/viewform";
                 const question4Id = "46158305"; 
-                const formUrl = `${formBaseUrl}?usp=pp_url&entry.${question4Id}=${encodeURIComponent(artName)}`;
-                
-                window.location.href = formUrl;
-
+                window.location.href = `${formBaseUrl}?usp=pp_url&entry.${question4Id}=${encodeURIComponent(artName)}`;
             } catch (e) {
                 overlay.style.display = 'none';
-                alert("送信に失敗しました。ネット接続を確認してください。");
-                console.error(e);
+                alert("送信に失敗しました。");
             }
         }
 
-        // --- 描画・基本操作 ---
+        // 描画ロジック等は以前と同じため省略（そのまま残してください）
         function updateTransform() { wrapper.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`; }
         zoomRange.oninput = () => { scale = parseFloat(zoomRange.value); updateTransform(); };
         document.getElementById('btn-reset-zoom').onclick = () => { scale = 1; offsetX = 0; offsetY = 0; zoomRange.value = 1; updateTransform(); };
@@ -308,7 +327,6 @@
             }
         }
 
-        // --- 保存・パレット・履歴 ---
         function saveHistory() { historyStack.push(canvas.toDataURL()); if (historyStack.length > 30) historyStack.shift(); redoStack = []; localStorage.setItem('dotsAppData', canvas.toDataURL()); }
         function loadImg(u) { const i = new Image(); i.src = u; i.onload = () => { ctx.clearRect(0, 0, 32, 32); ctx.drawImage(i, 0, 0); }; }
         document.getElementById('btn-undo').onclick = () => { if (historyStack.length > 1) { redoStack.push(historyStack.pop()); loadImg(historyStack[historyStack.length - 1]); } };
