@@ -20,32 +20,33 @@
             overflow-y: auto; 
         }
 
-        /* タイトルエリアを1行に整える */
+        /* タイトルエリア */
         .header-area {
-            position: relative;
             width: 100%;
             max-width: 500px;
             display: flex;
             justify-content: center;
             align-items: center;
-            margin-bottom: 15px;
+            padding: 10px 0;
+            margin-bottom: 5px;
         }
 
         h1 { margin: 0; font-size: 1rem; color: var(--primary-color); font-weight: 800; letter-spacing: 1px; }
 
-        /* メニューボタンを右上に配置 */
+        /* 【追従型に変更】メニューボタンを画面右上に固定 */
         #openSidebar {
-            position: absolute;
-            right: 10px;
-            top: 50%;
-            transform: translateY(-50%);
+            position: fixed; /* 固定配置 */
+            right: 15px;
+            top: 15px;
+            z-index: 900; /* 他の要素より上に、サイドバー(1000)より下に */
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15); /* 浮いている感を出すための影 */
+            background: var(--card-bg);
         }
         
-        /* キャンバスとボタンを分けるコンテナ */
         .app-container { 
             width: 100%; 
             display: flex; 
-            flex-direction: column; /* 縦に並べる */
+            flex-direction: column; 
             align-items: center; 
             gap: 15px; 
         }
@@ -75,10 +76,9 @@
             background-size: 80px 80px, 80px 80px, 10px 10px, 10px 10px;
         }
 
-        /* 戻る・進む・移動ボタンを横並びにする */
         .quick-toolbar { 
             display: flex; 
-            flex-direction: row; /* 横並び */
+            flex-direction: row; 
             justify-content: center;
             gap: 20px; 
             width: 100%;
@@ -90,7 +90,6 @@
         .sidebar.open { right: 0; }
         .sidebar .btn-text { width: 100%; min-height: 45px; font-weight: bold; display: flex; align-items: center; gap: 10px; border: none; background: #f1f2f6; border-radius: 10px; padding-left: 15px; cursor: pointer; color: #57606f; }
 
-        /* SNSボタンのスタイル */
         .sns-button-container {
             margin-top: auto;
             padding: 15px 0;
@@ -106,20 +105,13 @@
             flex-direction: column;
             align-items: center;
             gap: 4px;
-            font-size: 0.55rem; /* テキストサイズを少し調整 */
+            font-size: 0.55rem;
             font-weight: bold;
             color: #57606f;
             transition: 0.2s;
         }
-        .sns-link:active { transform: scale(0.9); }
         .sns-icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
+            width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white;
         }
         .bg-line { background-color: #06C755; }
         .bg-x { background-color: #000000; }
@@ -157,8 +149,9 @@
 
     <div class="header-area">
         <h1>DOTS ART STUDIO</h1>
-        <button class="btn-round" id="openSidebar"><span class="material-icons">menu</span></button>
     </div>
+
+    <button class="btn-round" id="openSidebar"><span class="material-icons">menu</span></button>
 
     <div id="loadingOverlay">
         <div class="spinner"></div>
@@ -256,7 +249,7 @@
     </div>
 
     <script>
-        // --- 以前のスクリプトをそのまま使用 ---
+        // スクリプト部分は以前と同じ
         const canvas = document.getElementById('dotCanvas');
         const ctx = canvas.getContext('2d');
         const wrapper = document.getElementById('canvasWrapper');
