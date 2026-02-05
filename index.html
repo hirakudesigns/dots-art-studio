@@ -91,7 +91,12 @@
             object-fit: contain;
         }
 
-        /* アクティブな画像アイコンの色を反転（白くする） */
+        /* 消しゴム画像だけ1.1倍に拡大（枠はそのまま） */
+        #btn-eraser .img-icon {
+            transform: scale(1.1);
+        }
+
+        /* アクティブな画像アイコンの色を反転 */
         .btn.active .img-icon {
             filter: brightness(0) invert(1);
         }
@@ -238,7 +243,6 @@
     </div>
 
     <script>
-        // JS部分は以前と同じ（省略せずにそのままお使いください）
         const canvas = document.getElementById('dotCanvas');
         const ctx = canvas.getContext('2d');
         const wrapper = document.getElementById('canvasWrapper');
