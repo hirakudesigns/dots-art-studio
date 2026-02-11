@@ -131,7 +131,7 @@
         </div>
 
         <div class="sidebar" id="sidebar">
-            <div class="section-label">BACKGROUND 合成確認</div>
+            <div class="section-label">背景画像合成 完成イメージ確認</div>
             <label style="font-size:0.8rem; font-weight:bold; display:flex; justify-content:space-between; align-items:center; color:#57606f; background:#f9f9f9; padding:10px; border-radius:10px;">
                 背景を合成する <input type="checkbox" id="bgSwitch">
             </label>
@@ -145,12 +145,12 @@
 
             <hr style="width:100%; border:0; border-top:1px solid #eee; margin:10px 0;">
             
-            <div class="section-label">DISPLAY</div>
+            <div class="section-label">グリッド線の表示/非表示</div>
             <label style="font-size:0.85rem; font-weight:bold; display:flex; justify-content:space-between; align-items:center; color:#57606f;">
-                グリッド線を表示 <input type="checkbox" id="gridSwitch">
+                グリッド線を表示する <input type="checkbox" id="gridSwitch">
             </label>
             
-            <div class="section-label" style="margin-top:10px;">TRANSFORM</div>
+            <div class="section-label" style="margin-top:10px;">移動/消去</div>
             <button class="btn-text" id="btn-flip-h"><span class="material-icons">flip</span> 左右反転</button>
             <button class="btn-text" id="btn-flip-v"><span class="material-icons">swap_vert</span> 上下反転</button>
             <button class="btn-text" id="btn-rotate"><span class="material-icons">rotate_right</span> 90度回転</button>
@@ -166,14 +166,14 @@
     </div>
 
     <div class="bottom-controls">
-        <div class="section-label">ZOOM & MOVE</div>
+        <div class="section-label">拡大/拡大リセット</div>
         <div class="zoom-row">
             <span class="material-icons" style="font-size:18px">zoom_in</span>
             <input type="range" id="zoomRange" min="1" max="5" step="0.1" value="1">
             <button class="btn" id="btn-reset-zoom" style="width:auto; padding:0 10px; height:30px; font-size:0.7rem;">RESET</button>
         </div>
 
-        <div class="section-label">TOOLS</div>
+        <div class="section-label">描画機能</div>
         <div class="row">
             <input type="color" id="colorPicker" value="#000000">
             <button class="btn active" id="btn-pen"><span class="material-icons">edit</span></button>
@@ -182,13 +182,13 @@
             <button class="btn" id="btn-picker"><span class="material-icons">colorize</span></button>
         </div>
 
-        <div class="section-label">PALETTE</div>
+        <div class="section-label">カラーパレット</div>
         <div class="row">
-            <button class="btn" id="btn-add-palette" style="background:#55efc4; color:#00b894; width:auto; padding:0 12px; font-weight:bold;">COLORS +</button>
+            <button class="btn" id="btn-add-palette" style="background:#55efc4; color:#00b894; width:auto; padding:0 12px; font-weight:bold;">カラーを追加する</button>
         </div>
         <div class="palette-container" id="paletteContainer"></div>
 
-        <div class="section-label">EXPORT (DOWNLOAD)</div>
+        <div class="section-label">データ書き出し設定</div>
         <div class="row">
             <select id="exportMode">
                 <option value="dotOnly">ドットのみ（透過）</option>
@@ -202,15 +202,15 @@
             <button onclick="exportImage('jpg')" class="btn" style="width:55px; font-weight:bold;">JPG</button>
         </div>
 
-        <div class="section-label">LIBRARY STOCK (LOCAL SAVE)</div>
+        <div class="section-label">作品名の記入欄</div>
         <div class="row">
             <input type="text" id="artName" placeholder="作品の名前を入力..." style="flex:1; height:40px; border-radius:10px; border:2px solid #dfe4ea; padding:0 10px; font-size:0.9rem;">
-            <button class="btn" id="btn-save-lib" style="background:#55efc4; color:#00b894; width:70px; font-weight:bold;">SAVE</button>
+            <button class="btn" id="btn-save-lib" style="background:#55efc4; color:#00b894; width:70px; font-weight:bold;">保存</button>
         </div>
         <div id="libraryList"></div>
 
-        <div class="section-label">WORKSHOP SUBMISSION (OFFICIAL)</div>
-        <button class="btn btn-upload" onclick="uploadImage()">UPLOAD 作品を提出する</button>
+        <div class="section-label">もしよろしければ、あなたの作品をアップロードして下さい。</div>
+        <button class="btn btn-upload" onclick="uploadImage()">作品をアップロード</button>
     </div>
 
     <script>
@@ -247,8 +247,8 @@
         async function uploadImage() {
             const artNameField = document.getElementById('artName');
             const artName = artNameField.value.trim();
-            if (!artName) { alert("作品名を入力してから提出してください！"); artNameField.focus(); return; }
-            if (!confirm(`「${artName}」を公式作品として提出しますか？`)) return;
+            if (!artName) { alert("作品名を入力してからアップロードしてください！"); artNameField.focus(); return; }
+            if (!confirm(`「${artName}」をあなたの作品としてアップロードしますか？`)) return;
 
             const urlParams = new URLSearchParams(window.location.search);
             const fromSource = urlParams.get('from') || 'T';
@@ -264,12 +264,12 @@
                     body: JSON.stringify({ image: imageData, name: artName, location: fromSource })
                 });
                 overlay.style.display = 'none';
-                alert(`作品を送信しました！`);
+                alert(`作品をアップロードしました！`);
                 const formBaseUrl = "https://docs.google.com/forms/d/e/1FAIpQLSfNwyTLJ_-3FJx5oBbgzULdlWZ8TrVfyH6eHv5V4pXlAhP34Q/viewform";
                 window.location.href = `${formBaseUrl}?usp=pp_url&entry.46158305=${encodeURIComponent(artName)}`;
             } catch (e) {
                 overlay.style.display = 'none';
-                alert("送信に失敗しました。");
+                alert("アップロードに失敗しました。");
             }
         }
 
