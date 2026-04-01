@@ -1,1 +1,128 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DOTS ART ZUKAN - 図鑑</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        :root { --primary-color: #6c5ce7; --bg-color: #f0f2f5; --card-bg: #ffffff; --collected-color: #55efc4; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg-color); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        
+        .header { width: 100%; max-width: 500px; text-align: center; margin-bottom: 20px; }
+        h1 { color: var(--primary-color); font-size: 1.2rem; letter-spacing: 2px; }
 
+        /* 今回見つけたキャラの表示エリア */
+        .new-arrival { 
+            width: 100%; max-width: 320px; background: var(--card-bg); 
+            border-radius: 20px; padding: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+            text-align: center; margin-bottom: 30px; border: 4px solid var(--collected-color);
+        }
+        .pixel-art-display { width: 128px; height: 128px; image-rendering: pixelated; margin: 10px 0; }
+        .status-msg { font-weight: bold; color: #57606f; font-size: 0.9rem; }
+
+        /* 図鑑グリッド */
+        .zukan-grid { 
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; 
+            width: 100%; max-width: 500px; 
+        }
+        .zukan-item { 
+            background: #d1d8e0; border-radius: 10px; aspect-ratio: 1/1; 
+            display: flex; align-items: center; justify-content: center; position: relative;
+            overflow: hidden;
+        }
+        .zukan-item.collected { background: var(--card-bg); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .zukan-item img { width: 80%; height: 80%; image-rendering: pixelated; filter: brightness(0) opacity(0.2); }
+        .zukan-item.collected img { filter: none; }
+        
+        .item-name { font-size: 0.6rem; position: absolute; bottom: 5px; width: 100%; text-align: center; color: #a1a1a1; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>DOTS ART 図鑑</h1>
+    </div>
+
+    <div id="newDiscovery" class="new-arrival" style="display:none;">
+        <div class="status-msg">✨ 新しいキャラを発見！ ✨</div>
+        <img id="discoveredImg" src="" class="pixel-art-display">
+        <div id="discoveredName" style="font-weight:900; font-size:1.2rem;">キャラ名</div>
+    </div>
+
+    <div style="width:100%; max-width:500px; margin-bottom:10px;">
+        <span class="status-msg">コレクション一覧</span>
+    </div>
+
+    <div class="zukan-grid" id="zukanGrid">
+        </div>
+
+    <script>
+        // --- 設定データ ---
+        const ITEMS = {
+            'entrance': { name: 'ネギ侍', img: 'images/samurai.png' },
+            'cafe': { name: 'おにぎり君', img: 'images/onigiri.png' },
+            'stage': { name: 'ドット龍', img: 'images/dragon.png' }
+        };
+
+        // GASのURL（後で設定するために空にしておく）
+        const GAS_ENDPOINT = ""; 
+
+        window.onload = async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const locID = urlParams.get('from');
+            
+            // 1. 匿名ユーザーIDの発行
+            let uid = localStorage.getItem('zukan_uid');
+            if(!uid) {
+                uid = 'U-' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('zukan_uid', uid);
+            }
+
+            // 2. 回遊ログの送信（GASが設定されていれば）
+            if(GAS_ENDPOINT && locID) {
+                fetch(GAS_ENDPOINT, {
+                    method: 'POST', mode: 'no-cors',
+                    body: JSON.stringify({ type: 'scan', uid: uid, loc: locID })
+                });
+            }
+
+            // 3. コレクションの更新
+            let collection = JSON.parse(localStorage.getItem('zukan_collection') || "[]");
+            if(locID && ITEMS[locID]) {
+                if(!collection.includes(locID)) {
+                    collection.push(locID);
+                    localStorage.setItem('zukan_collection', JSON.stringify(collection));
+                    showDiscovery(locID);
+                }
+            }
+
+            renderZukan(collection);
+        };
+
+        function showDiscovery(id) {
+            const item = ITEMS[id];
+            document.getElementById('discoveredImg').src = item.img;
+            document.getElementById('discoveredName').innerText = item.name;
+            document.getElementById('newDiscovery').style.display = 'block';
+        }
+
+        function renderZukan(collection) {
+            const grid = document.getElementById('zukanGrid');
+            grid.innerHTML = '';
+            
+            Object.keys(ITEMS).forEach(id => {
+                const isCollected = collection.includes(id);
+                const item = ITEMS[id];
+                const div = document.createElement('div');
+                div.className = `zukan-item ${isCollected ? 'collected' : ''}`;
+                div.innerHTML = `
+                    <img src="${item.img}">
+                    <div class="item-name">${isCollected ? item.name : '???'}</div>
+                `;
+                grid.appendChild(div);
+            });
+        }
+    </script>
+</body>
+</html>
