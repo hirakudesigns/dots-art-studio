@@ -1,1 +1,381 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DOTS ART STUDIO - Aquarium</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        :root { --primary-color: #6c5ce7; --bg-color: #f0f2f5; --card-bg: #ffffff; --accent-color: #ff7675; }
+        
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            display: flex; flex-direction: column; align-items: center; 
+            background-color: var(--bg-color); margin: 0; padding: 10px; 
+            overflow-x: hidden; overflow-y: auto; 
+        }
 
+        .header-area { width: 100%; max-width: 500px; display: flex; justify-content: center; align-items: center; padding: 10px 0; margin-bottom: 5px; }
+        h1 { margin: 0; font-size: 1rem; color: var(--primary-color); font-weight: 800; letter-spacing: 1px; }
+
+        #openSidebar {
+            position: fixed; right: 15px; top: 15px; z-index: 900;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15); background: var(--card-bg);
+        }
+        
+        .app-container { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 15px; }
+        
+        .canvas-area { 
+            position: relative; width: 320px; height: 320px; 
+            overflow: hidden; border: 4px solid var(--card-bg); border-radius: 8px; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1); background: #fff;
+            touch-action: none; 
+        }
+
+        #canvasBackground {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-size: cover; background-position: center; z-index: 0;
+            display: none;
+        }
+
+        .canvas-wrapper { 
+            position: absolute; transform-origin: 0 0; z-index: 1;
+            background-image: linear-gradient(45deg, #eee 25%, transparent 25%, transparent 75%, #eee 75%), linear-gradient(45deg, #eee 25%, #fff 25%, #fff 75%, #eee 75%);
+            background-size: 20px 20px; background-position: 0 0, 10px 10px;
+        }
+        .canvas-wrapper.bg-active { background-image: none; background-color: transparent; }
+        
+        canvas { image-rendering: pixelated; display: block; cursor: crosshair; }
+
+        #gridOverlay {
+            position: absolute; top: 0; left: 0; width: 320px; height: 320px;
+            pointer-events: none; display: none; z-index: 2;
+            background-image: 
+                linear-gradient(to right, rgba(0,0,0,0.3) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0,0,0,0.3) 1px, transparent 1px),
+                linear-gradient(to right, rgba(0,0,0,0.1) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0,0,0,0.1) 1px, transparent 1px);
+            background-size: 80px 80px, 80px 80px, 10px 10px, 10px 10px;
+        }
+
+        .quick-toolbar { display: flex; flex-direction: row; justify-content: center; gap: 20px; width: 100%; }
+        .btn-round { width: 45px; height: 45px; border-radius: 50%; border: none; background: var(--card-bg); color: #57606f; box-shadow: 0 3px 10px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+
+        .img-icon { width: 24px; height: 24px; object-fit: contain; }
+        #btn-eraser .img-icon { transform: scale(1.3); }
+
+        .sidebar { position: fixed; top: 0; right: -280px; width: 240px; height: 100%; background: var(--card-bg); z-index: 1000; padding: 40px 15px 20px; box-shadow: -5px 0 15px rgba(0,0,0,0.1); transition: 0.3s; display: flex; flex-direction: column; gap: 12px; box-sizing: border-box; overflow-y: auto; }
+        .sidebar.open { right: 0; }
+        .sidebar .btn-text { width: 100%; min-height: 45px; font-weight: bold; display: flex; align-items: center; gap: 10px; border: none; background: #f1f2f6; border-radius: 10px; padding-left: 15px; cursor: pointer; color: #57606f; font-size: 0.8rem; }
+
+        /* お手本（ぬりえ）セクションの追加スタイル */
+        .template-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 5px; }
+        .btn-template { 
+            background: #f1f2f6; border: 2px solid #dfe4ea; border-radius: 10px; 
+            padding: 10px 5px; font-size: 0.7rem; font-weight: bold; cursor: pointer; 
+            display: flex; flex-direction: column; align-items: center; gap: 5px; color: #57606f;
+        }
+        .btn-template:active { transform: scale(0.95); background: #e1e2e6; }
+        .template-icon { font-size: 1.2rem; }
+
+        .sns-button-container { margin-top: auto; padding: 15px 0; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid #eee; gap: 5px; }
+        .sns-link { text-decoration: none; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 0.55rem; font-weight: bold; color: #57606f; }
+        .sns-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; }
+        .bg-line { background-color: #06C755; }
+        .bg-x { background-color: #000000; }
+        .bg-insta { background-image: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); }
+
+        #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(108, 92, 231, 0.95); z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; text-align: center; }
+        .spinner { width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.3); border-top: 5px solid #fff; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 999; display: none; }
+        .overlay.active { display: block; }
+        .bottom-controls { margin-top: 15px; width: 100%; max-width: 500px; display: flex; flex-direction: column; gap: 10px; background: var(--card-bg); padding: 15px; border-radius: 20px; box-sizing: border-box; }
+        .row { display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; align-items: center; }
+        .btn { width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; border-radius: 10px; background: #f1f2f6; color: #57606f; font-size: 0.75rem; }
+        .btn.active { background: var(--primary-color); color: white; }
+        
+        .section-label { width: 100%; font-size: 0.65rem; color: #a1a1a1; font-weight: bold; margin-bottom: -2px; text-transform: uppercase; }
+        .palette-container { display: flex; flex-wrap: wrap; gap: 10px; max-height: 80px; overflow-y: auto; padding: 5px; background: #f9f9f9; border-radius: 10px; }
+        .palette-item { position: relative; width: 30px; height: 30px; }
+        .palette-color { width: 100%; height: 100%; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer; }
+        .btn-del-color { position: absolute; top: -5px; right: -5px; width: 16px; height: 16px; background: var(--accent-color); color: white; border-radius: 50%; border: none; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .btn-upload { background: var(--primary-color); color: white; width: 100%; height: 55px; font-weight: 900; font-size: 1.1rem; border-radius: 15px; margin-top: 5px; letter-spacing: 2px; box-shadow: 0 4px 15px rgba(108, 92, 231, 0.4); border: none; cursor: pointer; }
+        .zoom-row { display: flex; align-items: center; gap: 10px; width: 100%; background: #f1f2f6; padding: 5px 15px; border-radius: 10px; box-sizing: border-box; }
+        input[type="range"] { flex: 1; }
+        select { height: 42px; border-radius: 10px; border: 1px solid #dfe4ea; padding: 0 5px; font-size: 0.8rem; background: #fff; }
+    </style>
+</head>
+<body>
+
+    <div class="header-area">
+        <h1>DOTS ART STUDIO - AQUARIUM</h1>
+    </div>
+
+    <button class="btn-round" id="openSidebar"><span class="material-icons">menu</span></button>
+
+    <div id="loadingOverlay">
+        <div class="spinner"></div>
+        <p style="font-weight:bold; font-size:1.2rem;">作品を送信中...</p>
+    </div>
+
+    <div class="app-container">
+        <div class="canvas-area" id="canvasArea">
+            <div id="canvasBackground"></div>
+            <div class="canvas-wrapper" id="canvasWrapper">
+                <canvas id="dotCanvas" width="32" height="32" style="width: 320px; height: 320px;"></canvas>
+                <div id="gridOverlay"></div>
+            </div>
+        </div>
+
+        <div class="quick-toolbar">
+            <button class="btn-round" id="btn-undo"><span class="material-icons">undo</span></button>
+            <button class="btn-round" id="btn-redo"><span class="material-icons">redo</span></button>
+            <button class="btn-round" id="btn-move" title="移動"><span class="material-icons">pan_tool</span></button>
+        </div>
+
+        <div class="sidebar" id="sidebar">
+            <div class="section-label">お手本（ぬりえ）を選ぶ</div>
+            <div class="template-grid">
+                <button class="btn-template" onclick="loadTemplate('img/goldfish_frame.png')">
+                    <span class="template-icon">🐟</span><span>きんぎょ</span>
+                </button>
+                <button class="btn-template" onclick="loadTemplate('img/sakura_frame.png')">
+                    <span class="template-icon">🌸</span><span>さくら</span>
+                </button>
+                <button class="btn-template" onclick="loadTemplate('img/lantern_frame.png')">
+                    <span class="template-icon">🏮</span><span>ちょうちん</span>
+                </button>
+                <button class="btn-template" onclick="loadTemplate('img/bamboo_frame.png')">
+                    <span class="template-icon">🎍</span><span>たけ</span>
+                </button>
+            </div>
+
+            <hr style="width:100%; border:0; border-top:1px solid #eee; margin:10px 0;">
+
+            <div class="section-label">背景合成プレビュー</div>
+            <label style="font-size:0.8rem; font-weight:bold; display:flex; justify-content:space-between; align-items:center; color:#57606f; background:#f9f9f9; padding:10px; border-radius:10px;">
+                背景を表示する <input type="checkbox" id="bgSwitch">
+            </label>
+            <select id="bgSelect" style="width:100%; margin-top:5px;" disabled>
+                <option value="bg1.jpg">夜の竹林</option>
+                <option value="bg2.jpg">水槽の中</option>
+            </select>
+
+            <div class="section-label" style="margin-top:10px;">グリッド表示</div>
+            <label style="font-size:0.85rem; font-weight:bold; display:flex; justify-content:space-between; align-items:center; color:#57606f;">
+                線を表示する <input type="checkbox" id="gridSwitch">
+            </label>
+            
+            <div class="section-label" style="margin-top:10px;">へんしゅう</div>
+            <button class="btn-text" id="btn-flip-h"><span class="material-icons">flip</span> 左右反転</button>
+            <button class="btn-text" id="btn-rotate"><span class="material-icons">rotate_right</span> 90度回転</button>
+            <button class="btn-text" id="btn-clear" style="color:var(--accent-color)"><span class="material-icons">delete_outline</span> ぜんぶ消す</button>
+            
+            <div class="sns-button-container">
+                <a href="https://lin.ee/CkQNe7q" class="sns-link" target="_blank"><div class="sns-icon bg-line"><span class="material-icons">chat</span></div>公式LINE</a>
+                <a href="https://www.instagram.com/dots_projects/" class="sns-link" target="_blank"><div class="sns-icon bg-insta"><span class="material-icons">camera_alt</span></div>Insta</a>
+            </div>
+        </div>
+        <div class="overlay" id="overlay"></div>
+    </div>
+
+    <div class="bottom-controls">
+        <div class="section-label">大きくする / 元にもどす</div>
+        <div class="zoom-row">
+            <span class="material-icons" style="font-size:18px">zoom_in</span>
+            <input type="range" id="zoomRange" min="1" max="5" step="0.1" value="1">
+            <button class="btn" id="btn-reset-zoom" style="width:auto; padding:0 10px; height:30px; font-size:0.7rem;">RESET</button>
+        </div>
+
+        <div class="section-label">えらぶ</div>
+        <div class="row">
+            <input type="color" id="colorPicker" value="#000000">
+            <button class="btn active" id="btn-pen"><span class="material-icons">edit</span></button>
+            <button class="btn" id="btn-eraser"><span class="material-icons">cleaning_services</span></button> 
+            <button class="btn" id="btn-bucket"><span class="material-icons">format_color_fill</span></button>
+            <button class="btn" id="btn-picker"><span class="material-icons">colorize</span></button>
+        </div>
+
+        <div class="section-label">よくつかう色</div>
+        <div class="row">
+            <button class="btn" id="btn-add-palette" style="background:#55efc4; color:#00b894; width:auto; padding:0 12px; font-weight:bold;">この色を保存</button>
+        </div>
+        <div class="palette-container" id="paletteContainer"></div>
+
+        <div class="section-label">なまえ</div>
+        <div class="row">
+            <input type="text" id="artName" placeholder="なまえを入力..." style="flex:1; height:40px; border-radius:10px; border:2px solid #dfe4ea; padding:0 10px;">
+        </div>
+
+        <button class="btn btn-upload" onclick="uploadImage()">作品をアップロード</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('dotCanvas');
+        const ctx = canvas.getContext('2d');
+        const wrapper = document.getElementById('canvasWrapper');
+        const canvasArea = document.getElementById('canvasArea');
+        const zoomRange = document.getElementById('zoomRange');
+        const colorPicker = document.getElementById('colorPicker');
+        const bgLayer = document.getElementById('canvasBackground');
+        const bgSelect = document.getElementById('bgSelect');
+        const bgSwitch = document.getElementById('bgSwitch');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+        
+        let scale = 1, offsetX = 0, offsetY = 0;
+        let currentMode = 'pen', isDrawing = false;
+        let colorPalette = [], historyStack = [], redoStack = [];
+
+        const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbz8SvflN2EgSSFFpcu9zbzASn32_JQU2oCn0ARICrar5gCXpR-KuW-hyO1TvsbOQUB2Kw/exec";
+
+        // --- お手本読み込み機能 (PNG枠線スキャン方式) ---
+        function loadTemplate(imagePath) {
+            if(!confirm("お手本を読み込みますか？")) return;
+
+            const img = new Image();
+            img.src = imagePath;
+            img.onload = () => {
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = 32; tempCanvas.height = 32;
+                const tCtx = tempCanvas.getContext('2d');
+                tCtx.drawImage(img, 0, 0, 32, 32);
+                const imageData = tCtx.getImageData(0, 0, 32, 32).data;
+
+                for (let y = 0; y < 32; y++) {
+                    for (let x = 0; x < 32; x++) {
+                        const i = (y * 32 + x) * 4;
+                        if (imageData[i + 3] > 0) { // 透明じゃない部分
+                            const current = ctx.getImageData(x, y, 1, 1).data;
+                            if (current[3] === 0) { // まだ何も描かれていないなら
+                                ctx.fillStyle = "#E0E0E0"; // ガイド用グレー
+                                ctx.fillRect(x, y, 1, 1);
+                            }
+                        }
+                    }
+                }
+                saveHistory();
+                sidebar.classList.remove('open');
+                overlay.classList.remove('active');
+                alert("お手本を読み込みました！グレーのところをぬってみよう！");
+            };
+            img.onerror = () => alert("画像の読み込みに失敗しました。imgフォルダを確認してね！");
+        }
+
+        // 基本機能
+        function updateTransform() { wrapper.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`; }
+        zoomRange.oninput = () => { scale = parseFloat(zoomRange.value); updateTransform(); };
+        document.getElementById('btn-reset-zoom').onclick = () => { scale = 1; offsetX = 0; offsetY = 0; zoomRange.value = 1; updateTransform(); };
+
+        let isMoving = false, startX, startY;
+        canvasArea.onmousedown = canvasArea.ontouchstart = (e) => {
+            if (currentMode === 'move') { isMoving = true; const p = e.touches ? e.touches[0] : e; startX = p.clientX - offsetX; startY = p.clientY - offsetY; return; }
+            isDrawing = true; handleAction(e);
+        };
+        window.onmousemove = window.ontouchmove = (e) => {
+            if (isMoving) { const p = e.touches ? e.touches[0] : e; offsetX = p.clientX - startX; offsetY = p.clientY - startY; updateTransform(); }
+            else if (isDrawing && currentMode !== 'bucket' && currentMode !== 'move') handleAction(e);
+        };
+        window.onmouseup = window.ontouchend = () => { isMoving = false; if (isDrawing) { isDrawing = false; saveHistory(); } };
+
+        function handleAction(e) {
+            const rect = canvas.getBoundingClientRect();
+            const p = e.touches ? e.touches[0] : e;
+            const x = Math.floor((p.clientX - rect.left) / (rect.width / 32));
+            const y = Math.floor((p.clientY - rect.top) / (rect.height / 32));
+            if (x < 0 || x >= 32 || y < 0 || y >= 32) return;
+            if (currentMode === 'pen') { ctx.fillStyle = colorPicker.value; ctx.fillRect(x, y, 1, 1); }
+            else if (currentMode === 'eraser') ctx.clearRect(x, y, 1, 1);
+            else if (currentMode === 'picker') { 
+                const d = ctx.getImageData(x, y, 1, 1).data; 
+                if (d[3] !== 0) colorPicker.value = "#" + [d[0], d[1], d[2]].map(x => x.toString(16).padStart(2, '0')).join(''); 
+            }
+            else if (currentMode === 'bucket') floodFill(x, y, colorPicker.value);
+        }
+
+        function floodFill(startX, startY, fillColor) {
+            const targetData = ctx.getImageData(startX, startY, 1, 1).data;
+            const targetColor = `rgba(${targetData[0]},${targetData[1]},${targetData[2]},${targetData[3]})`;
+            if (`rgba(${parseInt(fillColor.slice(1,3),16)},${parseInt(fillColor.slice(3,5),16)},${parseInt(fillColor.slice(5,7),16)},255)` === targetColor) return;
+            ctx.fillStyle = fillColor; const stack = [[startX, startY]]; const visited = new Set();
+            while(stack.length) {
+                const [x, y] = stack.pop(); if (x < 0 || x >= 32 || y < 0 || y >= 32 || visited.has(`${x},${y}`)) continue;
+                const d = ctx.getImageData(x, y, 1, 1).data;
+                if (`rgba(${d[0]},${d[1]},${d[2]},${d[3]})` === targetColor) { ctx.fillRect(x, y, 1, 1); visited.add(`${x},${y}`); stack.push([x+1, y], [x-1, y], [x, y+1], [x, y-1]); }
+            }
+        }
+
+        // 保存・履歴
+        function saveHistory() { historyStack.push(canvas.toDataURL()); if (historyStack.length > 30) historyStack.shift(); redoStack = []; localStorage.setItem('dotsAppData', canvas.toDataURL()); }
+        function loadImg(u) { const i = new Image(); i.src = u; i.onload = () => { ctx.clearRect(0, 0, 32, 32); ctx.drawImage(i, 0, 0); }; }
+        document.getElementById('btn-undo').onclick = () => { if (historyStack.length > 1) { redoStack.push(historyStack.pop()); loadImg(historyStack[historyStack.length - 1]); } };
+        document.getElementById('btn-redo').onclick = () => { if (redoStack.length) { const s = redoStack.pop(); historyStack.push(s); loadImg(s); } };
+
+        // パレット
+        function renderPalette() {
+            const pc = document.getElementById('paletteContainer'); pc.innerHTML = '';
+            colorPalette.forEach((c, i) => {
+                const w = document.createElement('div'); w.className = 'palette-item';
+                w.innerHTML = `<div class="palette-color" style="background:${c}" onclick="document.getElementById('colorPicker').value='${c}'"></div>
+                               <button class="btn-del-color" onclick="deletePaletteColor(${i})">×</button>`;
+                pc.appendChild(w);
+            });
+        }
+        window.deletePaletteColor = (i) => { colorPalette.splice(i, 1); localStorage.setItem('dotsAppPalette', JSON.stringify(colorPalette)); renderPalette(); };
+        document.getElementById('btn-add-palette').onclick = () => { const c = colorPicker.value.toLowerCase(); if(!colorPalette.includes(c)){ colorPalette.push(c); renderPalette(); localStorage.setItem('dotsAppPalette', JSON.stringify(colorPalette)); } };
+
+        // アップロード
+        async function uploadImage() {
+            const artName = document.getElementById('artName').value.trim() || "ななみの作品";
+            const overlay = document.getElementById('loadingOverlay');
+            overlay.style.display = 'flex';
+            const imageData = canvas.toDataURL('image/png');
+
+            try {
+                await fetch(GAS_ENDPOINT, {
+                    method: 'POST', mode: 'no-cors',
+                    body: JSON.stringify({ image: imageData, name: artName, location: 'Aquarium' })
+                });
+                overlay.style.display = 'none';
+                alert(`アップロードしたよ！ありがとう！`);
+            } catch (e) {
+                overlay.style.display = 'none';
+                alert("しっぱいしちゃった。もういちどやってみてね。");
+            }
+        }
+
+        // サイドバー操作
+        document.getElementById('openSidebar').onclick = () => { sidebar.classList.add('open'); overlay.classList.add('active'); };
+        overlay.onclick = () => { sidebar.classList.remove('open'); overlay.classList.remove('active'); };
+        document.getElementById('gridSwitch').onchange = (e) => { document.getElementById('gridOverlay').style.display = e.target.checked ? 'block' : 'none'; };
+
+        const toolBtns = { pen: 'btn-pen', eraser: 'btn-eraser', bucket: 'btn-bucket', picker: 'btn-picker', move: 'btn-move' };
+        Object.keys(toolBtns).forEach(m => {
+            document.getElementById(toolBtns[m]).onclick = () => {
+                currentMode = m;
+                Object.values(toolBtns).forEach(id => document.getElementById(id).classList.remove('active'));
+                document.getElementById(toolBtns[m]).classList.add('active');
+            };
+        });
+
+        document.getElementById('btn-clear').onclick = () => { if(confirm("ぜんぶ消してもいい？")) { ctx.clearRect(0, 0, 32, 32); saveHistory(); } };
+        document.getElementById('btn-flip-h').onclick = () => {
+            const t = document.createElement('canvas'); t.width=32; t.height=32; const tc = t.getContext('2d');
+            tc.scale(-1, 1); tc.drawImage(canvas, -32, 0); ctx.clearRect(0, 0, 32, 32); ctx.drawImage(t, 0, 0); saveHistory();
+        };
+        document.getElementById('btn-rotate').onclick = () => {
+            const t = document.createElement('canvas'); t.width=32; t.height=32; const tc = t.getContext('2d');
+            tc.translate(16,16); tc.rotate(Math.PI/2); tc.drawImage(canvas, -16, -16); ctx.clearRect(0, 0, 32, 32); ctx.drawImage(t, 0, 0); saveHistory();
+        };
+
+        window.onload = () => {
+            const d = localStorage.getItem('dotsAppData'), p = localStorage.getItem('dotsAppPalette');
+            if(d) loadImg(d); 
+            if(p) { colorPalette = JSON.parse(p); renderPalette(); }
+            saveHistory();
+        };
+    </script>
+</body>
+</html>
