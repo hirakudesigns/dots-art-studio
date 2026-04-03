@@ -6,7 +6,6 @@
     <title>DOTS AQUARIUM</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
-        /* 背景色を薄い水色 #bce2e8 に変更 */
         :root { --primary-color: #6c5ce7; --bg-color: #bce2e8; --card-bg: #ffffff; --accent-color: #ff7675; }
         
         body { 
@@ -16,7 +15,6 @@
             overflow-x: hidden; overflow-y: auto; 
         }
 
-        /* ヘッダーエリアのロゴとテキストの調整 */
         .header-area { 
             width: 100%; max-width: 500px; display: flex; justify-content: center; align-items: center; 
             padding: 10px 0; margin-bottom: 5px; gap: 8px;
@@ -260,7 +258,6 @@
                 sidebar.classList.remove('open');
                 overlay.classList.remove('active');
             };
-            img.onerror = () => alert("画像がみつかりませんでした。");
         }
 
         function updateTransform() { wrapper.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`; }
@@ -304,7 +301,7 @@
             }
         }
 
-        function saveHistory() { historyStack.push(canvas.toDataURL()); if (historyStack.length > 30) historyStack.shift(); redoStack = []; localStorage.setItem('dotsAppData', canvas.toDataURL()); }
+        function saveHistory() { historyStack.push(canvas.toDataURL()); if (historyStack.length > 30) historyStack.shift(); redoStack = []; localStorage.setItem('dotsAppData_Aqua', canvas.toDataURL()); }
         function loadImg(u) { const i = new Image(); i.src = u; i.onload = () => { ctx.clearRect(0, 0, 32, 32); ctx.drawImage(i, 0, 0); }; }
         document.getElementById('btn-undo').onclick = () => { if (historyStack.length > 1) { redoStack.push(historyStack.pop()); loadImg(historyStack[historyStack.length - 1]); } };
         document.getElementById('btn-redo').onclick = () => { if (redoStack.length) { const s = redoStack.pop(); historyStack.push(s); loadImg(s); } };
@@ -318,21 +315,56 @@
                 pc.appendChild(w);
             });
         }
-        window.deletePaletteColor = (i) => { colorPalette.splice(i, 1); localStorage.setItem('dotsAppPalette', JSON.stringify(colorPalette)); renderPalette(); };
-        document.getElementById('btn-add-palette').onclick = () => { const c = colorPicker.value.toLowerCase(); if(!colorPalette.includes(c)){ colorPalette.push(c); renderPalette(); localStorage.setItem('dotsAppPalette', JSON.stringify(colorPalette)); } };
+        window.deletePaletteColor = (i) => { colorPalette.splice(i, 1); localStorage.setItem('dotsAppPalette_Aqua', JSON.stringify(colorPalette)); renderPalette(); };
+        document.getElementById('btn-add-palette').onclick = () => { const c = colorPicker.value.toLowerCase(); if(!colorPalette.includes(c)){ colorPalette.push(c); renderPalette(); localStorage.setItem('dotsAppPalette_Aqua', JSON.stringify(colorPalette)); } };
 
+        // --- アップロード機能統合版 ---
         async function uploadImage() {
-            const artName = document.getElementById('artName').value.trim() || "なまえなし";
+            const artNameField = document.getElementById('artName');
+            const artName = artNameField.value.trim();
+
+            // 名前入力チェック
+            if (!artName) { 
+                alert("作品名を入力してからアップロードしてください！"); 
+                artNameField.focus(); 
+                return; 
+            }
+
+            // 確認ダイアログ
+            if (!confirm(`「${artName}」をあなたの作品としてアップロードしますか？`)) return;
+
+            // URLパラメータ取得 (from=Aquariumなどを想定)
+            const urlParams = new URLSearchParams(window.location.search);
+            const fromSource = urlParams.get('from') || 'T'; 
+
             const overlay = document.getElementById('loadingOverlay');
             overlay.style.display = 'flex';
+
+            // キャンバスデータ取得 (背景なし32x32をそのまま取得)
             const imageData = canvas.toDataURL('image/png');
+
             try {
-                await fetch(GAS_ENDPOINT, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ image: imageData, name: artName, location: 'Aquarium' }) });
+                // GASへ送信
+                await fetch(GAS_ENDPOINT, { 
+                    method: 'POST', 
+                    mode: 'no-cors', 
+                    body: JSON.stringify({ 
+                        image: imageData, 
+                        name: artName, 
+                        location: fromSource 
+                    }) 
+                });
+
                 overlay.style.display = 'none';
-                alert(`アップロードできたよ！`);
+                alert(`作品をアップロードしました！`);
+
+                // Googleフォームへ自動遷移 (作品名を引き継ぐ)
+                const formBaseUrl = "https://docs.google.com/forms/d/e/1FAIpQLSfNwyTLJ_-3FJx5oBbgzULdlWZ8TrVfyH6eHv5V4pXlAhP34Q/viewform";
+                window.location.href = `${formBaseUrl}?usp=pp_url&entry.46158305=${encodeURIComponent(artName)}`;
+
             } catch (e) {
                 overlay.style.display = 'none';
-                alert("しっぱいしちゃった。");
+                alert("アップロードに失敗しました。");
             }
         }
 
@@ -360,7 +392,7 @@
         };
 
         window.onload = () => {
-            const d = localStorage.getItem('dotsAppData'), p = localStorage.getItem('dotsAppPalette');
+            const d = localStorage.getItem('dotsAppData_Aqua'), p = localStorage.getItem('dotsAppPalette_Aqua');
             if(d) loadImg(d); 
             if(p) { colorPalette = JSON.parse(p); renderPalette(); }
             saveHistory();
