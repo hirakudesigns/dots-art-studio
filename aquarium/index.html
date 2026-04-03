@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DOTS AQUARIUM</title>
+    <title>DOTS AQUARIUM - Pro</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
         :root { --primary-color: #6c5ce7; --bg-color: #bce2e8; --card-bg: #ffffff; --accent-color: #ff7675; }
@@ -65,9 +65,9 @@
         .quick-toolbar { display: flex; flex-direction: row; justify-content: center; gap: 20px; width: 100%; }
         .btn-round { width: 45px; height: 45px; border-radius: 50%; border: none; background: var(--card-bg); color: #57606f; box-shadow: 0 3px 10px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; cursor: pointer; }
 
-        .sidebar { position: fixed; top: 0; right: -280px; width: 240px; height: 100%; background: var(--card-bg); z-index: 1000; padding: 40px 15px 20px; box-shadow: -5px 0 15px rgba(0,0,0,0.1); transition: 0.3s; display: flex; flex-direction: column; gap: 12px; box-sizing: border-box; overflow-y: auto; }
+        .sidebar { position: fixed; top: 0; right: -280px; width: 260px; height: 100%; background: var(--card-bg); z-index: 1000; padding: 40px 15px 20px; box-shadow: -5px 0 15px rgba(0,0,0,0.1); transition: 0.3s; display: flex; flex-direction: column; gap: 12px; box-sizing: border-box; overflow-y: auto; }
         .sidebar.open { right: 0; }
-        .sidebar .btn-text { width: 100%; min-height: 45px; font-weight: bold; display: flex; align-items: center; gap: 10px; border: none; background: #f1f2f6; border-radius: 10px; padding-left: 15px; cursor: pointer; color: #57606f; font-size: 0.8rem; }
+        .sidebar .btn-text { width: 100%; min-height: 40px; font-weight: bold; display: flex; align-items: center; gap: 10px; border: none; background: #f1f2f6; border-radius: 10px; padding-left: 15px; cursor: pointer; color: #57606f; font-size: 0.75rem; }
 
         .template-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 5px; }
         .btn-template { 
@@ -75,20 +75,22 @@
             padding: 10px 5px; font-size: 0.75rem; font-weight: bold; cursor: pointer; 
             display: flex; flex-direction: column; align-items: center; gap: 5px; color: #57606f;
         }
-        
         .template-icon { width: 44px; height: 44px; object-fit: contain; image-rendering: pixelated; }
 
-        .tool-icon {
-            width: 24px; height: 24px; object-fit: contain; image-rendering: pixelated;
-            transform: scale(1.3);
-        }
+        /* SNS Styles */
+        .sns-button-container { margin-top: auto; padding: 15px 0; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid #eee; gap: 5px; }
+        .sns-link { text-decoration: none; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 0.55rem; font-weight: bold; color: #57606f; }
+        .sns-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; }
+        .bg-line { background-color: #06C755; }
+        .bg-x { background-color: #000000; }
+        .bg-insta { background-image: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); }
 
         .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 999; display: none; }
         .overlay.active { display: block; }
 
         .bottom-controls { margin-top: 15px; width: 100%; max-width: 500px; display: flex; flex-direction: column; gap: 10px; background: var(--card-bg); padding: 15px; border-radius: 20px; box-sizing: border-box; }
         .row { display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; align-items: center; }
-        .btn { width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; border-radius: 10px; background: #f1f2f6; color: #57606f; font-size: 0.75rem; overflow: hidden; }
+        .btn { width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; border-radius: 10px; background: #f1f2f6; color: #57606f; font-size: 0.75rem; }
         .btn.active { background: var(--primary-color); color: white; }
         
         .section-label { width: 100%; font-size: 0.65rem; color: #a1a1a1; font-weight: bold; margin-bottom: -2px; text-transform: uppercase; }
@@ -98,8 +100,12 @@
         .btn-del-color { position: absolute; top: -5px; right: -5px; width: 16px; height: 16px; background: var(--accent-color); color: white; border-radius: 50%; border: none; font-size: 10px; display: flex; align-items: center; justify-content: center; }
         
         .btn-upload { background: var(--primary-color); color: white; width: 100%; height: 55px; font-weight: 900; font-size: 1.1rem; border-radius: 15px; margin-top: 5px; letter-spacing: 2px; box-shadow: 0 4px 15px rgba(108, 92, 231, 0.4); border: none; cursor: pointer; }
-        .zoom-row { display: flex; align-items: center; gap: 10px; width: 100%; background: #f1f2f6; padding: 5px 15px; border-radius: 10px; box-sizing: border-box; }
-        input[type="range"] { flex: 1; }
+        
+        select { height: 40px; border-radius: 10px; border: 1px solid #dfe4ea; padding: 0 5px; font-size: 0.8rem; background: #fff; flex: 1; }
+
+        #libraryList { margin-top: 5px; max-height: 150px; overflow-y: auto; }
+        .library-item { display: flex; align-items: center; gap: 10px; background: #f9f9f9; padding: 8px; border-radius: 10px; margin-bottom: 5px; }
+        .library-thumb { width: 40px; height: 40px; border: 1px solid #ddd; background: white; image-rendering: pixelated; cursor: pointer; }
 
         #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(108, 92, 231, 0.95); z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; }
         .spinner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.3); border-top: 4px solid #fff; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
@@ -136,55 +142,52 @@
         </div>
 
         <div class="sidebar" id="sidebar">
-            <div class="section-label">お手本（ぬりえ）をえらぶ</div>
+            <div class="section-label">お手本をえらぶ</div>
             <div class="template-grid">
                 <button class="btn-template" onclick="loadTemplate('images/goldfish_a_frame.png')">
-                    <img id="ButtonIconA" src="images/icon_a.png" class="template-icon" alt="A">
+                    <img src="images/icon_a.png" class="template-icon" alt="A">
                     <span>金魚A</span>
                 </button>
                 <button class="btn-template" onclick="loadTemplate('images/goldfish_b_frame.png')">
-                    <img id="ButtonIconB" src="images/icon_b.png" class="template-icon" alt="B">
+                    <img src="images/icon_b.png" class="template-icon" alt="B">
                     <span>金魚B</span>
-                </button>
-                <button class="btn-template" onclick="loadTemplate('images/goldfish_c_frame.png')">
-                    <img id="ButtonIconC" src="images/icon_c.png" class="template-icon" alt="C">
-                    <span>金魚C</span>
-                </button>
-                <button class="btn-template" onclick="loadTemplate('images/goldfish_d_frame.png')">
-                    <img id="ButtonIconD" src="images/icon_d.png" class="template-icon" alt="D">
-                    <span>金魚D</span>
                 </button>
             </div>
 
-            <hr style="width:100%; border:0; border-top:1px solid #eee; margin:15px 0;">
+            <hr style="width:100%; border:0; border-top:1px solid #eee; margin:10px 0;">
 
-            <div class="section-label">背景をみる</div>
+            <div class="section-label">背景イメージ</div>
             <label style="font-size:0.8rem; font-weight:bold; display:flex; justify-content:space-between; align-items:center; color:#57606f; background:#f9f9f9; padding:10px; border-radius:10px;">
-                背景をだす <input type="checkbox" id="bgSwitch">
+                背景を表示 <input type="checkbox" id="bgSwitch">
             </label>
             <select id="bgSelect" style="width:100%; margin-top:5px;" disabled>
                 <option value="bg1.jpg">背景 1</option>
                 <option value="bg2.jpg">背景 2</option>
             </select>
 
-            <div class="section-label" style="margin-top:15px;">グリッド（せん）</div>
+            <div class="section-label" style="margin-top:10px;">グリッド表示</div>
             <label style="font-size:0.85rem; font-weight:bold; display:flex; justify-content:space-between; align-items:center; color:#57606f;">
                 せんをだす <input type="checkbox" id="gridSwitch">
             </label>
             
-            <div class="section-label" style="margin-top:15px;">へんしゅう</div>
-            <button class="btn-text" id="btn-flip-h"><span class="material-icons">flip</span> ぎゃくにする</button>
-            <button class="btn-text" id="btn-rotate"><span class="material-icons">rotate_right</span> まわす</button>
+            <div class="section-label" style="margin-top:10px;">へんしゅう</div>
+            <button class="btn-text" id="btn-flip-h"><span class="material-icons">flip</span> 左右はんてん</button>
+            <button class="btn-text" id="btn-rotate"><span class="material-icons">rotate_right</span> 90ど回転</button>
             <button class="btn-text" id="btn-clear" style="color:var(--accent-color)"><span class="material-icons">delete_outline</span> ぜんぶけす</button>
+
+            <div class="sns-button-container">
+                <a href="https://lin.ee/CkQNe7q" class="sns-link" target="_blank"><div class="sns-icon bg-line"><span class="material-icons">chat</span></div>公式LINE</a>
+                <a href="https://www.instagram.com/dots_projects/" class="sns-link" target="_blank"><div class="sns-icon bg-insta"><span class="material-icons">camera_alt</span></div>Insta</a>
+                <a href="https://x.com/hiraku_designs" class="sns-link" target="_blank"><div class="sns-icon bg-x"><span class="material-icons">close</span></div>X</a>
+            </div>
         </div>
         <div class="overlay" id="overlay"></div>
     </div>
 
     <div class="bottom-controls">
-        <div class="section-label">おおきさ</div>
-        <div class="zoom-row">
-            <span class="material-icons" style="font-size:18px">zoom_in</span>
-            <input type="range" id="zoomRange" min="1" max="5" step="0.1" value="1">
+        <div class="section-label">ズーム</div>
+        <div class="row">
+            <input type="range" id="zoomRange" min="1" max="5" step="0.1" value="1" style="flex:1;">
             <button class="btn" id="btn-reset-zoom" style="width:auto; padding:0 10px; height:30px;">RESET</button>
         </div>
 
@@ -192,25 +195,39 @@
         <div class="row">
             <input type="color" id="colorPicker" value="#000000" style="width:42px; height:42px; border:none; padding:0; background:none;">
             <button class="btn active" id="btn-pen"><span class="material-icons">edit</span></button>
-            <button class="btn" id="btn-eraser">
-                <img src="images/erazer.png" class="tool-icon" alt="Eraser">
-            </button>  
+            <button class="btn" id="btn-eraser"><span class="material-icons">auto_fix_normal</span></button>  
             <button class="btn" id="btn-bucket"><span class="material-icons">format_color_fill</span></button>
             <button class="btn" id="btn-picker"><span class="material-icons">colorize</span></button>
         </div>
 
-        <div class="section-label">保存した色</div>
+        <div class="section-label">カラーパレット</div>
         <div class="row">
             <button class="btn" id="btn-add-palette" style="background:#55efc4; color:#00b894; width:auto; padding:0 12px; font-weight:bold;">この色をのこす</button>
         </div>
         <div class="palette-container" id="paletteContainer"></div>
 
-        <div class="section-label">さくひんのなまえ</div>
+        <div class="section-label">データ書き出し</div>
         <div class="row">
-            <input type="text" id="artName" placeholder="なまえをかいてね" style="flex:1; height:40px; border-radius:10px; border:2px solid #dfe4ea; padding:0 10px;">
+            <select id="exportMode">
+                <option value="dotOnly">ドットのみ</option>
+                <option value="withBg">背景あり</option>
+            </select>
+            <select id="sizeSelect">
+                <option value="256" selected>256px</option>
+                <option value="512">512px</option>
+            </select>
+            <button onclick="exportImage('png')" class="btn" style="font-weight:bold; width:50px;">PNG</button>
+            <button onclick="exportImage('jpg')" class="btn" style="font-weight:bold; width:50px;">JPG</button>
         </div>
 
-        <button class="btn btn-upload" onclick="uploadImage()">アップロードする！</button>
+        <div class="section-label">作品を一時保存する</div>
+        <div class="row">
+            <input type="text" id="artName" placeholder="作品の名前を入力" style="flex:1; height:40px; border-radius:10px; border:2px solid #dfe4ea; padding:0 10px;">
+            <button class="btn" id="btn-save-lib" style="background:#55efc4; color:#00b894; width:60px; font-weight:bold;">保存</button>
+        </div>
+        <div id="libraryList"></div>
+
+        <button class="btn btn-upload" onclick="uploadImage()">アップロードして応募！</button>
     </div>
 
     <script>
@@ -228,12 +245,26 @@
         
         let scale = 1, offsetX = 0, offsetY = 0;
         let currentMode = 'pen', isDrawing = false;
-        let colorPalette = [], historyStack = [], redoStack = [];
+        let colorPalette = [], library = [], historyStack = [], redoStack = [];
 
         const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbz8SvflN2EgSSFFpcu9zbzASn32_JQU2oCn0ARICrar5gCXpR-KuW-hyO1TvsbOQUB2Kw/exec";
 
+        // 背景切り替え
+        bgSwitch.onchange = (e) => {
+            const active = e.target.checked;
+            bgSelect.disabled = !active;
+            bgLayer.style.display = active ? 'block' : 'none';
+            wrapper.classList.toggle('bg-active', active);
+            updateBgImage();
+        };
+        bgSelect.onchange = updateBgImage;
+        function updateBgImage() {
+            if (bgSwitch.checked) bgLayer.style.backgroundImage = `url('${bgSelect.value}')`;
+        }
+
+        // お手本ロード
         function loadTemplate(imagePath) {
-            if(!confirm("お手本をだしてもいい？")) return;
+            if(!confirm("お手本を表示しますか？（今の絵はきえません）")) return;
             const img = new Image();
             img.src = imagePath;
             img.onload = () => {
@@ -260,6 +291,56 @@
             };
         }
 
+        // 合成データ生成（書き出し用）
+        async function getCompositeDataURL(size, mode, format = 'png') {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = tempCanvas.height = size;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.imageSmoothingEnabled = false;
+
+            if (mode === 'withBg' && bgSwitch.checked) {
+                const bgImg = new Image();
+                bgImg.src = bgSelect.value;
+                await new Promise(resolve => { bgImg.onload = resolve; bgImg.onerror = resolve; });
+                tempCtx.drawImage(bgImg, 0, 0, size, size);
+            } else if (format === 'jpg') {
+                tempCtx.fillStyle = "#fff";
+                tempCtx.fillRect(0, 0, size, size);
+            }
+            tempCtx.drawImage(canvas, 0, 0, size, size);
+            return tempCanvas.toDataURL(format === 'jpg' ? 'image/jpeg' : 'image/png');
+        }
+
+        // 画像書き出し（ダウンロード）
+        async function exportImage(format) {
+            const s = parseInt(document.getElementById('sizeSelect').value);
+            const mode = document.getElementById('exportMode').value;
+            const dataUrl = await getCompositeDataURL(s, mode, format);
+            const a = document.createElement('a');
+            a.download = `dots_art_${Date.now()}.${format}`;
+            a.href = dataUrl;
+            a.click();
+        }
+
+        // ライブラリ表示
+        function renderLibrary() {
+            const ll = document.getElementById('libraryList'); ll.innerHTML = '';
+            library.forEach((item, i) => {
+                const div = document.createElement('div'); div.className = 'library-item';
+                div.innerHTML = `<img src="${item.data}" class="library-thumb" onclick="loadImg('${item.data}')">
+                                 <span style="flex:1; font-size:0.8rem; font-weight:bold;">${item.name}</span>
+                                 <button class="btn" onclick="deleteLib(${i})" style="width:30px; height:30px; color:red;">×</button>`;
+                ll.appendChild(div);
+            });
+        }
+        document.getElementById('btn-save-lib').onclick = () => {
+            const name = document.getElementById('artName').value || "無題";
+            library.push({ name: name, data: canvas.toDataURL() });
+            localStorage.setItem('dotsAppLib_Aqua', JSON.stringify(library)); renderLibrary();
+        };
+        window.deleteLib = (i) => { if(confirm("けしますか？")) { library.splice(i, 1); localStorage.setItem('dotsAppLib_Aqua', JSON.stringify(library)); renderLibrary(); } };
+
+        // キャンバス操作
         function updateTransform() { wrapper.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`; }
         zoomRange.oninput = () => { scale = parseFloat(zoomRange.value); updateTransform(); };
         document.getElementById('btn-reset-zoom').onclick = () => { scale = 1; offsetX = 0; offsetY = 0; zoomRange.value = 1; updateTransform(); };
@@ -301,11 +382,13 @@
             }
         }
 
+        // 歴史管理
         function saveHistory() { historyStack.push(canvas.toDataURL()); if (historyStack.length > 30) historyStack.shift(); redoStack = []; localStorage.setItem('dotsAppData_Aqua', canvas.toDataURL()); }
         function loadImg(u) { const i = new Image(); i.src = u; i.onload = () => { ctx.clearRect(0, 0, 32, 32); ctx.drawImage(i, 0, 0); }; }
         document.getElementById('btn-undo').onclick = () => { if (historyStack.length > 1) { redoStack.push(historyStack.pop()); loadImg(historyStack[historyStack.length - 1]); } };
         document.getElementById('btn-redo').onclick = () => { if (redoStack.length) { const s = redoStack.pop(); historyStack.push(s); loadImg(s); } };
 
+        // パレット
         function renderPalette() {
             const pc = document.getElementById('paletteContainer'); pc.innerHTML = '';
             colorPalette.forEach((c, i) => {
@@ -318,56 +401,36 @@
         window.deletePaletteColor = (i) => { colorPalette.splice(i, 1); localStorage.setItem('dotsAppPalette_Aqua', JSON.stringify(colorPalette)); renderPalette(); };
         document.getElementById('btn-add-palette').onclick = () => { const c = colorPicker.value.toLowerCase(); if(!colorPalette.includes(c)){ colorPalette.push(c); renderPalette(); localStorage.setItem('dotsAppPalette_Aqua', JSON.stringify(colorPalette)); } };
 
-        // --- アップロード機能統合版 ---
+        // アップロード
         async function uploadImage() {
             const artNameField = document.getElementById('artName');
             const artName = artNameField.value.trim();
+            if (!artName) { alert("作品名を入力してからアップロードしてください！"); artNameField.focus(); return; }
+            if (!confirm(`「${artName}」をアップロードしますか？`)) return;
 
-            // 名前入力チェック
-            if (!artName) { 
-                alert("作品名を入力してからアップロードしてください！"); 
-                artNameField.focus(); 
-                return; 
-            }
-
-            // 確認ダイアログ
-            if (!confirm(`「${artName}」をあなたの作品としてアップロードしますか？`)) return;
-
-            // URLパラメータ取得 (from=Aquariumなどを想定)
             const urlParams = new URLSearchParams(window.location.search);
-            const fromSource = urlParams.get('from') || 'T'; 
-
+            const fromSource = urlParams.get('from') || 'Aqua'; 
             const overlay = document.getElementById('loadingOverlay');
             overlay.style.display = 'flex';
 
-            // キャンバスデータ取得 (背景なし32x32をそのまま取得)
             const imageData = canvas.toDataURL('image/png');
 
             try {
-                // GASへ送信
                 await fetch(GAS_ENDPOINT, { 
-                    method: 'POST', 
-                    mode: 'no-cors', 
-                    body: JSON.stringify({ 
-                        image: imageData, 
-                        name: artName, 
-                        location: fromSource 
-                    }) 
+                    method: 'POST', mode: 'no-cors', 
+                    body: JSON.stringify({ image: imageData, name: artName, location: fromSource }) 
                 });
-
                 overlay.style.display = 'none';
-                alert(`作品をアップロードしました！`);
-
-                // Googleフォームへ自動遷移 (作品名を引き継ぐ)
+                alert(`アップロード完了！`);
                 const formBaseUrl = "https://docs.google.com/forms/d/e/1FAIpQLSfNwyTLJ_-3FJx5oBbgzULdlWZ8TrVfyH6eHv5V4pXlAhP34Q/viewform";
                 window.location.href = `${formBaseUrl}?usp=pp_url&entry.46158305=${encodeURIComponent(artName)}`;
-
             } catch (e) {
                 overlay.style.display = 'none';
                 alert("アップロードに失敗しました。");
             }
         }
 
+        // イベント初期化
         document.getElementById('openSidebar').onclick = () => { sidebar.classList.add('open'); overlay.classList.add('active'); };
         overlay.onclick = () => { sidebar.classList.remove('open'); overlay.classList.remove('active'); };
         document.getElementById('gridSwitch').onchange = (e) => { document.getElementById('gridOverlay').style.display = e.target.checked ? 'block' : 'none'; };
@@ -381,7 +444,7 @@
             };
         });
 
-        document.getElementById('btn-clear').onclick = () => { if(confirm("ぜんぶけしてもいい？")) { ctx.clearRect(0, 0, 32, 32); saveHistory(); } };
+        document.getElementById('btn-clear').onclick = () => { if(confirm("ぜんぶけしますか？")) { ctx.clearRect(0, 0, 32, 32); saveHistory(); } };
         document.getElementById('btn-flip-h').onclick = () => {
             const t = document.createElement('canvas'); t.width=32; t.height=32; const tc = t.getContext('2d');
             tc.scale(-1, 1); tc.drawImage(canvas, -32, 0); ctx.clearRect(0, 0, 32, 32); ctx.drawImage(t, 0, 0); saveHistory();
@@ -392,9 +455,10 @@
         };
 
         window.onload = () => {
-            const d = localStorage.getItem('dotsAppData_Aqua'), p = localStorage.getItem('dotsAppPalette_Aqua');
+            const d = localStorage.getItem('dotsAppData_Aqua'), p = localStorage.getItem('dotsAppPalette_Aqua'), l = localStorage.getItem('dotsAppLib_Aqua');
             if(d) loadImg(d); 
             if(p) { colorPalette = JSON.parse(p); renderPalette(); }
+            if(l) { library = JSON.parse(l); renderLibrary(); }
             saveHistory();
         };
     </script>
