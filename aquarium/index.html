@@ -73,9 +73,19 @@
             display: flex; flex-direction: column; align-items: center; gap: 5px; color: #57606f;
         }
         .btn-template:active { transform: scale(0.95); background: #e1e2e6; }
+        
+        /* サイドバー内のアイコン画像 */
         .template-icon { 
             width: 44px; height: 44px; object-fit: contain; 
-            image-rendering: pixelated; /* ドット絵アイコンをくっきりさせる */
+            image-rendering: pixelated; 
+        }
+
+        /* ツールバー内の自作アイコン画像 (消しゴム用) */
+        .tool-icon {
+            width: 24px;
+            height: 24px;
+            object-fit: contain;
+            image-rendering: pixelated;
         }
 
         .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 999; display: none; }
@@ -186,7 +196,9 @@
         <div class="row">
             <input type="color" id="colorPicker" value="#000000" style="width:42px; height:42px; border:none; padding:0; background:none;">
             <button class="btn active" id="btn-pen"><span class="material-icons">edit</span></button>
-            <button class="btn" id="btn-eraser"><img src="images/erazer.png" span class="material-icons" alt="Eraser"></button>  
+            <button class="btn" id="btn-eraser">
+                <img src="images/erazer.png" class="tool-icon" alt="Eraser">
+            </button>  
             <button class="btn" id="btn-bucket"><span class="material-icons">format_color_fill</span></button>
             <button class="btn" id="btn-picker"><span class="material-icons">colorize</span></button>
         </div>
@@ -222,13 +234,10 @@
         let currentMode = 'pen', isDrawing = false;
         let colorPalette = [], historyStack = [], redoStack = [];
 
-        // GASエンドポイント
         const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbz8SvflN2EgSSFFpcu9zbzASn32_JQU2oCn0ARICrar5gCXpR-KuW-hyO1TvsbOQUB2Kw/exec";
 
-        // お手本読み込み機能
         function loadTemplate(imagePath) {
             if(!confirm("お手本をだしてもいい？")) return;
-
             const img = new Image();
             img.src = imagePath;
             img.onload = () => {
@@ -237,7 +246,6 @@
                 const tCtx = tempCanvas.getContext('2d');
                 tCtx.drawImage(img, 0, 0, 32, 32);
                 const imageData = tCtx.getImageData(0, 0, 32, 32).data;
-
                 for (let y = 0; y < 32; y++) {
                     for (let x = 0; x < 32; x++) {
                         const i = (y * 32 + x) * 4;
@@ -257,7 +265,6 @@
             img.onerror = () => alert("画像がみつかりませんでした。");
         }
 
-        // 描画・ズーム・操作系
         function updateTransform() { wrapper.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`; }
         zoomRange.oninput = () => { scale = parseFloat(zoomRange.value); updateTransform(); };
         document.getElementById('btn-reset-zoom').onclick = () => { scale = 1; offsetX = 0; offsetY = 0; zoomRange.value = 1; updateTransform(); };
@@ -321,7 +328,6 @@
             const overlay = document.getElementById('loadingOverlay');
             overlay.style.display = 'flex';
             const imageData = canvas.toDataURL('image/png');
-
             try {
                 await fetch(GAS_ENDPOINT, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ image: imageData, name: artName, location: 'Aquarium' }) });
                 overlay.style.display = 'none';
