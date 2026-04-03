@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DOTS ART STUDIO - Aquarium Edition</title>
+    <title>DOTS AQUARIUM</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
-        :root { --primary-color: #6c5ce7; --bg-color: #f0f2f5; --card-bg: #ffffff; --accent-color: #ff7675; }
+        /* 背景色を薄い水色 #bce2e8 に変更 */
+        :root { --primary-color: #6c5ce7; --bg-color: #bce2e8; --card-bg: #ffffff; --accent-color: #ff7675; }
         
         body { 
             font-family: 'Segoe UI', 'Hiragino Sans', sans-serif; 
@@ -15,8 +16,13 @@
             overflow-x: hidden; overflow-y: auto; 
         }
 
-        .header-area { width: 100%; max-width: 500px; display: flex; justify-content: center; align-items: center; padding: 10px 0; margin-bottom: 5px; }
-        h1 { margin: 0; font-size: 1rem; color: var(--primary-color); font-weight: 800; letter-spacing: 1px; }
+        /* ヘッダーエリアのロゴとテキストの調整 */
+        .header-area { 
+            width: 100%; max-width: 500px; display: flex; justify-content: center; align-items: center; 
+            padding: 10px 0; margin-bottom: 5px; gap: 8px;
+        }
+        .header-logo { height: 24px; width: auto; object-fit: contain; }
+        h1 { margin: 0; font-size: 1.2rem; color: #333; font-weight: 800; letter-spacing: 1px; }
 
         #openSidebar {
             position: fixed; right: 15px; top: 15px; z-index: 900;
@@ -65,27 +71,17 @@
         .sidebar.open { right: 0; }
         .sidebar .btn-text { width: 100%; min-height: 45px; font-weight: bold; display: flex; align-items: center; gap: 10px; border: none; background: #f1f2f6; border-radius: 10px; padding-left: 15px; cursor: pointer; color: #57606f; font-size: 0.8rem; }
 
-        /* お手本（ぬりえ）セクション */
         .template-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 5px; }
         .btn-template { 
             background: #f1f2f6; border: 2px solid #dfe4ea; border-radius: 10px; 
             padding: 10px 5px; font-size: 0.75rem; font-weight: bold; cursor: pointer; 
             display: flex; flex-direction: column; align-items: center; gap: 5px; color: #57606f;
         }
-        .btn-template:active { transform: scale(0.95); background: #e1e2e6; }
         
-        .template-icon { 
-            width: 44px; height: 44px; object-fit: contain; 
-            image-rendering: pixelated; 
-        }
+        .template-icon { width: 44px; height: 44px; object-fit: contain; image-rendering: pixelated; }
 
-        /* ツールバー内の自作アイコン画像 (消しゴム用) の微調整 */
         .tool-icon {
-            width: 24px;
-            height: 24px;
-            object-fit: contain;
-            image-rendering: pixelated;
-            /* 大もとの設定を反映 */
+            width: 24px; height: 24px; object-fit: contain; image-rendering: pixelated;
             transform: scale(1.3);
         }
 
@@ -115,7 +111,8 @@
 <body>
 
     <div class="header-area">
-        <h1>DOTS ART STUDIO - AQUARIUM</h1>
+        <img src="images/DOTS_PROJECT_logo_black.png" alt="DOTS" class="header-logo">
+        <h1>AQUARIUM</h1>
     </div>
 
     <button class="btn-round" id="openSidebar"><span class="material-icons">menu</span></button>
