@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DOTS ART STUDIO</title>
+<style>
+body { font-family:sans-serif; text-align:center; background:#f5f5f5; }
+canvas { image-rendering:pixelated; border:1px solid #ccc; }
+button { padding:10px 20px; margin-top:10px; }
+</style>
+</head>
+<body>
+
+<h2>DOTS ART STUDIO</h2>
+
+<canvas id="dotCanvas" width="32" height="32" style="width:320px;height:320px;"></canvas>
+
+<br>
+<input type="text" id="artName" placeholder="作品名">
+<br><br>
+<button onclick="uploadImage()">アップロード</button>
+
+<div id="loading" style="display:none;">送信中...</div>
+
+<script>
+const canvas = document.getElementById('dotCanvas');
+const ctx = canvas.getContext('2d');
+
+let drawing = false;
+
+canvas.addEventListener('mousedown', ()=>drawing=true);
+canvas.addEventListener('mouseup', ()=>drawing=false);
+
+canvas.addEventListener('mousemove', e=>{
+    if(!drawing) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = Math.floor((e.clientX-rect.left)/(rect.width/32));
+    const y = Math.floor((e.clientY-rect.top)/(rect.height/32));
+    ctx.fillRect(x,y,1,1);
+});
+
+function getImage(){
+    const temp = document.createElement('canvas');
+    temp.width = 512;
+    temp.height = 512;
+    const t = temp.getContext('2d');
+    t.imageSmoothingEnabled=false;
+    t.drawImage(canvas,0,0,512,512);
+    return temp.toDataURL("image/png");
+}
+
+const GAS_ENDPOINT = "ここにGASのURL";
+
+async function uploadImage(){
+    const name = document.getElementById("artName").value.trim();
+    if(!name){ alert("作品名を入力してください"); return;}
+
+    document.getElementById("loading").style.display="block";
+
+    const res = await fetch(GAS_ENDPOINT,{
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body:JSON.stringify({
+            image:getImage(),
+            name:name,
+            location:"T"
+        })
+    });
+
+    const json = await res.json();
+
+    document.getElementById("loading").style.display="none";
+
+    if(json.status!=="success"){
+        alert("失敗しました");
+        return;
+    }
+
+    const serialId = json.serial;
+
+    alert("受付番号："+serialId);
+
+    const formUrl = "https://docs.google.com/forms/d/e/1FAIpQLSfNwyTLJ_-3FJx5oBbgzULdlWZ8TrVfyH6eHv5V4pXlAhP34Q/viewform";
+
+    location.href =
+        formUrl +
+        "?usp=pp_url" +
+        "&entry.46158305="+encodeURIComponent(name) +
+        "&entry.1234567890="+encodeURIComponent(serialId);
+}
+</script>
+
+</body>
+</html>
