@@ -24,12 +24,6 @@
         .sidebar { position: fixed; top: 0; right: -280px; width: 240px; height: 100%; background: var(--card-bg); z-index: 1000; padding: 40px 15px 20px; transition: 0.3s; display: flex; flex-direction: column; gap: 10px; box-sizing: border-box; overflow-y: auto; }
         .sidebar.open { right: 0; }
         .sidebar .btn-text { width: 100%; min-height: 40px; font-weight: bold; display: flex; align-items: center; gap: 10px; border: none; background: #f1f2f6; border-radius: 10px; padding-left: 15px; cursor: pointer; color: #57606f; font-size: 0.8rem; }
-        .sns-button-container { margin-top: auto; padding: 15px 0; display: flex; justify-content: space-around; border-top: 1px solid #eee; }
-        .sns-link { text-decoration: none; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 0.6rem; color: #57606f; font-weight: bold; }
-        .sns-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px; }
-        .bg-line { background-color: #06C755; }
-        .bg-x { background-color: #000; }
-        .bg-dots { background-color: #6c5ce7; }
         .bottom-controls { margin-top: 15px; width: 100%; max-width: 500px; display: flex; flex-direction: column; gap: 12px; background: var(--card-bg); padding: 15px; border-radius: 20px; box-sizing: border-box; }
         .row { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; align-items: center; }
         .btn { width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; border-radius: 10px; background: #f1f2f6; color: #57606f; }
@@ -42,7 +36,7 @@
         .gallery-item { flex: 0 0 60px; height: 60px; border-radius: 8px; border: 2px solid #ddd; cursor: pointer; background-size: cover; image-rendering: pixelated; position: relative; }
         .btn-upload { background: var(--primary-color); color: white; height: 50px; font-weight: 900; border-radius: 15px; border: none; cursor: pointer; width: 100%; font-size: 1.1rem; }
         .btn-save-img { background: #55efc4; color: #00b894; font-weight: bold; border: none; border-radius: 10px; width: 100%; height: 45px; cursor: pointer; }
-        #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(108, 92, 231, 0.95); z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; }
+        #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(108, 92, 231, 0.95); z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; text-align: center; padding: 20px; }
         .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 999; display: none; }
         .overlay.active { display: block; }
     </style>
@@ -57,7 +51,7 @@
 
     <div id="loadingOverlay">
         <div class="spinner"></div>
-        <p>作品を送信中...</p>
+        <p>作品を送信中...<br><br>送信後、アンケート画面に切り替わります。<br>そのままお待ちください。</p>
     </div>
 
     <div class="app-container">
@@ -76,13 +70,6 @@
         </div>
 
         <div class="bottom-controls">
-            <div class="section-label">拡大・表示</div>
-            <div class="row">
-                <span class="material-icons">zoom_in</span>
-                <input type="range" id="zoomRange" min="1" max="5" step="0.1" value="1" style="flex:1">
-                <button class="btn" id="btn-reset-zoom" style="width:auto; padding:0 10px;">RESET</button>
-            </div>
-
             <div class="section-label">描画</div>
             <div class="row">
                 <input type="color" id="colorPicker" value="#000000" style="width:40px; height:40px; border:none; background:none;">
@@ -92,49 +79,30 @@
                 <button class="btn" id="btn-picker"><span class="material-icons">colorize</span></button>
             </div>
 
-            <div class="section-label">パレット</div>
-            <div class="row" style="justify-content: flex-start;">
-                <button class="btn" id="btn-add-palette" style="background:#55efc4; color:white; width:auto; padding:0 10px; font-weight:bold;">色を保存</button>
-                <div id="paletteContainer" class="palette-container"></div>
-            </div>
-
             <div class="section-label">画像を保存</div>
-            <button class="btn-save-img" id="btn-download-png"><span class="material-icons">download</span> PNG画像として保存 (512px)</button>
+            <button class="btn-save-img" id="btn-download-png"><span class="material-icons">download</span> デバイスに保存 (512px)</button>
 
             <div class="section-label">作品名・アプリ内保存</div>
             <div class="row">
-                <input type="text" id="artName" placeholder="作品の名前..." style="flex:1; height:45px; border-radius:10px; border:2px solid #ddd; padding:0 10px;">
+                <input type="text" id="artName" placeholder="作品の名前を入力..." style="flex:1; height:45px; border-radius:10px; border:2px solid #ddd; padding:0 10px;">
                 <button class="btn" id="btn-app-save" style="background:#55efc4; color:white; width:auto; padding:0 15px; font-weight:bold;">保存</button>
             </div>
 
-            <div class="section-label">保存済み作品（クリックで読み込み）</div>
+            <div class="section-label">保存済み作品</div>
             <div id="gallery" class="gallery-container"></div>
             
-            <button class="btn-upload" id="uploadButton">作品をアップロード</button>
+            <button class="btn-upload" id="uploadButton">作品をアップロードして次へ</button>
         </div>
 
         <div class="sidebar" id="sidebar">
             <div class="section-label">変形操作</div>
             <button class="btn-text" id="btn-flip-h"><span class="material-icons">flip</span> 左右反転</button>
-            <button class="btn-text" id="btn-flip-v"><span class="material-icons">swap_vert</span> 上下反転</button>
             <button class="btn-text" id="btn-rotate"><span class="material-icons">rotate_right</span> 90度回転</button>
-            <hr>
-            <div class="section-label">背景合成</div>
-            <label style="display:flex; justify-content:space-between; font-size:0.8rem;">合成する <input type="checkbox" id="bgSwitch"></label>
-            <select id="bgSelect" style="width:100%; height:35px; border-radius:5px;" disabled>
-                <option value="bg1.jpg">背景素材 1</option>
-                <option value="bg2.jpg">背景素材 2</option>
-            </select>
             <hr>
             <div class="section-label">グリッド</div>
             <label style="display:flex; justify-content:space-between; font-size:0.8rem;">表示 <input type="checkbox" id="gridSwitch" checked></label>
             <hr>
             <button class="btn-text" id="btn-clear" style="color:var(--accent-color)"><span class="material-icons">delete_outline</span> 全消去</button>
-            <div class="sns-button-container">
-                <a href="https://dots-project.com" class="sns-link" target="_blank"><div class="sns-icon bg-dots">DOTS</div>公式</a>
-                <a href="https://x.com/hiraku_design" class="sns-link" target="_blank"><div class="sns-icon bg-x">X</div>作者</a>
-                <a href="https://line.me/R/ti/p/@your_id" class="sns-link" target="_blank"><div class="sns-icon bg-line">LINE</div>相談</a>
-            </div>
         </div>
         <div class="overlay" id="overlay"></div>
     </div>
@@ -143,37 +111,51 @@
         const canvas = document.getElementById('dotCanvas');
         const ctx = canvas.getContext('2d');
         const wrapper = document.getElementById('canvasWrapper');
-        const bgLayer = document.getElementById('canvasBackground');
         const colorPicker = document.getElementById('colorPicker');
         const gallery = document.getElementById('gallery');
-        const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbyo2gkGTUg0y-cywnLa-XkiXvUauUZFuSKhOBX_I6YymDgDo-xOAD9vq9MnUbijyXkfIA/exec";
+        const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbzv20d-iA-YDiE8OpGCBoruGPcJguVDQGnJvXrs0O0gixS0hYZeJROcqFM2cNdrsrbSYw/exec";
 
         let scale = 1, offsetX = 0, offsetY = 0, isDrawing = false, isMoving = false, currentMode = 'pen';
         let historyStack = [], redoStack = [];
         let startTime = null;
 
-        // --- アップロード機能 (これが抜けていました) ---
+        // --- アップロード機能 (512px & メッセージ追加) ---
         document.getElementById('uploadButton').onclick = async () => {
             const name = document.getElementById('artName').value.trim();
             if(!name) { alert("作品名を入力してください"); return; }
 
+            // 事前メッセージ
+            if(!confirm("作品をアップロードします。\nこの後、自動的にアンケート画面が開きます。\nアンケート送信後に完了となります！")) {
+                return;
+            }
+
             document.getElementById('loadingOverlay').style.display = 'flex';
             const duration = startTime ? Math.floor((new Date() - startTime)/1000) : 0;
+
+            // 512pxに拡大した送信用データ作成
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = tempCanvas.height = 512;
+            const tctx = tempCanvas.getContext('2d');
+            tctx.imageSmoothingEnabled = false;
+            tctx.drawImage(canvas, 0, 0, 512, 512);
+            const imageData512 = tempCanvas.toDataURL("image/png");
 
             try {
                 const response = await fetch(GAS_ENDPOINT, {
                     method: 'POST',
                     body: JSON.stringify({
-                        image: canvas.toDataURL(),
+                        image: imageData512,
                         name: name,
                         duration: duration,
-                        location: new URLSearchParams(window.location.search).get('from') || 'WEB'
+                        location: new URLSearchParams(window.location.search).get('from') || '26A'
                     })
                 });
                 const result = await response.json();
                 
                 if(result.status === 'success') {
-                    // Googleフォームへパラメータ付きで移動
+                    // 完了アラート
+                    alert("アップロード成功！\n続いてアンケート画面が開きます。管理番号などは自動入力されます。");
+                    
                     const formURL = `https://docs.google.com/forms/d/e/1FAIpQLSfNwyTLJ_-3FJx5oBbgzULdlWZ8TrVfyH6eHv5V4pXlAhP34Q/viewform?usp=pp_url&entry.1524592109=${result.serial}&entry.46158305=${encodeURIComponent(name)}`;
                     window.location.href = formURL;
                 } else {
@@ -181,13 +163,12 @@
                     document.getElementById('loadingOverlay').style.display = 'none';
                 }
             } catch(e) {
-                console.error(e);
                 alert("通信エラーが発生しました。");
                 document.getElementById('loadingOverlay').style.display = 'none';
             }
         };
 
-        // --- アプリ内保存システム ---
+        // --- 以下、描画・基本システム ---
         function refreshGallery() {
             gallery.innerHTML = '';
             const saved = JSON.parse(localStorage.getItem('dots_gallery') || '[]');
@@ -215,27 +196,7 @@
             if(saved.length > 10) saved.pop();
             localStorage.setItem('dots_gallery', JSON.stringify(saved));
             refreshGallery();
-            alert("保存しました。");
         };
-
-        // --- 背景・変形・描画ロジック ---
-        const bgSwitch = document.getElementById('bgSwitch');
-        const bgSelect = document.getElementById('bgSelect');
-        bgSwitch.onchange = () => {
-            bgSelect.disabled = !bgSwitch.checked;
-            if(bgSwitch.checked) {
-                bgLayer.style.display = 'block';
-                bgLayer.style.backgroundImage = `url(${bgSelect.value})`;
-                wrapper.classList.add('bg-active');
-            } else {
-                bgLayer.style.display = 'none';
-                wrapper.classList.remove('bg-active');
-            }
-        };
-
-        function updateTransform() { wrapper.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`; }
-        document.getElementById('zoomRange').oninput = (e) => { scale = e.target.value; updateTransform(); };
-        document.getElementById('btn-reset-zoom').onclick = () => { scale = 1; offsetX = 0; offsetY = 0; document.getElementById('zoomRange').value = 1; updateTransform(); };
 
         document.getElementById('btn-download-png').onclick = () => {
             const temp = document.createElement('canvas'); temp.width = temp.height = 512;
@@ -243,17 +204,6 @@
             tctx.drawImage(canvas, 0, 0, 512, 512);
             const link = document.createElement('a'); link.download = 'dots_art.png';
             link.href = temp.toDataURL(); link.click();
-        };
-
-        document.getElementById('btn-flip-h').onclick = () => {
-            const t = document.createElement('canvas'); t.width=t.height=32;
-            const tc = t.getContext('2d'); tc.scale(-1,1); tc.drawImage(canvas,-32,0);
-            ctx.clearRect(0,0,32,32); ctx.drawImage(t,0,0); saveHistory();
-        };
-        document.getElementById('btn-rotate').onclick = () => {
-            const t = document.createElement('canvas'); t.width=t.height=32;
-            const tc = t.getContext('2d'); tc.translate(16,16); tc.rotate(Math.PI/2); tc.drawImage(canvas,-16,-16);
-            ctx.clearRect(0,0,32,32); ctx.drawImage(t,0,0); saveHistory();
         };
 
         document.getElementById('canvasArea').onmousedown = document.getElementById('canvasArea').ontouchstart = (e) => {
@@ -265,10 +215,10 @@
             isDrawing = true; handleAction(e);
         };
         window.onmousemove = window.ontouchmove = (e) => {
-            if(isMoving) { const p = e.touches ? e.touches[0] : e; offsetX = p.clientX - startX; offsetY = p.clientY - startY; updateTransform(); }
+            if(isMoving) { const p = e.touches ? e.touches[0] : e; offsetX = p.clientX - startX; offsetY = p.clientY - startY; wrapper.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`; }
             else if(isDrawing) handleAction(e);
         };
-        window.onmouseup = window.ontouchend = () => { isMoving = false; isDrawing = false; if(isDrawing) saveHistory(); };
+        window.onmouseup = window.ontouchend = () => { isMoving = false; isDrawing = false; saveHistory(); };
 
         function handleAction(e) {
             const rect = canvas.getBoundingClientRect();
@@ -300,14 +250,6 @@
                 document.getElementById(tools[t]).classList.add('active');
             };
         });
-
-        document.getElementById('btn-add-palette').onclick = () => {
-            const col = colorPicker.value;
-            const item = document.createElement('div');
-            item.className = 'palette-item'; item.style.backgroundColor = col;
-            item.onclick = () => colorPicker.value = col;
-            document.getElementById('paletteContainer').appendChild(item);
-        };
 
         function floodFill(x,y,col) {
             const target = ctx.getImageData(x,y,1,1).data;
