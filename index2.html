@@ -208,32 +208,45 @@
         let redoStack = [];
 
         // ----------------------------------------------------
-        // GASアップロード機能 (ここを追加)
+        // GASアップロード機能 (修正・統合)
         // ----------------------------------------------------
-        const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbz5qMW9LddXhweGi5MWm8fSBWavcwcdnIDW9JyNU8V1_v8tyYA8rZ1QQkafCVtdUOhyKA/exec"; // ここにGASのURLを入力
+        const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbz5qMW9LddXhweGi5MWm8fSBWavcwcdnIDW9JyNU8V1_v8tyYA8rZ1QQkafCVtdUOhyKA/exec"; 
 
         document.getElementById('uploadButton').onclick = async () => {
             const btn = document.getElementById('uploadButton');
             const originalText = btn.innerText;
-            const name = artNameInput.value.trim() || "無題の作品";
-            
-            // ドット絵のみを32x32のBase64で取得
-            const base64Data = canvas.toDataURL('image/png').split(',')[1];
+            const name = artNameInput.value.trim();
 
-            if(!GAS_ENDPOINT || GAS_ENDPOINT === "YOUR_GAS_DEPLOY_URL") {
+            // 1. 作品名チェック
+            if (!name) {
+                alert("作品名を入力してください。");
+                artNameInput.focus();
+                return;
+            }
+
+            // 2. 512pxに拡大した画像データを生成
+            const uploadCanvas = document.createElement('canvas');
+            uploadCanvas.width = uploadCanvas.height = 512;
+            const uctx = uploadCanvas.getContext('2d');
+            uctx.imageSmoothingEnabled = false; // ニアレストネイバー法で拡大（ドットをくっきりさせる）
+            uctx.drawImage(canvas, 0, 0, 512, 512);
+            
+            const base64Data = uploadCanvas.toDataURL('image/png').split(',')[1];
+
+            if(!GAS_ENDPOINT || GAS_ENDPOINT === "https://script.google.com/macros/s/AKfycbz5qMW9LddXhweGi5MWm8fSBWavcwcdnIDW9JyNU8V1_v8tyYA8rZ1QQkafCVtdUOhyKA/exec") {
                 alert("GASのURLが設定されていません。コード内の GAS_ENDPOINT を書き換えてください。");
                 return;
             }
 
-            if(!confirm(`「${name}」をアップロードしますか？`)) return;
+            if(!confirm(`「${name}」をアップロードしますか？\n(サイズ: 512px)`)) return;
 
             btn.innerText = "アップロード中...";
             btn.disabled = true;
 
             try {
-                const response = await fetch(GAS_ENDPOINT, {
+                await fetch(GAS_ENDPOINT, {
                     method: "POST",
-                    mode: "no-cors", // GASの仕様上no-corsが必要な場合が多いです
+                    mode: "no-cors",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         image: base64Data,
@@ -241,9 +254,7 @@
                         type: "image/png"
                     })
                 });
-                
-                // no-corsの場合はレスポンス内容を読み取れませんが、送信は完了します
-                alert("アップロードリクエストを送信しました！\n（Googleドライブ等を確認してください）");
+                alert("アップロードリクエストを送信しました！");
             } catch (error) {
                 console.error("Upload Error:", error);
                 alert("アップロードに失敗しました。");
