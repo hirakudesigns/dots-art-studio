@@ -22,7 +22,7 @@
         
         .app-container { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 15px; }
 
-        /* キャンバスエリア：薄い市松模様を実装 */
+        /* キャンバスエリア */
         .canvas-area { 
             position: relative; 
             width: 320px; 
@@ -30,42 +30,54 @@
             border: 4px solid var(--card-bg); 
             border-radius: 8px; 
             box-shadow: 0 5px 15px rgba(0,0,0,0.1); 
-            /* 市松模様のCSS */
-            background-image: linear-gradient(45deg, #eee 25%, transparent 25%, transparent 75%, #eee 75%), linear-gradient(45deg, #eee 25%, #fff 25%, #fff 75%, #eee 75%);
-            background-size: 20px 20px;
-            background-position: 0 0, 10px 10px;
+            background: #fff; /* ベースを白に */
             touch-action: none; 
             overflow: hidden; 
         }
-        .canvas-wrapper { position: absolute; top: 0; left: 0; width: 320px; height: 320px; transform-origin: 0 0; }
+
+        /* 拡大時に連動する背景ラッパー */
+        .canvas-wrapper { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 320px; 
+            height: 320px; 
+            transform-origin: 0 0; 
+            /* 市松模様をここに配置（グレーを#f9f9f9とさらに薄く変更） */
+            background-image: linear-gradient(45deg, #f9f9f9 25%, transparent 25%, transparent 75%, #f9f9f9 75%), linear-gradient(45deg, #f9f9f9 25%, #fff 25%, #fff 75%, #f9f9f9 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 10px;
+        }
         
         canvas { position: absolute; top: 0; left: 0; image-rendering: pixelated; display: block; width: 320px; height: 320px; }
         #bgLayer { z-index: 0; background-size: cover; background-position: center; display: none; }
         #modelLayer { z-index: 1; opacity: 0.6; pointer-events: none; }
         #gridOverlay { position: absolute; top: 0; left: 0; width: 320px; height: 320px; pointer-events: none; z-index: 2; 
-            background-image: linear-gradient(to right, rgba(0,0,0,0.3) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.3) 1px, transparent 1px), linear-gradient(to right, rgba(0,0,0,0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.1) 1px, transparent 1px); 
-            background-size: 80px 80px, 80px 80px, 10px 10px, 10px 10px; 
+            background-image: linear-gradient(to right, rgba(0,0,0,0.2) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.2) 1px, transparent 1px); 
+            background-size: 10px 10px; 
         }
         #dotCanvas { z-index: 3; background: transparent; }
 
         .bottom-controls { margin-top: 15px; width: 100%; max-width: 500px; display: flex; flex-direction: column; gap: 12px; background: var(--card-bg); padding: 15px; border-radius: 20px; box-sizing: border-box; }
         .section-label { font-size: 0.65rem; color: #a1a1a1; font-weight: bold; text-transform: uppercase; margin-bottom: -5px; }
         .row { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; align-items: center; }
+        
         .btn { width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; border-radius: 10px; background: #f1f2f6; color: #57606f; }
         .btn.active { background: var(--primary-color); color: white; }
         
+        /* 消しゴムアイコンの拡大対応 */
+        .btn img { width: 32px; height: 32px; object-fit: contain; }
+
         .btn-upload { background: var(--primary-color); color: white; height: 55px; font-weight: 900; border-radius: 15px; border: none; cursor: pointer; width: 100%; font-size: 1.1rem; margin-top: 10px; }
         .btn-save-color { background: var(--save-green); color: #fff; font-weight: bold; border: none; border-radius: 10px; width: 100%; height: 45px; cursor: pointer; }
-        .btn-save-img { background: #f1f2f6; color: #57606f; font-weight: bold; border: none; border-radius: 10px; width: 100%; height: 45px; cursor: pointer; }
+        .btn-save-img { background: #f1f2f6; color: #57606f; font-weight: bold; border: none; border-radius: 10px; width: 100%; height: 45px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
 
-        /* パレット削除機能のためのスタイル */
         .palette-item { position: relative; width: 34px; height: 34px; }
         .color-chip { width: 30px; height: 30px; border-radius: 50%; border: 2px solid #fff; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .delete-badge { position: absolute; top: -5px; right: -5px; width: 15px; height: 15px; background: var(--accent-color); color: white; border-radius: 50%; font-size: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .delete-badge { position: absolute; top: -5px; right: -5px; width: 15px; height: 15px; background: var(--accent-color); color: white; border-radius: 50%; font-size: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid white; }
 
-        /* ギャラリー削除機能のためのスタイル */
-        .gallery-item { position: relative; flex: 0 0 60px; height: 60px; border-radius: 8px; border: 2px solid #ddd; background-size: cover; cursor: pointer; }
-        .gallery-delete { position: absolute; top: -5px; right: -5px; width: 20px; height: 20px; background: var(--accent-color); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+        .gallery-item { position: relative; flex: 0 0 60px; height: 60px; border-radius: 8px; border: 2px solid #ddd; background-size: cover; cursor: pointer; background-color: #fff; image-rendering: pixelated; }
+        .gallery-delete { position: absolute; top: -5px; right: -5px; width: 20px; height: 20px; background: var(--accent-color); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 1px solid white; }
 
         .sidebar { position: fixed; top: 0; right: -280px; width: 260px; height: 100%; background: var(--card-bg); z-index: 1000; padding: 40px 15px 20px; transition: 0.3s; display: flex; flex-direction: column; gap: 10px; box-sizing: border-box; overflow-y: auto; }
         .sidebar.open { right: 0; }
@@ -112,7 +124,7 @@
             <div class="row">
                 <input type="color" id="colorPicker" value="#000000" style="width:40px; height:40px; border:none; background:none; cursor:pointer;">
                 <button class="btn active" id="btn-pen"><span class="material-icons">edit</span></button>
-                <button class="btn" id="btn-eraser"><img src="erazer.png" style="width:24px;" alt="消しゴム"></button> 
+                <button class="btn" id="btn-eraser"><img src="erazer.png" alt="消しゴム"></button> 
                 <button class="btn" id="btn-bucket"><span class="material-icons">format_color_fill</span></button>
                 <button class="btn" id="btn-picker"><span class="material-icons">colorize</span></button>
             </div>
@@ -122,7 +134,7 @@
             <div id="paletteArea" class="row" style="min-height:30px; justify-content:flex-start; margin-top:5px; gap:10px;"></div>
 
             <div class="section-label">画像を保存</div>
-            <button class="btn-save-img" id="btn-download-png"><span class="material-icons">download</span> デバイスに保存 (512px)</button>
+            <button class="btn-save-img" id="btn-download-png"><span class="material-icons">download</span> 作品をスマホに保存</button>
 
             <div class="section-label">作品の名前・保存</div>
             <div class="row">
@@ -139,13 +151,13 @@
         <div class="sidebar" id="sidebar">
             <div class="section-label">お手本をえらぶ</div>
             <div class="model-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0;">
-                <div class="model-item" onclick="selectModel('kingyoA.png')"><img src="kingyoA.png" alt="A" style="width:100%;"><br>お手本A</div>
-                <div class="model-item" onclick="selectModel('kingyoB.png')"><img src="kingyoB.png" alt="B" style="width:100%;"><br>お手本B</div>
-                <div class="model-item" onclick="selectModel('kingyoC.png')"><img src="kingyoC.png" alt="C" style="width:100%;"><br>お手本C</div>
-                <div class="model-item" onclick="selectModel('kingyoD.png')"><img src="kingyoD.png" alt="D" style="width:100%;"><br>お手本D</div>
+                <div class="model-item" onclick="selectModel('kingyoA.png')" style="cursor:pointer; text-align:center; background:#fff; padding:5px; border-radius:8px; border:1px solid #ddd; font-size:0.7rem;"><img src="kingyoA.png" alt="A" style="width:100%; image-rendering:pixelated;"><br>お手本A</div>
+                <div class="model-item" onclick="selectModel('kingyoB.png')" style="cursor:pointer; text-align:center; background:#fff; padding:5px; border-radius:8px; border:1px solid #ddd; font-size:0.7rem;"><img src="kingyoB.png" alt="B" style="width:100%; image-rendering:pixelated;"><br>お手本B</div>
+                <div class="model-item" onclick="selectModel('kingyoC.png')" style="cursor:pointer; text-align:center; background:#fff; padding:5px; border-radius:8px; border:1px solid #ddd; font-size:0.7rem;"><img src="kingyoC.png" alt="C" style="width:100%; image-rendering:pixelated;"><br>お手本C</div>
+                <div class="model-item" onclick="selectModel('kingyoD.png')" style="cursor:pointer; text-align:center; background:#fff; padding:5px; border-radius:8px; border:1px solid #ddd; font-size:0.7rem;"><img src="kingyoD.png" alt="D" style="width:100%; image-rendering:pixelated;"><br>お手本D</div>
             </div>
             <button class="btn-text" onclick="selectModel(null)" style="justify-content:center; padding-left:0;">お手本を消す</button>
-            <hr>
+            <hr style="border:0; border-top:1px solid #eee;">
             <button class="btn-text" id="btn-flip-h"><span class="material-icons">flip</span> 左右はんてん</button>
             <button class="btn-text" id="btn-flip-v"><span class="material-icons">flip</span> 上下はんてん</button>
             <button class="btn-text" id="btn-rotate"><span class="material-icons">rotate_right</span> 90度回転</button>
@@ -163,12 +175,23 @@
         const paletteArea = document.getElementById('paletteArea');
         const colorPicker = document.getElementById('colorPicker');
         const artNameInput = document.getElementById('artName');
+        const zoomRange = document.getElementById('zoomRange');
 
         let scale = 1, offsetX = 0, offsetY = 0, isDrawing = false, isMoving = false, currentMode = 'pen';
+        let startX = 0, startY = 0;
         let historyStack = [], redoStack = [];
-        let startTime = null;
 
-        // --- ギャラリー・パレット機能 (削除機能付き) ---
+        // ズーム適用 (市松模様のwrapperに適用)
+        function applyZoom() { 
+            wrapper.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`; 
+        }
+
+        zoomRange.oninput = (e) => { scale = parseFloat(e.target.value); applyZoom(); };
+        document.getElementById('btn-zoom-in').onclick = () => { scale = Math.min(5, scale + 0.2); zoomRange.value = scale; applyZoom(); };
+        document.getElementById('btn-zoom-out').onclick = () => { scale = Math.max(1, scale - 0.2); zoomRange.value = scale; applyZoom(); };
+        document.getElementById('btn-zoom-reset').onclick = () => { scale = 1; offsetX = 0; offsetY = 0; zoomRange.value = 1; applyZoom(); };
+
+        // ギャラリー更新
         function refreshGallery() {
             gallery.innerHTML = '';
             const saved = JSON.parse(localStorage.getItem('dots_gallery') || '[]');
@@ -176,30 +199,23 @@
                 const container = document.createElement('div');
                 container.className = 'gallery-item';
                 container.style.backgroundImage = `url(${item.image})`;
-                
-                // 削除ボタン
                 const del = document.createElement('div');
                 del.className = 'gallery-delete';
                 del.innerHTML = '×';
                 del.onclick = (e) => {
                     e.stopPropagation();
                     if(confirm(`「${item.name}」を削除しますか？`)) {
-                        saved.splice(index, 1);
-                        localStorage.setItem('dots_gallery', JSON.stringify(saved));
-                        refreshGallery();
+                        saved.splice(index, 1); localStorage.setItem('dots_gallery', JSON.stringify(saved)); refreshGallery();
                     }
                 };
-                
                 container.onclick = () => {
                     if(confirm(`${item.name} を読み込みますか？`)) {
-                        const img = new Image();
-                        img.src = item.image;
+                        const img = new Image(); img.src = item.image;
                         img.onload = () => { ctx.clearRect(0,0,32,32); ctx.drawImage(img,0,0); saveHistory(); };
                         artNameInput.value = item.name;
                     }
                 };
-                container.appendChild(del);
-                gallery.appendChild(container);
+                container.appendChild(del); gallery.appendChild(container);
             });
         }
 
@@ -211,31 +227,22 @@
             if(saved.length > 10) saved.pop();
             localStorage.setItem('dots_gallery', JSON.stringify(saved));
             refreshGallery();
-            alert("アプリ内に保存しました！下のリストから確認できます。");
+            alert("アプリ内に保存しました！");
         };
 
-        // カラーパレット保存と削除
         document.getElementById('btn-save-palette').onclick = () => {
             const col = colorPicker.value;
             const item = document.createElement('div');
             item.className = 'palette-item';
-            
             const chip = document.createElement('div');
-            chip.className = 'color-chip';
-            chip.style.backgroundColor = col;
+            chip.className = 'color-chip'; chip.style.backgroundColor = col;
             chip.onclick = () => colorPicker.value = col;
-            
             const del = document.createElement('div');
-            del.className = 'delete-badge';
-            del.innerHTML = '×';
+            del.className = 'delete-badge'; del.innerHTML = '×';
             del.onclick = () => item.remove();
-            
-            item.appendChild(chip);
-            item.appendChild(del);
-            paletteArea.appendChild(item);
+            item.appendChild(chip); item.appendChild(del); paletteArea.appendChild(item);
         };
 
-        // デバイス保存（メッセージ追加）
         document.getElementById('btn-download-png').onclick = () => {
             const temp = document.createElement('canvas'); temp.width = temp.height = 512;
             const tctx = temp.getContext('2d'); tctx.imageSmoothingEnabled = false;
@@ -244,17 +251,11 @@
             link.download = (artNameInput.value.trim() || 'dots_art') + '.png';
             link.href = temp.toDataURL(); 
             link.click();
-            alert("デバイスへの保存が完了しました！");
+            alert("作品をスマホに保存しました！");
         };
 
-        // --- 基本描画ロジック (修復版) ---
-        function applyZoom() { wrapper.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`; }
-        document.getElementById('btn-zoom-in').onclick = () => { scale = Math.min(5, scale + 0.2); applyZoom(); };
-        document.getElementById('btn-zoom-out').onclick = () => { scale = Math.max(1, scale - 0.2); applyZoom(); };
-        document.getElementById('btn-zoom-reset').onclick = () => { scale = 1; offsetX = 0; offsetY = 0; applyZoom(); };
-
+        // イベント管理
         document.getElementById('canvasArea').onmousedown = document.getElementById('canvasArea').ontouchstart = (e) => {
-            if(!startTime) startTime = new Date();
             const p = e.touches ? e.touches[0] : e;
             if(currentMode === 'move') { 
                 isMoving = true; startX = p.clientX - offsetX; startY = p.clientY - offsetY; return; 
@@ -301,7 +302,6 @@
             };
         });
 
-        // サイドバー関連
         function selectModel(src) {
             const mctx = document.getElementById('modelLayer').getContext('2d');
             mctx.clearRect(0,0,32,32);
