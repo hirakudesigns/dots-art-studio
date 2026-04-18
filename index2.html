@@ -91,7 +91,7 @@
             <div class="section-label">保存済み作品</div>
             <div id="gallery" class="gallery-container"></div>
             
-            <button class="btn-upload" id="uploadButton">作品をアップロードして次へ</button>
+            <button class="btn-upload" id="uploadButton">作品をアップロード</button>
         </div>
 
         <div class="sidebar" id="sidebar">
@@ -113,7 +113,7 @@
         const wrapper = document.getElementById('canvasWrapper');
         const colorPicker = document.getElementById('colorPicker');
         const gallery = document.getElementById('gallery');
-        const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbzifog70SkkofUTImw0ZgFZAlmjPqKqIrzciomIw0epTondaHLIXnv5bk-_ZiWbFnMiLw/exec";
+        const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbx2OedwmyVjFaizeVpTQhEV45sH9t1ugkQO_SdBCp-y2-c5IxU_Pq7FcJPyy33B99NBtg/exec";
 
         let scale = 1, offsetX = 0, offsetY = 0, isDrawing = false, isMoving = false, currentMode = 'pen';
         let historyStack = [], redoStack = [];
