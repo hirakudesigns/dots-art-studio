@@ -233,7 +233,7 @@
             
             const base64Data = uploadCanvas.toDataURL('image/png').split(',')[1];
 
-            if(!GAS_ENDPOINT || GAS_ENDPOINT === "https://script.google.com/macros/s/AKfycbz5qMW9LddXhweGi5MWm8fSBWavcwcdnIDW9JyNU8V1_v8tyYA8rZ1QQkafCVtdUOhyKA/exec") {
+            if(!GAS_ENDPOINT || GAS_ENDPOINT === "YOUR_GAS_DEPLOY_URL") {
                 alert("GASのURLが設定されていません。コード内の GAS_ENDPOINT を書き換えてください。");
                 return;
             }
