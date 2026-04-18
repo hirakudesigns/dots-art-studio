@@ -22,7 +22,6 @@
         
         .app-container { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 15px; }
 
-        /* キャンバスエリア */
         .canvas-area { 
             position: relative; 
             width: 320px; 
@@ -30,12 +29,11 @@
             border: 4px solid var(--card-bg); 
             border-radius: 8px; 
             box-shadow: 0 5px 15px rgba(0,0,0,0.1); 
-            background: #fff; /* ベースを白に */
+            background: #fff; 
             touch-action: none; 
             overflow: hidden; 
         }
 
-        /* 拡大時に連動する背景ラッパー */
         .canvas-wrapper { 
             position: absolute; 
             top: 0; 
@@ -43,7 +41,6 @@
             width: 320px; 
             height: 320px; 
             transform-origin: 0 0; 
-            /* 市松模様をここに配置（グレーを#f9f9f9とさらに薄く変更） */
             background-image: linear-gradient(45deg, #f9f9f9 25%, transparent 25%, transparent 75%, #f9f9f9 75%), linear-gradient(45deg, #f9f9f9 25%, #fff 25%, #fff 75%, #f9f9f9 75%);
             background-size: 20px 20px;
             background-position: 0 0, 10px 10px;
@@ -52,9 +49,22 @@
         canvas { position: absolute; top: 0; left: 0; image-rendering: pixelated; display: block; width: 320px; height: 320px; }
         #bgLayer { z-index: 0; background-size: cover; background-position: center; display: none; }
         #modelLayer { z-index: 1; opacity: 0.6; pointer-events: none; }
-        #gridOverlay { position: absolute; top: 0; left: 0; width: 320px; height: 320px; pointer-events: none; z-index: 2; 
-            background-image: linear-gradient(to right, rgba(0,0,0,0.2) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.2) 1px, transparent 1px); 
-            background-size: 10px 10px; 
+        
+        /* グリッド線のメリハリ：8px(80px相当)ごとに濃い線を引く */
+        #gridOverlay { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 320px; 
+            height: 320px; 
+            pointer-events: none; 
+            z-index: 2; 
+            background-image: 
+                linear-gradient(to right, rgba(0,0,0,0.25) 1.5px, transparent 1.5px), 
+                linear-gradient(to bottom, rgba(0,0,0,0.25) 1.5px, transparent 1.5px),
+                linear-gradient(to right, rgba(0,0,0,0.1) 1px, transparent 1px), 
+                linear-gradient(to bottom, rgba(0,0,0,0.1) 1px, transparent 1px); 
+            background-size: 80px 80px, 80px 80px, 10px 10px, 10px 10px; 
         }
         #dotCanvas { z-index: 3; background: transparent; }
 
@@ -64,8 +74,6 @@
         
         .btn { width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; border-radius: 10px; background: #f1f2f6; color: #57606f; }
         .btn.active { background: var(--primary-color); color: white; }
-        
-        /* 消しゴムアイコンの拡大対応 */
         .btn img { width: 32px; height: 32px; object-fit: contain; }
 
         .btn-upload { background: var(--primary-color); color: white; height: 55px; font-weight: 900; border-radius: 15px; border: none; cursor: pointer; width: 100%; font-size: 1.1rem; margin-top: 10px; }
@@ -179,19 +187,110 @@
 
         let scale = 1, offsetX = 0, offsetY = 0, isDrawing = false, isMoving = false, currentMode = 'pen';
         let startX = 0, startY = 0;
-        let historyStack = [], redoStack = [];
+        
+        // --- 履歴管理(Redo修復版) ---
+        let historyStack = [];
+        let redoStack = [];
 
-        // ズーム適用 (市松模様のwrapperに適用)
-        function applyZoom() { 
-            wrapper.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`; 
+        function saveHistory() {
+            historyStack.push(canvas.toDataURL());
+            if(historyStack.length > 50) historyStack.shift();
+            redoStack = []; // 新しく描いたらRedoスタックはクリア
         }
 
+        document.getElementById('btn-undo').onclick = () => {
+            if (historyStack.length > 1) {
+                const current = historyStack.pop();
+                redoStack.push(current);
+                const prev = historyStack[historyStack.length - 1];
+                const img = new Image();
+                img.src = prev;
+                img.onload = () => { ctx.clearRect(0, 0, 32, 32); ctx.drawImage(img, 0, 0); };
+            }
+        };
+
+        document.getElementById('btn-redo').onclick = () => {
+            if (redoStack.length > 0) {
+                const next = redoStack.pop();
+                historyStack.push(next);
+                const img = new Image();
+                img.src = next;
+                img.onload = () => { ctx.clearRect(0, 0, 32, 32); ctx.drawImage(img, 0, 0); };
+            }
+        };
+
+        // --- ズーム ---
+        function applyZoom() { wrapper.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`; }
         zoomRange.oninput = (e) => { scale = parseFloat(e.target.value); applyZoom(); };
         document.getElementById('btn-zoom-in').onclick = () => { scale = Math.min(5, scale + 0.2); zoomRange.value = scale; applyZoom(); };
         document.getElementById('btn-zoom-out').onclick = () => { scale = Math.max(1, scale - 0.2); zoomRange.value = scale; applyZoom(); };
         document.getElementById('btn-zoom-reset').onclick = () => { scale = 1; offsetX = 0; offsetY = 0; zoomRange.value = 1; applyZoom(); };
 
-        // ギャラリー更新
+        // --- 描画イベント ---
+        document.getElementById('canvasArea').onmousedown = document.getElementById('canvasArea').ontouchstart = (e) => {
+            const p = e.touches ? e.touches[0] : e;
+            if(currentMode === 'move') { 
+                isMoving = true; startX = p.clientX - offsetX; startY = p.clientY - offsetY; return; 
+            }
+            isDrawing = true; handleAction(e);
+        };
+
+        window.onmousemove = window.ontouchmove = (e) => {
+            const p = e.touches ? e.touches[0] : e;
+            if(isMoving) { offsetX = p.clientX - startX; offsetY = p.clientY - startY; applyZoom(); }
+            else if(isDrawing) handleAction(e);
+        };
+
+        window.onmouseup = window.ontouchend = () => { if(isDrawing) saveHistory(); isMoving = false; isDrawing = false; };
+
+        function handleAction(e) {
+            const rect = canvas.getBoundingClientRect();
+            const p = e.touches ? e.touches[0] : e;
+            const x = Math.floor((p.clientX - rect.left) / (rect.width / 32));
+            const y = Math.floor((p.clientY - rect.top) / (rect.height / 32));
+            if(x<0 || x>=32 || y<0 || y>=32) return;
+
+            if(currentMode==='pen'){ ctx.fillStyle=colorPicker.value; ctx.fillRect(x,y,1,1); }
+            else if(currentMode==='eraser') ctx.clearRect(x,y,1,1);
+            else if(currentMode==='bucket') floodFill(x,y,colorPicker.value);
+            else if(currentMode==='picker'){
+                const d = ctx.getImageData(x,y,1,1).data;
+                if(d[3]!==0) colorPicker.value = "#" + [d[0],d[1],d[2]].map(c=>c.toString(16).padStart(2,'0')).join('');
+            }
+        }
+
+        // --- 塗りつぶし（上書き可能版） ---
+        function floodFill(startX, startY, fillHex) {
+            const imageData = ctx.getImageData(0, 0, 32, 32);
+            const data = new Uint32Array(imageData.data.buffer);
+            
+            // ターゲット（クリックした場所）の色を取得
+            const targetColor = data[startY * 32 + startX];
+            
+            // 塗りつぶす色の作成 (RGBA)
+            const r = parseInt(fillHex.slice(1,3), 16);
+            const g = parseInt(fillHex.slice(3,5), 16);
+            const b = parseInt(fillHex.slice(5,7), 16);
+            const fillColor = (0xFF << 24) | (b << 16) | (g << 8) | r;
+
+            // 同じ色なら何もしない（無限ループ防止）
+            if (targetColor === fillColor) return;
+
+            const stack = [[startX, startY]];
+            while (stack.length) {
+                const [x, y] = stack.pop();
+                if (data[y * 32 + x] === targetColor) {
+                    data[y * 32 + x] = fillColor;
+                    if (x > 0) stack.push([x - 1, y]);
+                    if (x < 31) stack.push([x + 1, y]);
+                    if (y > 0) stack.push([x, y - 1]);
+                    if (y < 31) stack.push([x, y + 1]);
+                }
+            }
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        // --- ギャラリー・パレット ---
         function refreshGallery() {
             gallery.innerHTML = '';
             const saved = JSON.parse(localStorage.getItem('dots_gallery') || '[]');
@@ -254,45 +353,7 @@
             alert("作品をスマホに保存しました！");
         };
 
-        // イベント管理
-        document.getElementById('canvasArea').onmousedown = document.getElementById('canvasArea').ontouchstart = (e) => {
-            const p = e.touches ? e.touches[0] : e;
-            if(currentMode === 'move') { 
-                isMoving = true; startX = p.clientX - offsetX; startY = p.clientY - offsetY; return; 
-            }
-            isDrawing = true; handleAction(e);
-        };
-        window.onmousemove = window.ontouchmove = (e) => {
-            const p = e.touches ? e.touches[0] : e;
-            if(isMoving) { offsetX = p.clientX - startX; offsetY = p.clientY - startY; applyZoom(); }
-            else if(isDrawing) handleAction(e);
-        };
-        window.onmouseup = window.ontouchend = () => { if(isDrawing) saveHistory(); isMoving = false; isDrawing = false; };
-
-        function handleAction(e) {
-            const rect = canvas.getBoundingClientRect();
-            const p = e.touches ? e.touches[0] : e;
-            const x = Math.floor((p.clientX - rect.left) / (rect.width / 32));
-            const y = Math.floor((p.clientY - rect.top) / (rect.height / 32));
-            if(x<0 || x>=32 || y<0 || y>=32) return;
-            if(currentMode==='pen'){ ctx.fillStyle=colorPicker.value; ctx.fillRect(x,y,1,1); }
-            else if(currentMode==='eraser') ctx.clearRect(x,y,1,1);
-            else if(currentMode==='bucket') floodFill(x,y,colorPicker.value);
-            else if(currentMode==='picker'){
-                const d = ctx.getImageData(x,y,1,1).data;
-                if(d[3]!==0) colorPicker.value = "#" + [d[0],d[1],d[2]].map(c=>c.toString(16).padStart(2,'0')).join('');
-            }
-        }
-
-        function saveHistory() { historyStack.push(canvas.toDataURL()); if(historyStack.length>30) historyStack.shift(); redoStack = []; }
-        document.getElementById('btn-undo').onclick = () => {
-            if(historyStack.length > 1) {
-                redoStack.push(historyStack.pop());
-                const img = new Image(); img.src = historyStack[historyStack.length - 1];
-                img.onload = () => { ctx.clearRect(0,0,32,32); ctx.drawImage(img, 0, 0); };
-            }
-        };
-
+        // --- サイドバー機能 ---
         const tools = {pen:'btn-pen', eraser:'btn-eraser', bucket:'btn-bucket', picker:'btn-picker', move:'btn-move'};
         Object.keys(tools).forEach(k => {
             document.getElementById(tools[k]).onclick = () => {
@@ -314,26 +375,12 @@
         document.getElementById('overlay').onclick = closeSidebar;
         document.getElementById('btn-clear').onclick = () => { if(confirm("ぜんぶ消しますか？")) { ctx.clearRect(0,0,32,32); saveHistory(); } };
 
-        function floodFill(x,y,col) {
-            const target = ctx.getImageData(x,y,1,1).data;
-            const targetCol = (target[3]<<24)|(target[2]<<16)|(target[1]<<8)|target[0];
-            const f = parseInt(col.slice(1), 16);
-            const newCol = 0xff000000 | ((f&0xff)<<16) | (f&0xff00) | ((f&0xff0000)>>16);
-            if(targetCol === newCol) return;
-            const img = ctx.getImageData(0,0,32,32); const data = new Uint32Array(img.data.buffer);
-            const stack = [[x,y]];
-            while(stack.length){
-                const [cx,cy] = stack.pop();
-                if(data[cy*32+cx] === targetCol){
-                    data[cy*32+cx] = newCol;
-                    if(cx>0) stack.push([cx-1,cy]); if(cx<31) stack.push([cx+1,cy]);
-                    if(cy>0) stack.push([cx,cy-1]); if(cy<31) stack.push([cx,cy+1]);
-                }
-            }
-            ctx.putImageData(img,0,0);
-        }
-
-        window.onload = () => { refreshGallery(); saveHistory(); };
+        // 初回起動時
+        window.onload = () => {
+            ctx.clearRect(0,0,32,32);
+            saveHistory(); 
+            refreshGallery(); 
+        };
     </script>
 </body>
 </html>
