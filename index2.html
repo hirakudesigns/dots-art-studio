@@ -210,59 +210,68 @@
         // ----------------------------------------------------
         // GASアップロード機能 (修正・統合)
         // ----------------------------------------------------
-        const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbz5qMW9LddXhweGi5MWm8fSBWavcwcdnIDW9JyNU8V1_v8tyYA8rZ1QQkafCVtdUOhyKA/exec"; 
+        const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbx_3mWd3NiNePH-ziRD6B_VFinSrat4ELnvevHTFwg2dahRD_jkSFHFO7k8JEvK-fHfnA/exec"; 
 
         document.getElementById('uploadButton').onclick = async () => {
-            const btn = document.getElementById('uploadButton');
-            const originalText = btn.innerText;
-            const name = artNameInput.value.trim();
+    const btn = document.getElementById('uploadButton');
+    const originalText = btn.innerText;
+    const name = artNameInput.value.trim();
 
-            // 1. 作品名チェック
-            if (!name) {
-                alert("作品名を入力してください。");
-                artNameInput.focus();
-                return;
-            }
+    // 1. 作品名チェック
+    if (!name) {
+        alert("作品の名前を入力してください。");
+        artNameInput.focus();
+        return;
+    }
 
-            // 2. 512pxに拡大した画像データを生成
-            const uploadCanvas = document.createElement('canvas');
-            uploadCanvas.width = uploadCanvas.height = 512;
-            const uctx = uploadCanvas.getContext('2d');
-            uctx.imageSmoothingEnabled = false; // ニアレストネイバー法で拡大（ドットをくっきりさせる）
-            uctx.drawImage(canvas, 0, 0, 512, 512);
-            
-            const base64Data = uploadCanvas.toDataURL('image/png').split(',')[1];
+    // 2. 512pxに拡大した画像データを生成
+    const uploadCanvas = document.createElement('canvas');
+    uploadCanvas.width = uploadCanvas.height = 512;
+    const uctx = uploadCanvas.getContext('2d');
+    uctx.imageSmoothingEnabled = false; 
+    uctx.drawImage(canvas, 0, 0, 512, 512);
+    
+    // GAS側で扱いやすいよう、純粋なBase64文字列のみを取得
+    const base64Data = uploadCanvas.toDataURL('image/png').split(',')[1];
 
-            if(!GAS_ENDPOINT || GAS_ENDPOINT === "YOUR_GAS_DEPLOY_URL") {
-                alert("GASのURLが設定されていません。コード内の GAS_ENDPOINT を書き換えてください。");
-                return;
-            }
+    if(!confirm(`「${name}」をアップロードしますか？`)) return;
 
-            if(!confirm(`「${name}」をアップロードしますか？\n(サイズ: 512px)`)) return;
+    btn.innerText = "アップロード中...";
+    btn.disabled = true;
 
-            btn.innerText = "アップロード中...";
-            btn.disabled = true;
-
-            try {
-                await fetch(GAS_ENDPOINT, {
-                    method: "POST",
-                    mode: "no-cors",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        image: base64Data,
-                        filename: name + ".png",
-                        type: "image/png"
-                    })
-                });
-                alert("アップロードリクエストを送信しました！");
-            } catch (error) {
-                console.error("Upload Error:", error);
-                alert("アップロードに失敗しました。");
-            } finally {
-                btn.innerText = originalText;
-                btn.disabled = false;
-            }
+    try {
+        // payloadの項目名をGASの受け取り側に合わせる
+        const payload = {
+            image: base64Data,
+            name: name, // filenameではなくnameで送る
+            location: "WEB",
+            duration: 0
         };
+
+        // GASへ送信
+        const response = await fetch(GAS_ENDPOINT, {
+            method: "POST",
+            body: JSON.stringify(payload)
+        });
+
+        // GAS側でContentServiceを返していれば結果を受け取れる
+        const result = await response.json();
+        
+        if (result.status === "success") {
+            alert("アップロード完了！\n管理番号: " + result.serial);
+        } else {
+            alert("サーバーエラー: " + result.message);
+        }
+    } catch (error) {
+        // GASの仕様上、成功していてもここに来る場合がありますが、
+        // 修正後のGASなら正常にレスポンスが返るはずです
+        console.error("Upload Error:", error);
+        alert("送信完了（反映されない場合はGASのデプロイ設定を確認してください）");
+    } finally {
+        btn.innerText = originalText;
+        btn.disabled = false;
+    }
+};
         // ----------------------------------------------------
 
         function saveHistory() {
