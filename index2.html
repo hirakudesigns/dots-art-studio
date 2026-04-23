@@ -149,7 +149,7 @@
             <div id="paletteArea" class="row" style="min-height:30px; justify-content:flex-start; margin-top:5px; gap:10px;"></div>
 
             <div class="section-label">画像を保存</div>
-            <button class="btn-save-img" id="btn-download-png"><span class="material-icons">download</span> 作品をスマホに保存</button>
+            <button class="btn-save-img" id="btn-download-png"><span class="material-icons">download</span> 作品を端末に保存</button>
 
             <div class="section-label">作品の名前・保存</div>
             <div class="row">
@@ -208,9 +208,14 @@
         let redoStack = [];
 
         // ----------------------------------------------------
-        // GASアップロード機能 (修正・フォーム遷移追加)
+        // 修正点1: 制作時間計測の開始
         // ----------------------------------------------------
-        const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbyTqZ6WHVerODxAirS26je2kE-5AJK3MaAalBl-LvDpq5SGMpNcQLC_ZzG2BbhUa-z4_w/exec"; 
+        let startTime = Date.now(); 
+
+        // ----------------------------------------------------
+        // GASアップロード & フォーム遷移ロジック
+        // ----------------------------------------------------
+        const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbyIZWN4zMumJ1ser0U7T4v9-w7Mo804mFxUzaKYcS7NhcCAxDlZSWct83sr55fjLbJ-Fg/exec"; 
         const FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfNwyTLJ_-3FJx5oBbgzULdlWZ8TrVfyH6eHv5V4pXlAhP34Q/viewform";
 
         document.getElementById('uploadButton').onclick = async () => {
@@ -223,6 +228,9 @@
                 artNameInput.focus();
                 return;
             }
+
+            // 修正点2: 制作時間の計算（秒）
+            const durationSeconds = Math.floor((Date.now() - startTime) / 1000);
 
             const uploadCanvas = document.createElement('canvas');
             uploadCanvas.width = uploadCanvas.height = 512;
@@ -243,22 +251,28 @@
                         image: base64Data,
                         name: name,
                         location: "WEB",
-                        duration: 0
+                        duration: durationSeconds // 制作時間を送信
                     })
                 });
                 
                 const result = await response.json();
 
                 if(result.status === "success") {
-                    // クリップボードに管理番号をコピー
                     try {
                         await navigator.clipboard.writeText(result.serial);
-                        alert(`アップロード成功！\n管理番号「${result.serial}」をコピーしました。\nOKを押すと入力フォームへ移動します。`);
-                    } catch(e) {
-                        alert(`アップロード成功！\n管理番号は「${result.serial}」です。\nOKを押すと入力フォームへ移動します。`);
-                    }
-                    // フォームへ遷移
-                    window.location.href = FORM_URL;
+                    } catch(e) {}
+
+                    alert(`アップロード成功！\n管理番号「${result.serial}」をコピーしました。\n閉じるを押し、アンケートのご記入をお願いします。`);
+
+                    // 修正点3: URLパラメーター付きでフォームへ遷移
+                    const entryId_Name = "entry.46158305";   
+                    const entryId_Serial = "entry.1524592109"; 
+                    
+                    const params = new URLSearchParams();
+                    params.append(entryId_Name, name);
+                    params.append(entryId_Serial, result.serial);
+
+                    window.location.href = `${FORM_URL}?${params.toString()}`;
                 } else {
                     alert("エラー: " + result.message);
                 }
@@ -272,9 +286,8 @@
         };
 
         // ----------------------------------------------------
-        // 以降、描画ロジック（UI変更なし）
+        // 描画関連の基本機能
         // ----------------------------------------------------
-
         function saveHistory() {
             historyStack.push(canvas.toDataURL());
             if(historyStack.length > 50) historyStack.shift();
@@ -398,7 +411,7 @@
             alert("アプリ内に保存しました！");
         };
 
-        document.getElementById('btn-save-palette').onclick = () => {
+        document.getElementById('btn-save-color').onclick = () => {
             const col = colorPicker.value;
             const item = document.createElement('div');
             item.className = 'palette-item';
@@ -419,7 +432,7 @@
             link.download = (artNameInput.value.trim() || 'dots_art') + '.png';
             link.href = temp.toDataURL(); 
             link.click();
-            alert("作品をスマホに保存しました！");
+            alert("作品を端末に保存しました！");
         };
 
         document.getElementById('btn-flip-h').onclick = () => {
