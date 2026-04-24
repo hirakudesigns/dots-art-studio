@@ -48,7 +48,6 @@
         
         canvas { position: absolute; top: 0; left: 0; image-rendering: pixelated; display: block; width: 320px; height: 320px; }
         #bgLayer { z-index: 0; background-size: cover; background-position: center; display: none; }
-        /* 修正点：お手本をさらに薄く(0.6 -> 0.3) */
         #modelLayer { z-index: 1; opacity: 0.3; pointer-events: none; }
         
         #gridOverlay { 
@@ -102,7 +101,6 @@
         .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 999; display: none; }
         .overlay.active { display: block; }
 
-        /* 追加：セレクトボックス用スタイル */
         .sidebar-select { width: 100%; height: 40px; border-radius: 10px; border: 2px solid #f1f2f6; padding: 0 10px; font-weight: bold; color: #57606f; margin-bottom: 5px; }
     </style>
 </head>
@@ -145,7 +143,7 @@
                 <button class="btn active" id="btn-pen"><span class="material-icons">edit</span></button>
                 <button class="btn" id="btn-eraser"><img src="erazer.png" alt="消しゴム"></button> 
                 <button class="btn" id="btn-bucket"><span class="material-icons">format_color_fill</span></button>
-                <button class="btn" id="btn-picker"><span class="material-icons">colorize</span></button>
+                <button class="btn" id="btn-call-picker" id="btn-picker"><span class="material-icons">colorize</span></button>
             </div>
 
             <div class="section-label">カラーパレット</div>
@@ -202,7 +200,7 @@
                 <a href="https://www.instagram.com/dots_projects/" class="sns-link" target="_blank"><div class="sns-icon bg-insta"><span class="material-icons">camera_alt</span></div>Insta</a>
                 <a href="https://x.com/hiraku_designs" class="sns-link" target="_blank"><div class="sns-icon bg-x"><span class="material-icons">close</span></div>X</a>
             </div>
-            </div>
+        </div>
         <div class="overlay" id="overlay"></div>
     </div>
 
@@ -246,7 +244,6 @@
             const uctx = uploadCanvas.getContext('2d');
             uctx.imageSmoothingEnabled = false; 
 
-            // 修正点：アップロード時に背景が設定されていれば合成して保存
             if (bgLayer.style.display !== 'none' && bgLayer.style.backgroundImage) {
                 const bgImg = new Image();
                 const bgUrl = bgLayer.style.backgroundImage.slice(5, -2);
@@ -299,7 +296,6 @@
             }
         };
 
-        // 修正点：背景切り替えロジック
         document.getElementById('bgSelect').onchange = (e) => {
             const val = e.target.value;
             if (val) {
@@ -311,7 +307,6 @@
             }
         };
 
-        // 修正点：グリッド表示切り替えロジック
         document.getElementById('btn-toggle-grid').onclick = () => {
             if (gridOverlay.style.display === 'none') {
                 gridOverlay.style.display = 'block';
@@ -320,10 +315,13 @@
             }
         };
 
+        // 修正点：履歴保存と同時にLocalStorageへバックアップ
         function saveHistory() {
-            historyStack.push(canvas.toDataURL());
+            const dataUrl = canvas.toDataURL();
+            historyStack.push(dataUrl);
             if(historyStack.length > 50) historyStack.shift();
             redoStack = [];
+            localStorage.setItem('dots_auto_save', dataUrl); // 自動保存
         }
 
         document.getElementById('btn-undo').onclick = () => {
@@ -333,7 +331,7 @@
                 const prev = historyStack[historyStack.length - 1];
                 const img = new Image();
                 img.src = prev;
-                img.onload = () => { ctx.clearRect(0, 0, 32, 32); ctx.drawImage(img, 0, 0); };
+                img.onload = () => { ctx.clearRect(0, 0, 32, 32); ctx.drawImage(img, 0, 0); localStorage.setItem('dots_auto_save', prev); };
             }
         };
 
@@ -343,7 +341,7 @@
                 historyStack.push(next);
                 const img = new Image();
                 img.src = next;
-                img.onload = () => { ctx.clearRect(0, 0, 32, 32); ctx.drawImage(img, 0, 0); };
+                img.onload = () => { ctx.clearRect(0, 0, 32, 32); ctx.drawImage(img, 0, 0); localStorage.setItem('dots_auto_save', next); };
             }
         };
 
@@ -460,7 +458,6 @@
             const temp = document.createElement('canvas'); temp.width = temp.height = 512;
             const tctx = temp.getContext('2d'); tctx.imageSmoothingEnabled = false;
 
-            // ダウンロード時も背景を合成
             if (bgLayer.style.display !== 'none' && bgLayer.style.backgroundImage) {
                 const bgImg = new Image();
                 const bgUrl = bgLayer.style.backgroundImage.slice(5, -2);
@@ -496,7 +493,7 @@
             ctx.clearRect(0, 0, 32, 32); ctx.drawImage(temp, 0, 0); saveHistory();
         };
 
-        const tools = {pen:'btn-pen', eraser:'btn-eraser', bucket:'btn-bucket', picker:'btn-picker', move:'btn-move'};
+        const tools = {pen:'btn-pen', eraser:'btn-eraser', bucket:'btn-bucket', picker:'btn-call-picker', move:'btn-move'};
         Object.keys(tools).forEach(k => {
             const el = document.getElementById(tools[k]);
             if(el) {
@@ -526,13 +523,24 @@
             document.getElementById('sidebar').classList.add('open'); 
             document.getElementById('overlay').classList.add('active'); 
         };
-        // 修正点：オーバーレイ（メニュー以外）を押したら閉じる
         document.getElementById('overlay').onclick = closeSidebar;
         document.getElementById('btn-clear').onclick = () => { if(confirm("ぜんぶ消しますか？")) { ctx.clearRect(0,0,32,32); saveHistory(); } };
 
         window.onload = () => {
             ctx.clearRect(0,0,32,32);
-            saveHistory(); 
+            
+            // 修正点：自動保存されていたデータがあれば復元
+            const savedData = localStorage.getItem('dots_auto_save');
+            if (savedData) {
+                const img = new Image();
+                img.src = savedData;
+                img.onload = () => {
+                    ctx.drawImage(img, 0, 0);
+                    saveHistory(); // 復元した状態を履歴の最初にする
+                };
+            } else {
+                saveHistory();
+            }
             refreshGallery(); 
         };
     </script>
