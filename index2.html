@@ -48,7 +48,8 @@
         
         canvas { position: absolute; top: 0; left: 0; image-rendering: pixelated; display: block; width: 320px; height: 320px; }
         #bgLayer { z-index: 0; background-size: cover; background-position: center; display: none; }
-        #modelLayer { z-index: 1; opacity: 0.6; pointer-events: none; }
+        /* 修正点：お手本をさらに薄く(0.6 -> 0.3) */
+        #modelLayer { z-index: 1; opacity: 0.3; pointer-events: none; }
         
         #gridOverlay { 
             position: absolute; 
@@ -100,6 +101,9 @@
 
         .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 999; display: none; }
         .overlay.active { display: block; }
+
+        /* 追加：セレクトボックス用スタイル */
+        .sidebar-select { width: 100%; height: 40px; border-radius: 10px; border: 2px solid #f1f2f6; padding: 0 10px; font-weight: bold; color: #57606f; margin-bottom: 5px; }
     </style>
 </head>
 <body>
@@ -164,6 +168,19 @@
         </div>
 
         <div class="sidebar" id="sidebar">
+            <div class="section-label">背景合成</div>
+            <select id="bgSelect" class="sidebar-select">
+                <option value="">背景なし</option>
+                <option value="bg1.jpg">背景1</option>
+                <option value="bg2.jpg">背景2</option>
+                <option value="bg3.jpg">背景3</option>
+                <option value="bg4.jpg">背景4</option>
+                <option value="bg5.jpg">背景5</option>
+            </select>
+
+            <div class="section-label">表示設定</div>
+            <button class="btn-text" id="btn-toggle-grid"><span class="material-icons">grid_on</span> グリッド表示/非表示</button>
+
             <div class="section-label">お手本をえらぶ</div>
             <div class="model-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0;">
                 <div class="model-item" onclick="selectModel('template_a.png')" style="cursor:pointer; text-align:center; background:#fff; padding:5px; border-radius:8px; border:1px solid #ddd; font-size:0.7rem;"><img src="template_a.png" alt="A" style="width:100%; image-rendering:pixelated;"><br>サンプルA</div>
@@ -185,9 +202,7 @@
                 <a href="https://www.instagram.com/dots_projects/" class="sns-link" target="_blank"><div class="sns-icon bg-insta"><span class="material-icons">camera_alt</span></div>Insta</a>
                 <a href="https://x.com/hiraku_designs" class="sns-link" target="_blank"><div class="sns-icon bg-x"><span class="material-icons">close</span></div>X</a>
             </div>
-
-            <button onclick="closeSidebar()" style="margin-top:20px; width:100%; padding:12px; border:none; background:#eee; border-radius:10px; font-weight:bold;">とじる</button>
-        </div>
+            </div>
         <div class="overlay" id="overlay"></div>
     </div>
 
@@ -200,21 +215,16 @@
         const colorPicker = document.getElementById('colorPicker');
         const artNameInput = document.getElementById('artName');
         const zoomRange = document.getElementById('zoomRange');
+        const bgLayer = document.getElementById('bgLayer');
+        const gridOverlay = document.getElementById('gridOverlay');
 
         let scale = 1, offsetX = 0, offsetY = 0, isDrawing = false, isMoving = false, currentMode = 'pen';
         let startX = 0, startY = 0;
         
         let historyStack = [];
         let redoStack = [];
-
-        // ----------------------------------------------------
-        // 修正点1: 制作時間計測の開始
-        // ----------------------------------------------------
         let startTime = Date.now(); 
 
-        // ----------------------------------------------------
-        // GASアップロード & フォーム遷移ロジック
-        // ----------------------------------------------------
         const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbxLN0lTux5SRb8cI3lYp1sXBCEPHW4x4B-px7AguEjgvMHqA7wRipvF05iI5UiQJ_WknA/exec"; 
         const FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfNwyTLJ_-3FJx5oBbgzULdlWZ8TrVfyH6eHv5V4pXlAhP34Q/viewform";
 
@@ -229,13 +239,22 @@
                 return;
             }
 
-            // 修正点2: 制作時間の計算（秒）
             const durationSeconds = Math.floor((Date.now() - startTime) / 1000);
 
             const uploadCanvas = document.createElement('canvas');
             uploadCanvas.width = uploadCanvas.height = 512;
             const uctx = uploadCanvas.getContext('2d');
             uctx.imageSmoothingEnabled = false; 
+
+            // 修正点：アップロード時に背景が設定されていれば合成して保存
+            if (bgLayer.style.display !== 'none' && bgLayer.style.backgroundImage) {
+                const bgImg = new Image();
+                const bgUrl = bgLayer.style.backgroundImage.slice(5, -2);
+                bgImg.src = bgUrl;
+                await new Promise(resolve => bgImg.onload = resolve);
+                uctx.drawImage(bgImg, 0, 0, 512, 512);
+            }
+
             uctx.drawImage(canvas, 0, 0, 512, 512);
             const base64Data = uploadCanvas.toDataURL('image/png').split(',')[1];
 
@@ -251,7 +270,7 @@
                         image: base64Data,
                         name: name,
                         location: "WEB",
-                        duration: durationSeconds // 制作時間を送信
+                        duration: durationSeconds
                     })
                 });
                 
@@ -261,17 +280,12 @@
                     try {
                         await navigator.clipboard.writeText(result.serial);
                     } catch(e) {}
-
                     alert(`アップロード成功！\n管理番号「${result.serial}」をコピーしました。\n閉じるを押し、アンケートのご記入をお願いします。`);
-
-                    // 修正点3: URLパラメーター付きでフォームへ遷移
                     const entryId_Name = "entry.46158305";   
                     const entryId_Serial = "entry.1524592109"; 
-                    
                     const params = new URLSearchParams();
                     params.append(entryId_Name, name);
                     params.append(entryId_Serial, result.serial);
-
                     window.location.href = `${FORM_URL}?${params.toString()}`;
                 } else {
                     alert("エラー: " + result.message);
@@ -285,9 +299,27 @@
             }
         };
 
-        // ----------------------------------------------------
-        // 描画関連の基本機能
-        // ----------------------------------------------------
+        // 修正点：背景切り替えロジック
+        document.getElementById('bgSelect').onchange = (e) => {
+            const val = e.target.value;
+            if (val) {
+                bgLayer.style.backgroundImage = `url(${val})`;
+                bgLayer.style.display = 'block';
+            } else {
+                bgLayer.style.backgroundImage = '';
+                bgLayer.style.display = 'none';
+            }
+        };
+
+        // 修正点：グリッド表示切り替えロジック
+        document.getElementById('btn-toggle-grid').onclick = () => {
+            if (gridOverlay.style.display === 'none') {
+                gridOverlay.style.display = 'block';
+            } else {
+                gridOverlay.style.display = 'none';
+            }
+        };
+
         function saveHistory() {
             historyStack.push(canvas.toDataURL());
             if(historyStack.length > 50) historyStack.shift();
@@ -424,9 +456,19 @@
             item.appendChild(chip); item.appendChild(del); paletteArea.appendChild(item);
         };
 
-        document.getElementById('btn-download-png').onclick = () => {
+        document.getElementById('btn-download-png').onclick = async () => {
             const temp = document.createElement('canvas'); temp.width = temp.height = 512;
             const tctx = temp.getContext('2d'); tctx.imageSmoothingEnabled = false;
+
+            // ダウンロード時も背景を合成
+            if (bgLayer.style.display !== 'none' && bgLayer.style.backgroundImage) {
+                const bgImg = new Image();
+                const bgUrl = bgLayer.style.backgroundImage.slice(5, -2);
+                bgImg.src = bgUrl;
+                await new Promise(resolve => bgImg.onload = resolve);
+                tctx.drawImage(bgImg, 0, 0, 512, 512);
+            }
+
             tctx.drawImage(canvas, 0, 0, 512, 512);
             const link = document.createElement('a'); 
             link.download = (artNameInput.value.trim() || 'dots_art') + '.png';
@@ -456,11 +498,17 @@
 
         const tools = {pen:'btn-pen', eraser:'btn-eraser', bucket:'btn-bucket', picker:'btn-picker', move:'btn-move'};
         Object.keys(tools).forEach(k => {
-            document.getElementById(tools[k]).onclick = () => {
-                currentMode = k;
-                Object.values(tools).forEach(id => document.getElementById(id).classList.remove('active'));
-                document.getElementById(tools[k]).classList.add('active');
-            };
+            const el = document.getElementById(tools[k]);
+            if(el) {
+                el.onclick = () => {
+                    currentMode = k;
+                    Object.values(tools).forEach(id => {
+                        const target = document.getElementById(id);
+                        if(target) target.classList.remove('active');
+                    });
+                    el.classList.add('active');
+                };
+            }
         });
 
         function selectModel(src) {
@@ -470,8 +518,15 @@
             const img = new Image(); img.src = src;
             img.onload = () => mctx.drawImage(img, 0, 0, 32, 32);
         }
-        function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('active'); }
-        document.getElementById('openSidebar').onclick = () => { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('active'); };
+        function closeSidebar() { 
+            document.getElementById('sidebar').classList.remove('open'); 
+            document.getElementById('overlay').classList.remove('active'); 
+        }
+        document.getElementById('openSidebar').onclick = () => { 
+            document.getElementById('sidebar').classList.add('open'); 
+            document.getElementById('overlay').classList.add('active'); 
+        };
+        // 修正点：オーバーレイ（メニュー以外）を押したら閉じる
         document.getElementById('overlay').onclick = closeSidebar;
         document.getElementById('btn-clear').onclick = () => { if(confirm("ぜんぶ消しますか？")) { ctx.clearRect(0,0,32,32); saveHistory(); } };
 
