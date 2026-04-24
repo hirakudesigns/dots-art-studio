@@ -102,9 +102,29 @@
         .overlay.active { display: block; }
 
         .sidebar-select { width: 100%; height: 40px; border-radius: 10px; border: 2px solid #f1f2f6; padding: 0 10px; font-weight: bold; color: #57606f; margin-bottom: 5px; }
+
+        /* 追加：アップロード中の演出用スタイル */
+        #loadingOverlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(108, 92, 231, 0.85); /* 薄紫 */
+            z-index: 2000; display: none; flex-direction: column;
+            align-items: center; justify-content: center; color: white;
+        }
+        .spinner {
+            width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.3);
+            border-top: 5px solid white; border-radius: 50%;
+            animation: spin 1s linear infinite; margin-bottom: 15px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .loading-text { font-weight: bold; font-size: 1.2rem; letter-spacing: 2px; }
     </style>
 </head>
 <body>
+
+    <div id="loadingOverlay">
+        <div class="spinner"></div>
+        <div class="loading-text">アップロード中...</div>
+    </div>
 
     <div class="header-area">
         <img src="DOTS_PROJECT_logo_black.png" alt="DOTS" class="header-logo">
@@ -143,7 +163,7 @@
                 <button class="btn active" id="btn-pen"><span class="material-icons">edit</span></button>
                 <button class="btn" id="btn-eraser"><img src="erazer.png" alt="消しゴム"></button> 
                 <button class="btn" id="btn-bucket"><span class="material-icons">format_color_fill</span></button>
-                <button class="btn" id="btn-call-picker" id="btn-picker"><span class="material-icons">colorize</span></button>
+                <button class="btn" id="btn-call-picker"><span class="material-icons">colorize</span></button>
             </div>
 
             <div class="section-label">カラーパレット</div>
@@ -215,6 +235,7 @@
         const zoomRange = document.getElementById('zoomRange');
         const bgLayer = document.getElementById('bgLayer');
         const gridOverlay = document.getElementById('gridOverlay');
+        const loadingOverlay = document.getElementById('loadingOverlay');
 
         let scale = 1, offsetX = 0, offsetY = 0, isDrawing = false, isMoving = false, currentMode = 'pen';
         let startX = 0, startY = 0;
@@ -227,8 +248,6 @@
         const FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfNwyTLJ_-3FJx5oBbgzULdlWZ8TrVfyH6eHv5V4pXlAhP34Q/viewform";
 
         document.getElementById('uploadButton').onclick = async () => {
-            const btn = document.getElementById('uploadButton');
-            const originalText = btn.innerText;
             const name = artNameInput.value.trim();
 
             if (!name) {
@@ -257,8 +276,8 @@
 
             if(!confirm(`「${name}」をアップロードしてアンケートに移動しますか？`)) return;
 
-            btn.innerText = "アップロード中...";
-            btn.disabled = true;
+            // 演出の開始
+            loadingOverlay.style.display = 'flex';
 
             try {
                 const response = await fetch(GAS_ENDPOINT, {
@@ -277,6 +296,7 @@
                     try {
                         await navigator.clipboard.writeText(result.serial);
                     } catch(e) {}
+                    loadingOverlay.style.display = 'none'; // 成功時も一旦非表示
                     alert(`アップロード成功！\n管理番号「${result.serial}」をコピーしました。\n閉じるを押し、アンケートのご記入をお願いします。`);
                     const entryId_Name = "entry.46158305";   
                     const entryId_Serial = "entry.1524592109"; 
@@ -285,14 +305,13 @@
                     params.append(entryId_Serial, result.serial);
                     window.location.href = `${FORM_URL}?${params.toString()}`;
                 } else {
+                    loadingOverlay.style.display = 'none';
                     alert("エラー: " + result.message);
                 }
             } catch (error) {
+                loadingOverlay.style.display = 'none';
                 console.error("Upload Error:", error);
                 alert("通信エラーが発生しました。");
-            } finally {
-                btn.innerText = originalText;
-                btn.disabled = false;
             }
         };
 
@@ -315,13 +334,12 @@
             }
         };
 
-        // 修正点：履歴保存と同時にLocalStorageへバックアップ
         function saveHistory() {
             const dataUrl = canvas.toDataURL();
             historyStack.push(dataUrl);
             if(historyStack.length > 50) historyStack.shift();
             redoStack = [];
-            localStorage.setItem('dots_auto_save', dataUrl); // 自動保存
+            localStorage.setItem('dots_auto_save', dataUrl); 
         }
 
         document.getElementById('btn-undo').onclick = () => {
@@ -528,16 +546,11 @@
 
         window.onload = () => {
             ctx.clearRect(0,0,32,32);
-            
-            // 修正点：自動保存されていたデータがあれば復元
             const savedData = localStorage.getItem('dots_auto_save');
             if (savedData) {
                 const img = new Image();
                 img.src = savedData;
-                img.onload = () => {
-                    ctx.drawImage(img, 0, 0);
-                    saveHistory(); // 復元した状態を履歴の最初にする
-                };
+                img.onload = () => { ctx.drawImage(img, 0, 0); saveHistory(); };
             } else {
                 saveHistory();
             }
