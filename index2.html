@@ -16,22 +16,17 @@
             --save-green: #55efc4;
         }
         body { font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; background-color: var(--bg-color); margin: 0; padding: 10px; overflow-x: hidden; }
-        
-        /* ヘッダーとナビゲーション */
         .header-area { width: 100%; max-width: 500px; display: flex; justify-content: center; align-items: center; padding: 5px 0; gap: 10px; }
         .header-logo { height: 24px; width: auto; }
         h1 { margin: 0; font-size: 1rem; color: #333; font-weight: 800; }
         
-        /* ステップタブ（4つのステップに拡張） */
         .step-tabs { display: flex; width: 100%; max-width: 500px; background: #e4e7eb; border-radius: 12px; padding: 4px; margin-bottom: 10px; box-sizing: border-box; }
         .tab { flex: 1; text-align: center; padding: 8px 0; font-size: 0.7rem; font-weight: bold; color: #747d8c; border-radius: 8px; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; align-items: center; gap: 2px; }
         .tab.active { background: var(--card-bg); color: var(--primary-color); box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
         .tab-num { font-size: 0.55rem; opacity: 0.7; }
 
-        /* メインコンテナ */
         .app-container { width: 100%; max-width: 500px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
 
-        /* スマホ対応可変キャンバス（縦横比1:1正方形） */
         .canvas-area { 
             position: relative; 
             width: 100%; 
@@ -45,47 +40,28 @@
             overflow: hidden; 
         }
         .canvas-wrapper { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-        
         canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block; }
-        /* らくがき用 */
         #sketchCanvas { z-index: 2; background: transparent; }
-        /* どっと化用 */
-        #dotCanvas { z-index: 3; image-rendering: pixelated; display: none; }
-        /* 3Dプレビューコンテナ（キャンバスと同サイズで重ねる） */
-        #threeContainer { z-index: 4; position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; }
         
-        /* グリッドと背景 */
-        #gridOverlay { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; display: none;
-            background-image: linear-gradient(to right, rgba(0,0,0,0.15) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.15) 1px, transparent 1px); 
-            background-size: calc(100% / 32) calc(100% / 32); 
-        }
+        /* 表示サイズとピクセルを一致させるため、CSSで拡縮するドット表示用 */
+        #dotCanvas { z-index: 3; image-rendering: pixelated; width: 100%; height: 100%; display: none; }
+        
+        /* 精確にドットに重ねるための専用グリッドキャンバス */
+        #gridCanvas { z-index: 10; position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; }
+        
+        #threeContainer { z-index: 4; position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; }
         #bgLayer { z-index: 0; position:absolute; top:0; left:0; width:100%; height:100%; background-size: cover; background-position: center; display: none; }
 
-        /* コントロールエリア */
         .control-panel { width: 100%; background: var(--card-bg); padding: 15px; border-radius: 20px; box-sizing: border-box; display: none; flex-direction: column; gap: 12px; }
         .control-panel.active { display: flex; }
-        
         .section-label { font-size: 0.65rem; color: #a1a1a1; font-weight: bold; text-transform: uppercase; margin-bottom: -5px; }
         .row { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; align-items: center; }
-        
         .btn { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; border-radius: 10px; background: #f1f2f6; color: #57606f; }
         .btn.active { background: var(--primary-color); color: white; }
         
-        /* 魔法ボタン */
         .btn-magic { background: linear-gradient(135deg, #6c5ce7, #a29bfe); color: white; height: 55px; font-weight: 900; border-radius: 15px; border: none; cursor: pointer; width: 100%; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(108, 92, 231, 0.4); display: flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-upload { background: var(--primary-color); color: white; height: 55px; font-weight: 900; border-radius: 15px; border: none; cursor: pointer; width: 100%; font-size: 1.1rem; }
-        .btn-download-rbxm { background: #0071e3; color: white; height: 45px; font-weight: bold; border-radius: 10px; border: none; cursor: pointer; width: 100%; font-size: 1rem; margin-top: 5px; }
 
-        /* 3Dスライダー */
-        .slider-group { display: flex; align-items: center; gap: 10px; width: 100%; background: #f8f9fa; padding: 10px; border-radius: 10px; box-sizing: border-box; }
-        .slider-group label { font-size: 0.75rem; font-weight: bold; width: 70px; color: #57606f; }
-        .slider-group input { flex: 1; accent-color: var(--primary-color); }
-        .slider-val { font-size: 0.8rem; font-weight: bold; width: 30px; text-align: right; }
-
-        .palette-item { position: relative; width: 34px; height: 34px; }
-        .color-chip { width: 30px; height: 30px; border-radius: 50%; border: 2px solid #fff; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .delete-badge { position: absolute; top: -5px; right: -5px; width: 15px; height: 15px; background: var(--accent-color); color: white; border-radius: 50%; font-size: 10px; display: flex; align-items: center; justify-content: center; border: 1px solid white; }
         #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(108, 92, 231, 0.85); z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; }
         .spinner { width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.3); border-top: 5px solid white; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -95,7 +71,7 @@
 
     <div id="loadingOverlay">
         <div class="spinner"></div>
-        <div class="loading-text">アップロード中...</div>
+        <div class="loading-text">作品をアップロード中...</div>
     </div>
 
     <div class="header-area">
@@ -106,7 +82,7 @@
     <div class="step-tabs">
         <div class="tab active" id="tab-step1" onclick="switchStep(1)"><span class="tab-num">STEP 01</span>らくがき</div>
         <div class="tab" id="tab-step2" onclick="switchStep(2)"><span class="tab-num">STEP 02</span>どっと化</div>
-        <div class="tab" id="tab-step3" onclick="switchStep(3)"><span class="tab-num">STEP 03</span>立体調整</div>
+        <div class="tab" id="tab-step3" onclick="switchStep(3)"><span class="tab-num">STEP 03</span>立体プレビュー</div>
         <div class="tab" id="tab-step4" onclick="switchStep(4)"><span class="tab-num">STEP 04</span>送信</div>
     </div>
 
@@ -116,8 +92,8 @@
                 <div id="bgLayer"></div>
                 <canvas id="sketchCanvas"></canvas>
                 <canvas id="dotCanvas" width="32" height="32"></canvas>
+                <canvas id="gridCanvas"></canvas>
                 <div id="threeContainer"></div>
-                <div id="gridOverlay"></div>
             </div>
         </div>
         
@@ -147,25 +123,19 @@
                 <button class="btn" id="btn-bucket"><span class="material-icons">format_color_fill</span></button>
                 <button class="btn" id="btn-toggle-grid" style="margin-left: auto;"><span class="material-icons">grid_on</span></button>
             </div>
-
             <div class="section-label">カラーパレット</div>
             <div class="row" style="justify-content: space-between;">
                 <div id="paletteArea" class="row" style="min-height:30px; justify-content:flex-start; gap:6px;"></div>
                 <button class="btn" id="btn-save-palette" style="width:auto; padding:0 8px; font-size:0.7rem; height:34px;">色を登録</button>
             </div>
-            
             <button class="btn-magic" style="background: var(--primary-color);" onclick="goTo3DStep()">3Dボクセルにする！ <span class="material-icons">view_in_ar</span></button>
         </div>
 
         <div class="control-panel" id="panel-step3">
-            <div class="section-label">ボクセルの厚み・調整</div>
-            <div class="slider-group">
-                <label>立体的な厚み</label>
-                <input type="range" id="heightSlider" min="0.2" max="8.0" step="0.1" value="2.0">
-                <span class="slider-val" id="heightSliderVal">2.0</span>
-            </div>
-            <p style="font-size:0.75rem; color:#747d8c; text-align:center; margin: 0;">🖯 画面をスワイプして角度をグルグル回せます</p>
-            <button class="btn-magic" style="background: var(--primary-color);" onclick="switchStep(4)">これでカタチ決定！次にすすむ <span class="material-icons">arrow_forward</span></button>
+            <div class="section-label">3D立体プレビュー</div>
+            <p style="font-size:0.8rem; color:#333; text-align:center; margin: 5px 0; font-weight: bold;">存在感ばつぐんの厚み（3.0）のブロックフィギュアになりました！</p>
+            <p style="font-size:0.75rem; color:#747d8c; text-align:center; margin: 0 0 5px 0;">🖯 グルグル回して色々な角度からチェックできます</p>
+            <button class="btn-magic" style="background: var(--primary-color);" onclick="switchStep(4)">これで決定！次にすすむ <span class="material-icons">arrow_forward</span></button>
         </div>
 
         <div class="control-panel" id="panel-step4">
@@ -179,26 +149,25 @@
                 <option value="bg2.jpg">背景2</option>
             </select>
 
-            <button class="btn-upload" id="uploadButton">作品をロブロックスへ送信！</button>
-            <button class="btn-download-rbxm" onclick="downloadRbxmFile()">PC用 .rbxm ファイルとして直接保存</button>
+            <button class="btn-upload" id="uploadButton">作品をアップロード！</button>
         </div>
     </div>
 
     <script>
-        // キャンバスおよび要素の初期化
         const sCanvas = document.getElementById('sketchCanvas');
         const sCtx = sCanvas.getContext('2d');
         const dCanvas = document.getElementById('dotCanvas');
         const dCtx = dCanvas.getContext('2d');
+        const gCanvas = document.getElementById('gridCanvas');
+        const gCtx = gCanvas.getContext('2d');
+        
         const canvasArea = document.getElementById('canvasArea');
-        const gridOverlay = document.getElementById('gridOverlay');
         const bgLayer = document.getElementById('bgLayer');
         const loadingOverlay = document.getElementById('loadingOverlay');
         const artNameInput = document.getElementById('artName');
         const paletteArea = document.getElementById('paletteArea');
         const colorPicker = document.getElementById('colorPicker');
         const threeContainer = document.getElementById('threeContainer');
-        const heightSlider = document.getElementById('heightSlider');
 
         let currentStep = 1;
         let isDrawing = false;
@@ -206,8 +175,11 @@
         let dotMode = 'pen';
         let historyStack = { 1: [], 2: [] };
         let startTime = Date.now();
+        let gridActive = true;
 
-        // Three.js 関連変数
+        // 厚み（存在感の出る 3.0 で固定）
+        const VOXEL_HEIGHT = 3.0;
+
         let scene, camera, renderer, controls, voxelGroup;
         let isThreeInitialized = false;
 
@@ -216,15 +188,51 @@
 
         function initCanvasSize() {
             const rect = canvasArea.getBoundingClientRect();
+            
+            // らくがきキャンバスの物理サイズ同期
             sCanvas.width = rect.width;
             sCanvas.height = rect.height;
             sCtx.lineCap = 'round';
             sCtx.lineJoin = 'round';
-            sCtx.lineWidth = 6;
-            saveHistory(1);
+            sCtx.lineWidth = 8; // 再現度向上のため線を少し太めに調整
+
+            // グリッドキャンバスの物理サイズ同期
+            gCanvas.width = rect.width;
+            gCanvas.height = rect.height;
             
-            if (isThreeInitialized && renderer) {
-                renderer.setSize(rect.width, rect.height);
+            drawGrid(); // サイズ変更時にグリッドを再描画
+
+            if (isThreeInitialized && renderer) renderer.setSize(rect.width, rect.height);
+        }
+
+        // ズレのない精確なグリッドを描画する関数
+        function drawGrid() {
+            gCtx.clearRect(0, 0, gCanvas.width, gCanvas.height);
+            if (!gridActive) return;
+
+            const w = gCanvas.width;
+            const h = gCanvas.height;
+            const stepX = w / 32;
+            const stepY = h / 32;
+
+            for (let i = 1; i < 32; i++) {
+                gCtx.beginPath();
+                // 8マスごとに少し濃く(0.4)、それ以外は薄く(0.12)設定
+                if (i % 8 === 0) {
+                    gCtx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
+                    gCtx.lineWidth = 1.5;
+                } else {
+                    gCtx.strokeStyle = 'rgba(0, 0, 0, 0.12)';
+                    gCtx.lineWidth = 0.8;
+                }
+                
+                // 縦線
+                gCtx.moveTo(i * stepX, 0);
+                gCtx.lineTo(i * stepX, h);
+                // 横線
+                gCtx.moveTo(0, i * stepY);
+                gCtx.lineTo(w, i * stepY);
+                gCtx.stroke();
             }
         }
 
@@ -233,43 +241,36 @@
             initCanvasSize();
             dCtx.clearRect(0, 0, 32, 32);
             saveHistory(2);
+            saveHistory(1);
         });
 
-        // ==================== ステップ切り替えシステム (4仕様) ====================
         function switchStep(step) {
             currentStep = step;
             document.querySelectorAll('.tab').forEach((t, i) => { t.classList.toggle('active', i === step - 1); });
             document.querySelectorAll('.control-panel').forEach((p, i) => { p.classList.toggle('active', i === step - 1); });
-
-            // 履歴ボタンは描画ステップ(1,2)のみ表示
             document.getElementById('history-row').style.display = (step <= 2) ? 'flex' : 'none';
 
-            // レイヤーの表示・非表示を厳密に制御
             sCanvas.style.display = (step === 1) ? 'block' : 'none';
             dCanvas.style.display = (step === 2 || step === 4) ? 'block' : 'none';
             threeContainer.style.display = (step === 3) ? 'block' : 'none';
-            gridOverlay.style.display = (step === 2 && gridActive) ? 'block' : 'none';
             
-            if (step === 3) {
-                updateThreeMesh(); // 3Dモデルを最新状態に更新してレンダリング
-            }
+            // 精確グリッドの表示切り替え
+            gCanvas.style.display = (step === 2) ? 'block' : 'none';
+            if(step === 2) drawGrid();
+            
+            if (step === 3) updateThreeMesh();
         }
 
         function goTo3DStep() {
-            if (!isThreeInitialized) {
-                initThree();
-            }
+            if (!isThreeInitialized) initThree();
             switchStep(3);
         }
 
-        // ==================== 3D (Three.js) ロジック ====================
         function initThree() {
             const rect = canvasArea.getBoundingClientRect();
-            
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0xffffff); // プレビューの背景は白
+            scene.background = new THREE.Color(0xffffff);
 
-            // 平行投影カメラでドット絵の等角投影を綺麗に見せる
             const aspect = rect.width / rect.height;
             const d = 20;
             camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 1000);
@@ -290,13 +291,7 @@
 
             voxelGroup = new THREE.Group();
             scene.add(voxelGroup);
-
             isThreeInitialized = true;
-
-            heightSlider.addEventListener('input', (e) => {
-                document.getElementById('heightSliderVal').innerText = parseFloat(e.target.value).toFixed(1);
-                updateThreeMesh();
-            });
 
             function animate3D() {
                 requestAnimationFrame(animate3D);
@@ -310,126 +305,130 @@
 
         function updateThreeMesh() {
             if (!isThreeInitialized) return;
-
-            // 既存の3Dモデルパーツをすべてクリア
             while(voxelGroup.children.length > 0){
                 const obj = voxelGroup.children[0];
-                obj.geometry.dispose();
-                obj.material.dispose();
+                obj.geometry.dispose(); obj.material.dispose();
                 voxelGroup.remove(obj);
             }
 
             const imgData = dCtx.getImageData(0, 0, 32, 32).data;
-            const hScale = parseFloat(heightSlider.value);
-            const boxGeo = new THREE.BoxGeometry(1, hScale, 1);
+            const boxGeo = new THREE.BoxGeometry(1, VOXEL_HEIGHT, 1);
 
             for (let y = 0; y < 32; y++) {
                 for (let x = 0; x < 32; x++) {
                     const idx = (y * 32 + x) * 4;
-                    const r = imgData[idx];
-                    const g = imgData[idx + 1];
-                    const b = imgData[idx + 2];
-                    const a = imgData[idx + 3];
-
-                    if (a < 128) continue; // 透明ピクセルはスキップ
+                    if (imgData[idx + 3] < 128) continue;
 
                     const mat = new THREE.MeshStandardMaterial({
-                        color: new THREE.Color(`rgb(${r},${g},${b})`),
-                        roughness: 0.5
+                        color: new THREE.Color(`rgb(${imgData[idx]},${imgData[idx+1]},${imgData[idx+2]})`),
+                        roughness: 0.4
                     });
                     const mesh = new THREE.Mesh(boxGeo, mat);
-                    // 2Dの(X,Y)を、3Dの(X,Z)へマッピング
-                    mesh.position.set(x - 16, hScale / 2, y - 16);
+                    mesh.position.set(x - 16, VOXEL_HEIGHT / 2, y - 16);
                     voxelGroup.add(mesh);
                 }
             }
-            voxelGroup.position.set(0, -hScale / 2, 0); // 中心を整える
+            voxelGroup.position.set(0, -VOXEL_HEIGHT / 2, 0);
         }
 
-        // ==================== 🛠 .rbxm 生成コアロジック ====================
+        // ==================== 🛠️ 改良版：らくがき⇒ドット絵 補正アルゴリズム ====================
+        function magicConvert() {
+            // 1. 低解像度化用の一時キャンバスを作成
+            const tempCanvas = document.createElement('canvas'); 
+            tempCanvas.width = tempCanvas.height = 32;
+            const tCtx = tempCanvas.getContext('2d');
+            
+            // 縮小時のブレを抑えるため平滑化をオフ
+            tCtx.imageSmoothingEnabled = false; 
+            tCtx.drawImage(sCanvas, 0, 0, 32, 32);
+            
+            // 2. ピクセルデータを取得して「輪郭くっきり補正(エッジと透明度の閾値)」を適用
+            const imgData = tCtx.getImageData(0, 0, 32, 32);
+            const data = imgData.data;
+            
+            for (let i = 0; i < data.length; i += 4) {
+                let alpha = data[i + 3];
+                
+                // 補正ロジック：薄いかすれ線を拾い上げ、逆に余分なボケをカットする(閾値の調整)
+                if (alpha > 40) { 
+                    data[i + 3] = 255; // 存在感のあるピクセルはアルファ値をMAXにしてクッキリ化
+                    
+                    // 白色ベースの消し残り等があれば透明化（背景白対策）
+                    if(data[i] > 245 && data[i+1] > 245 && data[i+2] > 245) {
+                        data[i + 3] = 0;
+                    }
+                } else {
+                    data[i + 3] = 0;   // 完全に薄いゴミはカット
+                }
+            }
+            
+            // 3. メインのドットキャンバスへ反映
+            dCtx.clearRect(0, 0, 32, 32);
+            dCtx.putImageData(imgData, 0, 0);
+            
+            saveHistory(2); 
+            switchStep(2);
+        }
+
+        // ==================== 📦 ファイル生成（厚み 3.0 同期） ====================
         function generateRbxmXml() {
             const imgData = dCtx.getImageData(0, 0, 32, 32).data;
-            const hScale = parseFloat(heightSlider.value);
-            
-            let xml = `<roblox xmlns:xd="http://www.w3.org/2006/xd" xmlns:ns0="http://www.w3.org/2006/xd" version="4">\n`;
-            xml += `  <Item class="Folder" referent="RBX0">\n`;
-            xml += `    <Properties>\n`;
-            xml += `      <string name="Name">${artNameInput.value.trim() || "VoxelModel"}</string>\n`;
-            xml += `    </Properties>\n`;
-
+            let xml = `<roblox xmlns:xd="http://www.w3.org/2006/xd" version="4">\n  <Item class="Folder" referent="RBX0">\n    <Properties>\n      <string name="Name">${artNameInput.value.trim() || "VoxelModel"}</string>\n    </Properties>\n`;
             let partCount = 1;
-
             for (let y = 0; y < 32; y++) {
                 for (let x = 0; x < 32; x++) {
                     const idx = (y * 32 + x) * 4;
-                    const r = imgData[idx];
-                    const g = imgData[idx + 1];
-                    const b = imgData[idx + 2];
-                    const a = imgData[idx + 3];
-
-                    if (a < 128) continue;
-
-                    const px = (x - 16);
-                    const py = hScale / 2;
-                    const pz = (y - 16);
-
-                    const rf = (r / 255).toFixed(6);
-                    const gf = (g / 255).toFixed(6);
-                    const bf = (b / 255).toFixed(6);
-
-                    xml += `    <Item class="Part" referent="RBX_Part_${partCount}">\n`;
-                    xml += `      <Properties>\n`;
-                    xml += `        <string name="Name">V_${partCount}</string>\n`;
-                    xml += `        <bool name="Anchored">true</bool>\n`;
-                    xml += `        <Color3 name="Color">\n`;
-                    xml += `          <R>${rf}</R>\n`;
-                    xml += `          <G>${gf}</G>\n`;
-                    xml += `          <B>${bf}</B>\n`;
-                    xml += `        </Color3>\n`;
-                    xml += `        <CoordinateFrame name="CFrame">\n`;
-                    xml += `          <X>${px}</X>\n`;
-                    xml += `          <Y>${py}</Y>\n`;
-                    xml += `          <Z>${pz}</Z>\n`;
-                    xml += `          <R00>1</R00><R01>0</R01><R02>0</R02>\n`;
-                    xml += `          <R10>0</R10><R11>1</R11><R12>0</R12>\n`;
-                    xml += `          <R20>0</R20><R21>0</R21><R22>1</R22>\n`;
-                    xml += `        </CoordinateFrame>\n`;
-                    xml += `        <Vector3 name="size">\n`;
-                    xml += `          <X>1</X>\n`;
-                    xml += `          <Y>${hScale.toFixed(2)}</Y>\n`;
-                    xml += `          <Z>1</Z>\n`;
-                    xml += `        </Vector3>\n`;
-                    xml += `        <token name="Material">256</token>\n`;
-                    xml += `      </Properties>\n`;
-                    xml += `    </Item>\n`;
-
+                    if (imgData[idx + 3] < 128) continue;
+                    xml += `    <Item class="Part" referent="RBX_Part_${partCount}">\n      <Properties>\n        <string name="Name">V_${partCount}</string>\n        <bool name="Anchored">true</bool>\n        <Color3 name="Color"><R>${(imgData[idx]/255).toFixed(6)}</R><G>${(imgData[idx+1]/255).toFixed(6)}</G><B>${(imgData[idx+2]/255).toFixed(6)}</B></Color3>\n        <CoordinateFrame name="CFrame">\n          <X>${x - 16}</X><Y>${VOXEL_HEIGHT / 2}</Y><Z>${y - 16}</Z>\n          <R00>1</R00><R01>0</R01><R02>0</R02><R10>0</R10><R11>1</R11><R12>0</R12><R20>0</R20><R21>0</R21><R22>1</R22>\n        </CoordinateFrame>\n        <Vector3 name="size"><X>1</X><Y>${VOXEL_HEIGHT.toFixed(2)}</Y><Z>1</Z></Vector3>\n        <token name="Material">256</token>\n      </Properties>\n    </Item>\n`;
                     partCount++;
                 }
             }
-            xml += `  </Item>\n`;
-            xml += `</roblox>\n`;
-            return xml;
+            return xml + `  </Item>\n</roblox>\n`;
         }
 
-        function downloadRbxmFile() {
-            const xml = generateRbxmXml();
-            const blob = new Blob([xml], { type: "application/octet-stream" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            const fileName = artNameInput.value.trim() || "voxel_model";
-            a.href = url;
-            a.download = `${fileName}.rbxm`;
-            a.click();
-            URL.revokeObjectURL(url);
+        function generateObjText() {
+            const imgData = dCtx.getImageData(0, 0, 32, 32).data;
+            let obj = `# DOTS 3D OBJ Export\n`;
+            let vCount = 1;
+            
+            for (let y = 0; y < 32; y++) {
+                for (let x = 0; x < 32; x++) {
+                    const idx = (y * 32 + x) * 4;
+                    if (imgData[idx + 3] < 128) continue;
+
+                    const px = x - 16;
+                    const py = 0; 
+                    const pz = y - 16;
+                    const h = VOXEL_HEIGHT;
+
+                    obj += `v ${px} ${py} ${pz}\n`;
+                    obj += `v ${px+1} ${py} ${pz}\n`;
+                    obj += `v ${px+1} ${py+h} ${pz}\n`;
+                    obj += `v ${px} ${py+h} ${pz}\n`;
+                    obj += `v ${px} ${py} ${pz+1}\n`;
+                    obj += `v ${px+1} ${py} ${pz+1}\n`;
+                    obj += `v ${px+1} ${py+h} ${pz+1}\n`;
+                    obj += `v ${px} ${py+h} ${pz+1}\n`;
+
+                    obj += `f ${vCount} ${vCount+1} ${vCount+2} ${vCount+3}\n`;
+                    obj += `f ${vCount+5} ${vCount+4} ${vCount+7} ${vCount+6}\n`;
+                    obj += `f ${vCount} ${vCount+3} ${vCount+7} ${vCount+4}\n`;
+                    obj += `f ${vCount+1} ${vCount+5} ${vCount+6} ${vCount+2}\n`;
+                    obj += `f ${vCount+3} ${vCount+2} ${vCount+6} ${vCount+7}\n`;
+                    obj += `f ${vCount} ${vCount+4} ${vCount+5} ${vCount+1}\n`;
+
+                    vCount += 8;
+                }
+            }
+            return obj;
         }
 
-        // ==================== STEP 1: らくがきロジック ====================
+        // ==================== タッチ・描画イベント関係 ====================
         function getCanvasTouchPos(e) {
             const rect = canvasArea.getBoundingClientRect();
             const p = e.touches ? e.touches[0] : e;
             return { x: p.clientX - rect.left, y: p.clientY - rect.top };
         }
-
         canvasArea.addEventListener('mousedown', startDrawing);
         canvasArea.addEventListener('touchstart', startDrawing);
         window.addEventListener('mousemove', draw);
@@ -438,86 +437,53 @@
         window.addEventListener('touchend', stopDrawing);
 
         function startDrawing(e) {
-            if (currentStep > 2) return; // 3Dステップ以降は描画処理を無視
-            isDrawing = true;
-            const pos = getCanvasTouchPos(e);
-            if (currentStep === 1) {
-                sCtx.beginPath();
-                sCtx.moveTo(pos.x, pos.y);
+            if (currentStep > 2) return;
+            isDrawing = true; const pos = getCanvasTouchPos(e);
+            if (currentStep === 1) { 
+                sCtx.beginPath(); 
+                sCtx.moveTo(pos.x, pos.y); 
             } else if (currentStep === 2) {
                 handleDotAction(pos.x, pos.y);
             }
         }
-
         function draw(e) {
             if (!isDrawing || currentStep > 2) return;
             const pos = getCanvasTouchPos(e);
             if (currentStep === 1) {
                 sCtx.strokeStyle = sketchMode === 'eraser' ? '#ffffff' : document.getElementById('sketchColor').value;
                 sCtx.globalCompositeOperation = sketchMode === 'eraser' ? 'destination-out' : 'source-over';
-                sCtx.lineTo(pos.x, pos.y);
-                sCtx.stroke();
+                sCtx.lineTo(pos.x, pos.y); sCtx.stroke();
             } else if (currentStep === 2) {
                 handleDotAction(pos.x, pos.y);
             }
         }
+        function stopDrawing() { if (isDrawing && currentStep <= 2) saveHistory(currentStep); isDrawing = false; }
 
-        function stopDrawing() {
-            if (isDrawing && currentStep <= 2) {
-                saveHistory(currentStep);
-            }
-            isDrawing = false;
-        }
-
-        function magicConvert() {
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = 32;
-            tempCanvas.height = 32;
-            const tCtx = tempCanvas.getContext('2d');
-            tCtx.imageSmoothingEnabled = false;
-            tCtx.drawImage(sCanvas, 0, 0, 32, 32);
-
-            dCtx.clearRect(0, 0, 32, 32);
-            dCtx.drawImage(tempCanvas, 0, 0);
-            
-            saveHistory(2);
-            switchStep(2);
-        }
-
-        // ==================== STEP 2: ドット微調整 ====================
-        let gridActive = true;
-        document.getElementById('btn-toggle-grid').onclick = () => {
-            gridActive = !gridActive;
-            gridOverlay.style.display = gridActive ? 'block' : 'none';
+        document.getElementById('btn-toggle-grid').onclick = () => { 
+            gridActive = !gridActive; 
+            drawGrid(); 
         };
 
         function handleDotAction(clientX, clientY) {
-            const rect = dCanvas.getBoundingClientRect();
+            const rect = canvasArea.getBoundingClientRect(); // 物理サイズベースで計算
             const x = Math.floor(clientX / (rect.width / 32));
             const y = Math.floor(clientY / (rect.height / 32));
             if (x < 0 || x >= 32 || y < 0 || y >= 32) return;
-
-            if (dotMode === 'pen') {
-                dCtx.fillStyle = colorPicker.value;
-                dCtx.fillRect(x, y, 1, 1);
-            } else if (dotMode === 'eraser') {
-                dCtx.clearRect(x, y, 1, 1);
-            } else if (dotMode === 'bucket') {
-                floodFill(x, y, colorPicker.value);
-            }
+            
+            if (dotMode === 'pen') { dCtx.fillStyle = colorPicker.value; dCtx.fillRect(x, y, 1, 1); }
+            else if (dotMode === 'eraser') dCtx.clearRect(x, y, 1, 1);
+            else if (dotMode === 'bucket') floodFill(x, y, colorPicker.value);
         }
 
         function floodFill(startX, startY, fillHex) {
-            const imageData = dCtx.getImageData(0, 0, 32, 32);
-            const data = imageData.data;
+            const imageData = dCtx.getImageData(0, 0, 32, 32), data = imageData.data;
             const baseIdx = (startY * 32 + startX) * 4;
             const startR = data[baseIdx], startG = data[baseIdx + 1], startB = data[baseIdx + 2], startA = data[baseIdx + 3];
             const fillR = parseInt(fillHex.slice(1,3), 16), fillG = parseInt(fillHex.slice(3,5), 16), fillB = parseInt(fillHex.slice(5,7), 16), fillA = 255;
             if (startR === fillR && startG === fillG && startB === fillB && startA === fillA) return;
             const stack = [[startX, startY]];
             while (stack.length > 0) {
-                const [x, y] = stack.pop();
-                const idx = (y * 32 + x) * 4;
+                const [x, y] = stack.pop(); const idx = (y * 32 + x) * 4;
                 if (data[idx] === startR && data[idx + 1] === startG && data[idx + 2] === startB && data[idx + 3] === startA) {
                     data[idx] = fillR; data[idx+1] = fillG; data[idx+2] = fillB; data[idx+3] = fillA;
                     if (x > 0) stack.push([x - 1, y]); if (x < 31) stack.push([x + 1, y]);
@@ -536,20 +502,19 @@
         document.getElementById('btn-undo').onclick = () => {
             const stack = historyStack[currentStep];
             if (stack && stack.length > 1) {
-                stack.pop();
-                const prev = stack[stack.length - 1];
-                const img = new Image();
-                img.src = prev;
+                stack.pop(); const prev = stack[stack.length - 1]; const img = new Image(); img.src = prev;
                 img.onload = () => {
-                    const targetCtx = currentStep === 1 ? sCtx : dCtx;
-                    const size = currentStep === 1 ? sCanvas.width : 32;
-                    targetCtx.clearRect(0, 0, size, size);
-                    targetCtx.drawImage(img, 0, 0, size, size);
+                    if (currentStep === 1) {
+                        sCtx.clearRect(0, 0, sCanvas.width, sCanvas.height);
+                        sCtx.drawImage(img, 0, 0, sCanvas.width, sCanvas.height);
+                    } else {
+                        dCtx.clearRect(0, 0, 32, 32);
+                        dCtx.drawImage(img, 0, 0, 32, 32);
+                    }
                 };
             }
         };
 
-        // イベント類の紐付けの維持
         document.getElementById('btn-sketch-pen').onclick = () => { sketchMode = 'pen'; document.getElementById('btn-sketch-pen').classList.add('active'); document.getElementById('btn-sketch-eraser').classList.remove('active'); };
         document.getElementById('btn-sketch-eraser').onclick = () => { sketchMode = 'eraser'; document.getElementById('btn-sketch-eraser').classList.add('active'); document.getElementById('btn-sketch-pen').classList.remove('active'); };
         document.getElementById('btn-sketch-clear').onclick = () => { if(confirm("らくがきをぜんぶ消しますか？")) { sCtx.clearRect(0,0,sCanvas.width,sCanvas.height); saveHistory(1); } };
@@ -557,32 +522,24 @@
         const tools = {pen:'btn-pen', eraser:'btn-eraser', bucket:'btn-bucket'};
         Object.keys(tools).forEach(k => {
             document.getElementById(tools[k]).onclick = () => {
-                dotMode = k;
-                Object.values(tools).forEach(id => document.getElementById(id).classList.remove('active'));
-                document.getElementById(tools[k]).add('active');
+                dotMode = k; Object.values(tools).forEach(id => document.getElementById(id).classList.remove('active'));
+                document.getElementById(tools[k]).classList.add('active');
             };
         });
 
         document.getElementById('btn-save-palette').onclick = () => {
-            const col = colorPicker.value;
-            const item = document.createElement('div');
-            item.className = 'palette-item';
-            const chip = document.createElement('div');
-            chip.className = 'color-chip'; chip.style.backgroundColor = col;
+            const col = colorPicker.value; const item = document.createElement('div'); item.className = 'palette-item';
+            const chip = document.createElement('div'); chip.className = 'color-chip'; chip.style.backgroundColor = col;
             chip.onclick = () => colorPicker.value = col;
-            const del = document.createElement('div');
-            del.className = 'delete-badge'; del.innerHTML = '×';
-            del.onclick = () => item.remove();
+            const del = document.createElement('div'); del.className = 'delete-badge'; del.innerHTML = '×'; del.onclick = () => item.remove();
             item.appendChild(chip); item.appendChild(del); paletteArea.appendChild(item);
         };
 
         document.getElementById('bgSelect').onchange = (e) => {
-            const val = e.target.value;
-            bgLayer.style.backgroundImage = val ? `url(${val})` : '';
-            bgLayer.style.display = val ? 'block' : 'none';
+            const val = e.target.value; bgLayer.style.backgroundImage = val ? `url(${val})` : ''; bgLayer.style.display = val ? 'block' : 'none';
         };
 
-        // ==================== STEP 4: アップロード・送信処理 ====================
+        // ==================== 送信処理 ====================
         document.getElementById('uploadButton').onclick = async () => {
             const name = artNameInput.value.trim();
             if (!name) { alert("作品名を入力してください。"); artNameInput.focus(); return; }
@@ -594,30 +551,30 @@
             uctx.imageSmoothingEnabled = false; 
 
             if (bgLayer.style.display !== 'none' && bgLayer.style.backgroundImage) {
-                const bgImg = new Image();
-                bgImg.src = bgLayer.style.backgroundImage.slice(5, -2);
+                const bgImg = new Image(); bgImg.src = bgLayer.style.backgroundImage.slice(5, -2);
                 await new Promise(resolve => bgImg.onload = resolve);
                 uctx.drawImage(bgImg, 0, 0, 512, 512);
             }
-
             uctx.drawImage(dCanvas, 0, 0, 512, 512);
+            
             const base64Data = uploadCanvas.toDataURL('image/png').split(',')[1];
-            const hScale = parseFloat(heightSlider.value);
+            const rbxmData = generateRbxmXml();
+            const objData = generateObjText();
 
             if(!confirm(`「${name}」をアップロードしてアンケートに移動しますか？`)) return;
 
             loadingOverlay.style.display = 'flex';
 
             try {
-                // 送信データに「voxel_height」を追加。Robloxサーバー側で立体高さを同期可能にするための仕組み化
                 const response = await fetch(GAS_ENDPOINT, {
                     method: "POST",
                     body: JSON.stringify({
-                        image: base64Data, 
+                        image: base64Data,
+                        rbxm: rbxmData,
+                        obj: objData,
                         name: name, 
-                        location: "WEB_MAGIC_3D", 
-                        duration: durationSeconds,
-                        voxel_height: hScale
+                        location: "WEB_MAGIC_3D_MULTIOUT", 
+                        duration: durationSeconds
                     })
                 });
                 const result = await response.json();
