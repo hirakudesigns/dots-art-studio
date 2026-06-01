@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DOTS ART STUDIO - Magic Editor 3D</title>
+    <title>DOTS ART STUDIO - Magic Editor 3D & Game</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/controls/OrbitControls.js"></script>
@@ -20,7 +20,7 @@
         .header-logo { height: 24px; width: auto; }
         h1 { margin: 0; font-size: 1rem; color: #333; font-weight: 800; }
         
-        .step-tabs { display: flex; width: 100%; max-width: 500px; background: #e4e7eb; border-radius: 12px; padding: 4px; margin-bottom: 10px; box-sizing: border-box; z-index: 100; }
+        .step-tabs { display: flex; width: 100%; max-width: 500px; background: #e4e7eb; border-radius: 12px; padding: 4px; margin-bottom: 10px; box-sizing: border-box; }
         .tab { flex: 1; text-align: center; padding: 8px 0; font-size: 0.7rem; font-weight: bold; color: #747d8c; border-radius: 8px; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; align-items: center; gap: 2px; }
         .tab.active { background: var(--card-bg); color: var(--primary-color); box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
         .tab-num { font-size: 0.55rem; opacity: 0.7; }
@@ -46,7 +46,11 @@
         #gridCanvas { z-index: 10; position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; }
         
         #threeContainer { z-index: 4; position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; }
-        #bgLayer { z-index: 0; position:absolute; top:0; left:0; width:100%; height:100%; background-size: cover; background-position: center; display: none; }
+        #bgLayer { z-index: 1; position:absolute; top:0; left:0; width:100%; height:100%; display: none; overflow: hidden; pointer-events: none; }
+        #bgVideo { width: 100%; height: 100%; object-fit: cover; }
+
+        #gameContainer { z-index: 20; position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; background: #222; }
+        #gameCanvas { width: 100%; height: 100%; background: #111; }
 
         .control-panel { width: 100%; background: var(--card-bg); padding: 15px; border-radius: 20px; box-sizing: border-box; display: none; flex-direction: column; gap: 12px; }
         .control-panel.active { display: flex; }
@@ -87,11 +91,15 @@
     <div class="app-container">
         <div class="canvas-area" id="canvasArea">
             <div class="canvas-wrapper">
-                <div id="bgLayer"></div>
+                <div id="bgLayer"><video id="bgVideo" autoplay playsinline muted></video></div>
                 <canvas id="sketchCanvas"></canvas>
                 <canvas id="dotCanvas" width="32" height="32"></canvas>
                 <canvas id="gridCanvas"></canvas>
                 <div id="threeContainer"></div>
+                
+                <div id="gameContainer">
+                    <canvas id="gameCanvas"></canvas>
+                </div>
             </div>
         </div>
         
@@ -101,16 +109,21 @@
         </div>
 
         <div class="control-panel active" id="panel-step1">
-            <div class="section-label">らくがきツール</div>
+            <div class="section-label">らくがき・スキャンツール</div>
             <div class="row">
                 <input type="color" id="sketchColor" value="#000000" style="width:40px; height:40px; border:none; background:none; cursor:pointer;">
                 <button class="btn active" id="btn-sketch-pen"><span class="material-icons">edit</span></button>
                 <button class="btn" id="btn-sketch-eraser"><img src="eraser.png" alt="消しゴム"></button>
                 <button class="btn" id="btn-sketch-bucket"><span class="material-icons">format_color_fill</span></button>
                 <button class="btn" id="btn-sketch-picker"><span class="material-icons">colorize</span></button>
+                
+                <button class="btn" id="btn-sketch-camera" style="background:#e3f2fd; color:#1e88e5; font-size:0.75rem; width:auto; padding:0 8px; gap:4px;">
+                    <span class="material-icons">photo_camera</span><span id="camera-btn-text">かみの絵をスキャン</span>
+                </button>
+                
                 <button class="btn" id="btn-sketch-clear" style="color:var(--accent-color); margin-left: auto;"><span class="material-icons">delete_outline</span></button>
             </div>
-            <p style="font-size:0.75rem; color:#747d8c; text-align:center; margin: 5px 0;">まずは指やペンで自由に落書きを描いてみよう！</p>
+            <p style="font-size:0.75rem; color:#747d8c; text-align:center; margin: 5px 0;">画面に描くか、カメラで紙の絵をパシャッと写してみよう！</p>
             <button class="btn-magic" onclick="magicConvert()"><span class="material-icons">auto_awesome</span> ドット絵に変身させる！</button>
         </div>
 
@@ -143,14 +156,22 @@
             <div class="section-label">作品の名前</div>
             <input type="text" id="artName" placeholder="作品の名前を入力..." style="width:100%; height:45px; border-radius:10px; border:2px solid #ddd; padding:0 10px; box-sizing:border-box;">
 
-            <div class="section-label">背景を選ぶ</div>
+            <div class="section-label">完成背景デザイン</div>
             <select id="bgSelect" class="sidebar-select" style="width: 100%; height: 40px; border-radius: 10px; border: 2px solid #f1f2f6; padding: 0 10px; font-weight: bold; color: #57606f;">
                 <option value="">背景なし（透明）</option>
-                <option value="bg1.jpg">背景1</option>
-                <option value="bg2.jpg">背景2</option>
+                <option value="bg1.jpg">背景デザイン1</option>
+                <option value="bg2.jpg">背景デザイン2</option>
             </select>
 
             <button class="btn-upload" id="uploadButton">作品をアップロード！</button>
+        </div>
+
+        <div class="control-panel" id="panel-game">
+            <div class="section-label">特典ゲーム：DOTS ブロック崩し</div>
+            <p style="font-size:0.8rem; color:#333; text-align:center; margin: 5px 0; font-weight: bold;">あなたが作ったドット絵がブロックステージになりました！</p>
+            <div class="row" style="justify-content:space-around;">
+                <button class="btn-magic" style="background:#20bf6b; height:44px; font-size:0.9rem;" onclick="startGame()">ゲームスタート</button>
+            </div>
         </div>
     </div>
 
@@ -164,12 +185,15 @@
         
         const canvasArea = document.getElementById('canvasArea');
         const bgLayer = document.getElementById('bgLayer');
+        const bgVideo = document.getElementById('bgVideo');
         const loadingOverlay = document.getElementById('loadingOverlay');
         const artNameInput = document.getElementById('artName');
         const paletteArea = document.getElementById('paletteArea');
         const colorPicker = document.getElementById('colorPicker');
         const sketchColor = document.getElementById('sketchColor');
         const threeContainer = document.getElementById('threeContainer');
+        const gameContainer = document.getElementById('gameContainer');
+        const gameCanvas = document.getElementById('gameCanvas');
 
         let currentStep = 1;
         let isDrawing = false;
@@ -178,6 +202,9 @@
         let historyStack = { 1: [], 2: [] };
         let startTime = Date.now();
         let gridActive = true;
+        
+        let isCameraActive = false;
+        let videoStream = null;
         
         let lastCanvasWidth = 0;
         let lastCanvasHeight = 0;
@@ -232,7 +259,6 @@
             const h = gCanvas.height;
             const stepX = w / 32;
             const stepY = h / 32;
-
             gCtx.lineWidth = 0.8;
 
             for (let i = 1; i < 32; i++) {
@@ -242,12 +268,64 @@
                 } else {
                     gCtx.strokeStyle = 'rgba(0, 0, 0, 0.12)';
                 }
-                
                 gCtx.moveTo(i * stepX, 0); gCtx.lineTo(i * stepX, h);
                 gCtx.moveTo(0, i * stepY); gCtx.lineTo(w, i * stepY);
                 gCtx.stroke();
             }
         }
+
+        // ==================== 📷 STEP1専用：カメラ・スキャンロジック ====================
+        async function toggleCamera() {
+            if (!isCameraActive) {
+                // カメラを起動して背景ストリーミング開始
+                try {
+                    const constraints = {
+                        video: { facingMode: "environment", width: { ideal: 640 }, height: { ideal: 640 } },
+                        audio: false
+                    };
+                    videoStream = await navigator.mediaDevices.getUserMedia(constraints);
+                    bgVideo.srcObject = videoStream;
+                    bgVideo.style.display = "block";
+                    bgLayer.style.backgroundImage = "none";
+                    bgLayer.style.display = "block";
+                    
+                    isCameraActive = true;
+                    document.getElementById('btn-sketch-camera').style.background = '#ff7675';
+                    document.getElementById('btn-sketch-camera').style.color = '#fff';
+                    document.getElementById('camera-btn-text').innerText = "パシャッ！（しゃったー）";
+                } catch (err) {
+                    console.error("Camera failed:", err);
+                    alert("カメラの起動に失敗しました。カメラのアクセス権限を確認してください。");
+                }
+            } else {
+                // シャッターを切り、現在の映像フレームをキャンバスに写し取って固定する
+                try {
+                    sCtx.globalCompositeOperation = 'source-over';
+                    sCtx.drawImage(bgVideo, 0, 0, sCanvas.width, sCanvas.height);
+                    saveHistory(1);
+                    autoSaveToStorage();
+                } catch(e) { console.error("Capture failed:", e); }
+
+                stopCameraMode();
+            }
+        }
+
+        function stopCameraMode() {
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+            }
+            bgVideo.srcObject = null;
+            bgVideo.style.display = "none";
+            bgLayer.style.display = "none";
+            
+            isCameraActive = false;
+            document.getElementById('btn-sketch-camera').style.background = '#e3f2fd';
+            document.getElementById('btn-sketch-camera').style.color = '#1e88e5';
+            document.getElementById('camera-btn-text').innerText = "かみの絵をスキャン";
+        }
+
+        document.getElementById('btn-sketch-camera').onclick = toggleCamera;
 
         function autoSaveToStorage() {
             try {
@@ -295,6 +373,11 @@
             gCanvas.style.display = (step === 2) ? 'block' : 'none';
             if(step === 2) drawGrid();
             if (step === 3) updateThreeMesh();
+
+            // STEP1から離れる時はカメラを自動で安全にクローズ
+            if (step !== 1 && isCameraActive) {
+                stopCameraMode();
+            }
         }
 
         function goTo3DStep() {
@@ -320,7 +403,6 @@
             renderer.setSize(rect.width, rect.height);
             threeContainer.appendChild(renderer.domElement);
 
-            // OrbitControlsが正常に初期化できるように変更
             controls = new THREE.OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
             controls.dampingFactor = 0.1;
@@ -344,16 +426,13 @@
             animate3D();
         }
 
-        // カメラのアスペクト比をコンテナの現在の実サイズに合わせる補正関数
         function updateCameraAspect() {
             if (!camera || !canvasArea) return;
             const rect = canvasArea.getBoundingClientRect();
             const aspect = rect.width / rect.height;
             const d = 20;
-            camera.left = -d * aspect;
-            camera.right = d * aspect;
-            camera.top = d;
-            camera.bottom = -d;
+            camera.left = -d * aspect; camera.right = d * aspect;
+            camera.top = d; camera.bottom = -d;
             camera.updateProjectionMatrix();
         }
 
@@ -439,7 +518,7 @@
                     if (imgData[idx + 3] < 128) continue;
                     const px = x - 16, py = 0, pz = y - 16, h = VOXEL_HEIGHT;
                     obj += `v ${px} ${py} ${pz}\nv ${px+1} ${py} ${pz}\nv ${px+1} ${py+h} ${pz}\nv ${px} ${py+h} ${pz}\n`;
-                    obj += `v ${px} ${py} ${pz+1}\nv ${px+1} ${py} ${pz+1}\nv ${px+1} ${py+h} ${pz+1}\nv ${px} ${py+h} ${pz+1}\n`;
+                    obj += `v ${px} ${py} ${pz+1}\nv ${px+1} ${py+h} ${pz+1}\nv ${px+1} ${py+h} ${pz+1}\nv ${px} ${py+h} ${pz+1}\n`;
                     obj += `f ${vCount} ${vCount+1} ${vCount+2} ${vCount+3}\nf ${vCount+5} ${vCount+4} ${vCount+7} ${vCount+6}\n`;
                     obj += `f ${vCount} ${vCount+3} ${vCount+7} ${vCount+4}\nf ${vCount+1} ${vCount+5} ${vCount+6} ${vCount+2}\n`;
                     obj += `f ${vCount+3} ${vCount+2} ${vCount+6} ${vCount+7}\nf ${vCount} ${vCount+4} ${vCount+5} ${vCount+1}\n`;
@@ -488,9 +567,7 @@
         window.addEventListener('touchend', stopDrawing);
 
         function startDrawing(e) {
-            if (currentStep > 2) return; // STEP3以降はお絵かき処理を完全にスルー（OrbitControlsを邪魔しない）
-            
-            // キャンバス内での描画時のみスクロールをガード
+            if (currentStep > 2) return;
             if (e.touches) e.preventDefault(); 
             isDrawing = true; 
             const pos = getCanvasTouchPos(e);
@@ -594,24 +671,30 @@
         };
 
         artNameInput.oninput = autoSaveToStorage;
+
         document.getElementById('bgSelect').onchange = (e) => {
             const val = e.target.value; bgLayer.style.backgroundImage = val ? `url(${val})` : ''; bgLayer.style.display = val ? 'block' : 'none';
         };
 
+        // ==================== 🏹 アップロード・送信処理 ====================
         document.getElementById('uploadButton').onclick = async () => {
             const name = artNameInput.value.trim();
             if (!name) { alert("作品名を入力してください。"); artNameInput.focus(); return; }
 
             const durationSeconds = Math.floor((Date.now() - startTime) / 1000);
+            
             const uploadCanvas = document.createElement('canvas');
             uploadCanvas.width = uploadCanvas.height = 512;
             const uctx = uploadCanvas.getContext('2d');
             uctx.imageSmoothingEnabled = false; 
 
-            if (bgLayer.style.display !== 'none' && bgLayer.style.backgroundImage) {
-                const bgImg = new Image(); bgImg.src = bgLayer.style.backgroundImage.slice(5, -2);
-                await new Promise(resolve => bgImg.onload = resolve);
-                uctx.drawImage(bgImg, 0, 0, 512, 512);
+            const bgSelect = document.getElementById('bgSelect').value;
+            if (bgSelect) {
+                const bgImg = new Image(); bgImg.src = bgSelect;
+                try {
+                    await new Promise(resolve => { bgImg.onload = resolve; bgImg.onerror = resolve; });
+                    uctx.drawImage(bgImg, 0, 0, 512, 512);
+                } catch(e){}
             }
             uctx.drawImage(dCanvas, 0, 0, 512, 512);
             
@@ -619,7 +702,7 @@
             const rbxmData = generateRbxmXml();
             const objData = generateObjText();
 
-            if(!confirm(`「${name}」をアップロードしてアンケートに移動しますか？`)) return;
+            if(!confirm(`「${name}」をアップロードして、アンケートおよび限定特典ゲームをアンロックしますか？`)) return;
 
             loadingOverlay.style.display = 'flex';
 
@@ -644,12 +727,16 @@
 
                     try { await navigator.clipboard.writeText(result.serial); } catch(e) {}
                     loadingOverlay.style.display = 'none';
-                    alert(`アップロード成功！\n管理番号「${result.serial}」をコピーしました。\nアンケートのご記入をお願いします。`);
                     
+                    alert(`アップロード成功！\n管理番号「${result.serial}」をコピーしました。\nOKを押すと、限定ブロック崩しゲームが解放されます！`);
+                    
+                    unlockGameMode();
+
                     const params = new URLSearchParams();
                     params.append("entry.46158305", name);
                     params.append("entry.1524592109", result.serial);
-                    window.location.href = `${FORM_URL}?${params.toString()}`;
+                    window.open(`${FORM_URL}?${params.toString()}`, '_blank');
+                    
                 } else {
                     loadingOverlay.style.display = 'none';
                     alert("エラー: " + result.message);
@@ -659,6 +746,162 @@
                 alert("通信エラーが発生しました。");
             }
         };
+
+        // ==================== 🎮 特典：ブロック崩しゲームロジック ====================
+        let gameBlocks = [];
+        let paddle = { x: 0, y: 0, width: 60, height: 10 };
+        let ball = { x: 0, y: 0, vx: 3, vy: -3, radius: 6 };
+        let gameAnimFrame = null;
+        let isGameRunning = false;
+
+        function unlockGameMode() {
+            currentStep = 5;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.control-panel').forEach(p => p.classList.remove('active'));
+            document.getElementById('panel-game').classList.add('active');
+            
+            sCanvas.style.display = 'none';
+            dCanvas.style.display = 'none';
+            threeContainer.style.display = 'none';
+            gCanvas.style.display = 'none';
+            bgLayer.style.display = 'none';
+            
+            gameContainer.style.display = 'block';
+            resizeGameCanvas();
+            initGameStage();
+        }
+
+        function resizeGameCanvas() {
+            const rect = canvasArea.getBoundingClientRect();
+            gameCanvas.width = rect.width;
+            gameCanvas.height = rect.height;
+        }
+
+        function initGameStage() {
+            gameBlocks = [];
+            const imgData = dCtx.getImageData(0, 0, 32, 32).data;
+            const bw = gameCanvas.width / 32;
+            const bh = (gameCanvas.height * 0.5) / 32;
+
+            for (let y = 0; y < 32; y++) {
+                for (let x = 0; x < 32; x++) {
+                    const idx = (y * 32 + x) * 4;
+                    if (imgData[idx + 3] >= 128) {
+                        gameBlocks.push({
+                            x: x * bw,
+                            y: y * bh,
+                            w: bw - 0.5,
+                            h: bh - 0.5,
+                            color: `rgb(${imgData[idx]},${imgData[idx+1]},${imgData[idx+2]})`
+                        });
+                    }
+                }
+            }
+
+            paddle.width = gameCanvas.width * 0.2;
+            paddle.x = (gameCanvas.width - paddle.width) / 2;
+            paddle.y = gameCanvas.height - 25;
+
+            ball.x = gameCanvas.width / 2;
+            ball.y = paddle.y - 15;
+            ball.vx = 2.5 * (Math.random() > 0.5 ? 1 : -1);
+            ball.vy = -3.5;
+
+            drawGameStatic();
+        }
+
+        function drawGameStatic() {
+            const gCtx = gameCanvas.getContext('2d');
+            gCtx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
+
+            gameBlocks.forEach(b => {
+                gCtx.fillStyle = b.color;
+                gCtx.fillRect(b.x, b.y, b.w, b.h);
+            });
+
+            gCtx.fillStyle = varColor('--primary-color', '#6c5ce7');
+            gCtx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
+
+            gCtx.beginPath();
+            gCtx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            gCtx.fillStyle = '#ff7675';
+            gCtx.fill();
+            gCtx.closePath();
+        }
+
+        function varColor(varName, fallback) {
+            return getComputedStyle(document.documentElement).getPropertyValue(varName).trim() || fallback;
+        }
+
+        function startGame() {
+            if (isGameRunning) return;
+            isGameRunning = true;
+            initGameStage();
+            gameLoop();
+        }
+
+        function gameLoop() {
+            if (!isGameRunning) return;
+            updateGameObjects();
+            drawGameStatic();
+            gameAnimFrame = requestAnimationFrame(gameLoop);
+        }
+
+        function updateGameObjects() {
+            ball.x += ball.vx;
+            ball.y += ball.vy;
+
+            if (ball.x - ball.radius < 0 || ball.x + ball.radius > gameCanvas.width) ball.vx *= -1;
+            if (ball.y - ball.radius < 0) ball.vy *= -1;
+
+            if (ball.y + ball.radius >= paddle.y && ball.y - ball.radius <= paddle.y + paddle.height) {
+                if (ball.x >= paddle.x && ball.x <= paddle.x + paddle.width) {
+                    ball.vy = -Math.abs(ball.vy);
+                    let hitPos = (ball.x - paddle.x) / paddle.width;
+                    ball.vx = 6 * (hitPos - 0.5);
+                }
+            }
+
+            for (let i = gameBlocks.length - 1; i >= 0; i--) {
+                let b = gameBlocks[i];
+                if (ball.x + ball.radius > b.x && ball.x - ball.radius < b.x + b.w &&
+                    ball.y + ball.radius > b.y && ball.y - ball.radius < b.y + b.h) {
+                    ball.vy *= -1;
+                    gameBlocks.splice(i, 1);
+                    break;
+                }
+            }
+
+            if (ball.y > gameCanvas.height) {
+                isGameRunning = false;
+                cancelAnimationFrame(gameAnimFrame);
+                alert("ゲームオーバー！もう一回チャレンジしよう！");
+                initGameStage();
+            }
+
+            if (gameBlocks.length === 0) {
+                isGameRunning = false;
+                cancelAnimationFrame(gameAnimFrame);
+                alert("すごーい！ステージクリア！おめでとう！🎉");
+            }
+        }
+
+        function movePaddle(clientX) {
+            const rect = gameCanvas.getBoundingClientRect();
+            let targetX = clientX - rect.left - paddle.width / 2;
+            if (targetX < 0) targetX = 0;
+            if (targetX > gameCanvas.width - paddle.width) targetX = gameCanvas.width - paddle.width;
+            paddle.x = targetX;
+        }
+
+        gameCanvas.addEventListener('mousemove', (e) => { if(isGameRunning) movePaddle(e.clientX); });
+        gameCanvas.addEventListener('touchmove', (e) => { 
+            if(isGameRunning && e.touches.length > 0) {
+                e.preventDefault();
+                movePaddle(e.touches[0].clientX);
+            }
+        }, { passive: false });
+
     </script>
 </body>
 </html>
