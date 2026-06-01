@@ -53,7 +53,25 @@
         #videoPreview { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 5; display: none; }
         #cameraOverlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 6; display: none; pointer-events: none; box-sizing: border-box; border: 30px solid rgba(0,0,0,0.4); }
         .camera-guide { width: 100%; height: 100%; border: 3px dashed rgba(255,255,255,0.8); box-sizing: border-box; position: relative; }
+        
+        /* ゲーム操作用のコントローラー（長押しメニューや選択を完全防止） */
         #gameControls { position: absolute; bottom: 10px; left: 0; width: 100%; z-index: 12; display: none; justify-content: center; gap: 40px; pointer-events: auto; }
+        .game-pad-btn { 
+            width: 75px; 
+            height: 55px; 
+            background: rgba(108,92,231,0.85); 
+            color: white; 
+            border-radius: 14px; 
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+        }
 
         .control-panel { width: 100%; background: var(--card-bg); padding: 15px; border-radius: 20px; box-sizing: border-box; display: none; flex-direction: column; gap: 12px; }
         .control-panel.active { display: flex; }
@@ -107,8 +125,8 @@
                 <div id="threeContainer"></div>
                 
                 <div id="gameControls">
-                    <button class="btn" id="btn-game-left" style="width:70px; height:50px; background:rgba(108,92,231,0.7); color:white; border-radius:12px;"><span class="material-icons" style="font-size:2rem;">arrow_back</span></button>
-                    <button class="btn" id="btn-game-right" style="width:70px; height:50px; background:rgba(108,92,231,0.7); color:white; border-radius:12px;"><span class="material-icons" style="font-size:2rem;">arrow_forward</span></button>
+                    <button class="game-pad-btn" id="btn-game-left"><span class="material-icons" style="font-size:2rem;">arrow_back</span></button>
+                    <button class="game-pad-btn" id="btn-game-right"><span class="material-icons" style="font-size:2rem;">arrow_forward</span></button>
                 </div>
             </div>
         </div>
@@ -243,7 +261,9 @@
         let scene, camera, renderer, controls, voxelGroup;
         let isThreeInitialized = false;
         let paddle3D = null, ball3D = null, blocks3D = [];
-        let ballPhysics = { x: 0, z: 5, dx: 0.15, dz: -0.18, radius: 0.6, active: false };
+        
+        // 初期位置を画面中央ではなく、画面上部（Z = -12）に変更
+        let ballPhysics = { x: 0, z: -12, dx: 0.15, dz: 0.18, radius: 0.6, active: false };
         let moveLeft = false, moveRight = false;
         let gameAnimationId = null;
         const stageWidth = 24, stageDepth = 28;
@@ -331,6 +351,7 @@
             saveHistory(2); saveHistory(1);
             loadFromStorageBackup();
             setupCameraAndZoomButtons();
+            setupGamePadControls();
         });
 
         function applyGameUnlockUI() {
@@ -415,7 +436,6 @@
 
             shutter.onclick = () => {
                 try {
-                    // 比率を保って32x32のドットキャンバスの中央へマッピング描画
                     dCtx.clearRect(0, 0, 32, 32);
                     dCtx.drawImage(videoPreview, 0, 0, videoPreview.videoWidth, videoPreview.videoHeight, 0, 0, 32, 32);
                     
@@ -423,7 +443,6 @@
                     let d = imgData.data;
                     for(let i=0; i<d.length; i+=4) {
                         let v = (d[i] + d[i+1] + d[i+2]) / 3;
-                        // 簡易的な二値化(紙の白色を透過させる)
                         if(v > 140) { d[i+3] = 0; }
                         else { d[i+3] = 255; }
                     }
@@ -441,6 +460,29 @@
             document.getElementById('btn-zoom-in').onclick = () => { zoomLevel = Math.min(4.0, zoomLevel + 0.3); applyTransform(); };
             document.getElementById('btn-zoom-out').onclick = () => { zoomLevel = Math.max(1.0, zoomLevel - 0.3); if(zoomLevel === 1) { panX = 0; panY = 0; } applyTransform(); };
             document.getElementById('btn-pan').onclick = () => setDotMode(dotMode === 'pan' ? 'pen' : 'pan');
+        }
+
+        /* 左右ボタンの長押しメニュー表示やハイライト選択を完全防止する実装 */
+        function setupGamePadControls() {
+            const leftBtn = document.getElementById('btn-game-left');
+            const rightBtn = document.getElementById('btn-game-right');
+
+            const preventBugs = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            };
+
+            // 左ボタン
+            leftBtn.addEventListener('pointerdown', (e) => { preventBugs(e); moveLeft = true; });
+            leftBtn.addEventListener('pointerup', (e) => { preventBugs(e); moveLeft = false; });
+            leftBtn.addEventListener('pointercancel', (e) => { preventBugs(e); moveLeft = false; });
+            leftBtn.addEventListener('contextmenu', preventBugs);
+
+            // 右ボタン
+            rightBtn.addEventListener('pointerdown', (e) => { preventBugs(e); moveRight = true; });
+            rightBtn.addEventListener('pointerup', (e) => { preventBugs(e); moveRight = false; });
+            rightBtn.addEventListener('pointercancel', (e) => { preventBugs(e); moveRight = false; });
+            rightBtn.addEventListener('contextmenu', preventBugs);
         }
 
         function setDotMode(mode) {
@@ -549,11 +591,11 @@
             paddle3D.position.set(0, 0.5, 13);
             scene.add(paddle3D);
 
-            // ボールのクリーン配置
+            // ボールのクリーン配置 (初期位置を上部 Z=-12 へマッピング)
             const ballGeo = new THREE.SphereGeometry(ballPhysics.radius, 16, 16);
             const ballMat = new THREE.MeshStandardMaterial({ color: 0xff7675 });
             ball3D = new THREE.Mesh(ballGeo, ballMat);
-            ball3D.position.set(0, 0.5, 5);
+            ball3D.position.set(ballPhysics.x, 0.5, ballPhysics.z);
             scene.add(ball3D);
 
             blocks3D = [];
@@ -576,12 +618,15 @@
             document.getElementById('gameControls').style.display = 'flex';
 
             document.getElementById('gameStatusLabel').innerText = "自分が創り出した3Dの世界を攻略しよう！";
-            build3DGameField();
-
-            ballPhysics.x = 0; ballPhysics.z = 4;
-            ballPhysics.dx = 0.16; ballPhysics.dz = -0.18;
-            ballPhysics.active = true;
             
+            // 物理側の初期値を画面上部にセット
+            ballPhysics.x = 0; 
+            ballPhysics.z = -12;
+            ballPhysics.dx = 0.16; 
+            ballPhysics.dz = 0.18; // 下（パドル側）に向かって進む
+            ballPhysics.active = true;
+
+            build3DGameField();
             runGamePhysicsLoop();
         }
 
@@ -647,12 +692,13 @@
             document.getElementById('btn-retry-game').style.display = 'none';
             document.getElementById('gameStatusLabel').innerText = "ステージをリセットして再スタートします！";
 
-            build3DGameField();
-
-            ballPhysics.x = 0; ballPhysics.z = 4;
-            ballPhysics.dx = 0.16; ballPhysics.dz = -0.18;
+            ballPhysics.x = 0; 
+            ballPhysics.z = -12;
+            ballPhysics.dx = 0.16; 
+            ballPhysics.dz = 0.18;
             ballPhysics.active = true;
 
+            build3DGameField();
             runGamePhysicsLoop();
         }
 
@@ -904,11 +950,6 @@
             const val = e.target.value; bgLayer.style.backgroundImage = val ? `url(${val})` : ''; bgLayer.style.display = val ? 'block' : 'none';
         };
 
-        document.getElementById('btn-game-left').onpointerdown = () => moveLeft = true;
-        document.getElementById('btn-game-left').onpointerup = () => moveLeft = false;
-        document.getElementById('btn-game-right').onpointerdown = () => moveRight = true;
-        document.getElementById('btn-game-right').onpointerup = () => moveRight = false;
-
         document.getElementById('uploadButton').onclick = async () => {
             const name = artNameInput.value.trim();
             if (!name) { alert("作品名を入力してください。"); artNameInput.focus(); return; }
@@ -927,7 +968,7 @@
             const base64Data = uploadCanvas.toDataURL('image/png').split(',')[1];
             const rbxmData = generateRbxmXml(); const objData = generateObjText();
 
-            if(!confirm(`「${name}」をアップロードしてアンケートに移動しますか？\n（回答すると、STEP 03の専用ゲームがアンロックされます！）`)) return;
+            if(!confirm(`「${name}」をアップロードしてアンケートに移動しますか？\n（回答完了後、STEP 03の専用ゲームがそのまま遊べます！）`)) return;
 
             loadingOverlay.style.display = 'flex';
 
@@ -943,19 +984,19 @@
 
                 if(result.status === "success") {
                     isGameUnlocked = true;
-                    autoSaveToStorage(); // アンロックと作品データを保持
+                    autoSaveToStorage(); 
 
                     try { await navigator.clipboard.writeText(result.serial); } catch(e) {}
                     loadingOverlay.style.display = 'none';
                     
-                    alert(`アップロード成功！\n管理番号「${result.serial}」をコピーしました。\nOKを押すとアンケートページが開きます。回答後にSTEP03に戻って遊んでね！`);
+                    alert(`アップロード成功！\n管理番号「${result.serial}」をコピーしました。\nOKを押すとこのタブのままアンケートページを開きます。回答後にブラウザの「戻る」で戻ってゲームを遊んでね！`);
                     
                     const params = new URLSearchParams();
                     params.append("entry.46158305", name);
                     params.append("entry.1524592109", result.serial);
                     
-                    window.open(`${FORM_URL}?${params.toString()}`, '_blank');
-                    switchStep(3);
+                    // ポップアップブロックを100%回避するため同一タブで遷移
+                    window.location.href = `${FORM_URL}?${params.toString()}`;
                 } else {
                     loadingOverlay.style.display = 'none'; alert("エラー: " + result.message);
                 }
