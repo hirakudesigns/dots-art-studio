@@ -40,7 +40,23 @@
             background: #fff; 
             touch-action: none; 
             overflow: hidden; 
+            transition: max-width 0.3s ease;
         }
+        /* ゲーム全画面プレイ用のスタイルクラス */
+        .canvas-area.game-fullscreen {
+            max-width: 100vw;
+            width: 100vw;
+            height: calc(100vh - 120px); /* ボタンエリアを考慮した高さ */
+            aspect-ratio: auto;
+            border: none;
+            border-radius: 0;
+            box-shadow: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+        }
+
         .canvas-wrapper { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
         canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block; }
         #sketchCanvas { z-index: 2; background: transparent; }
@@ -54,23 +70,44 @@
         #cameraOverlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 6; display: none; pointer-events: none; box-sizing: border-box; border: 30px solid rgba(0,0,0,0.4); }
         .camera-guide { width: 100%; height: 100%; border: 3px dashed rgba(255,255,255,0.8); box-sizing: border-box; position: relative; }
         
-        /* ゲーム操作用のコントローラー（長押しメニューや選択を完全防止） */
-        #gameControls { position: absolute; bottom: 10px; left: 0; width: 100%; z-index: 12; display: none; justify-content: center; gap: 40px; pointer-events: auto; }
+        /* ゲーム操作用コントローラー（全画面時は最下部に固定配置） */
+        #gameControls { position: absolute; bottom: 15px; left: 0; width: 100%; z-index: 1012; display: none; justify-content: center; gap: 50px; pointer-events: auto; }
+        /* 全画面モード時のボタンコンテナ用調整 */
+        #gameControls.fullscreen-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 0;
+            width: 100vw;
+        }
+
         .game-pad-btn { 
-            width: 75px; 
-            height: 55px; 
-            background: rgba(108,92,231,0.85); 
+            width: 85px; 
+            height: 60px; 
+            background: rgba(108,92,231,0.9); 
             color: white; 
-            border-radius: 14px; 
+            border-radius: 16px; 
             border: none;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
             -webkit-user-select: none;
             user-select: none;
             -webkit-touch-callout: none;
+        }
+
+        /* 全画面ゲーム時の終了・リトライボタンの上載せレイ換 */
+        #gameOverlayUI {
+            position: fixed;
+            top: 10px;
+            left: 5%;
+            width: 90%;
+            z-index: 1015;
+            display: none;
+            justify-content: space-between;
+            gap: 10px;
+            pointer-events: auto;
         }
 
         .control-panel { width: 100%; background: var(--card-bg); padding: 15px; border-radius: 20px; box-sizing: border-box; display: none; flex-direction: column; gap: 12px; }
@@ -96,24 +133,30 @@
 </head>
 <body>
 
+    <div id="gameOverlayUI">
+        <button id="btn-fullscreen-retry" class="btn-magic" style="background:linear-gradient(135deg, #ff7675, #fab1a0); height:40px; font-size:0.85rem; box-shadow:none; flex:1; display:none;" onclick="retryGame()"><span class="material-icons">refresh</span> リトライ</button>
+        <div id="gameFullscreenStatus" style="flex:2; background:rgba(0,0,0,0.7); color:white; border-radius:10px; font-size:0.75rem; display:flex; align-items:center; justify-content:center; text-align:center; padding:0 5px;"></div>
+        <button class="btn-magic" style="background:#57606f; height:40px; font-size:0.85rem; box-shadow:none; flex:1;" onclick="stopGameAndReturn()"><span class="material-icons">close</span> 終了</button>
+    </div>
+
     <div id="loadingOverlay">
         <div class="spinner"></div>
         <div class="loading-text">作品をアップロード中...</div>
     </div>
 
-    <div class="header-area">
+    <div class="header-area" id="mainHeader">
         <img src="DOTS_PROJECT_logo_black.png" alt="DOTS" class="header-logo">
         <h1>MAGIC STUDIO 3D</h1>
     </div>
 
-    <div class="step-tabs">
+    <div class="step-tabs" id="mainTabs">
         <div class="tab active" id="tab-step1" onclick="switchStep(1)"><span class="tab-num">STEP 01</span>らくがき</div>
         <div class="tab" id="tab-step2" onclick="switchStep(2)"><span class="tab-num">STEP 02</span>どっと化</div>
         <div class="tab" id="tab-step3" onclick="switchStep(3)"><span class="tab-num">STEP 03</span>立体プレビュー</div>
         <div class="tab" id="tab-step4" onclick="switchStep(4)"><span class="tab-num">STEP 04</span>送信</div>
     </div>
 
-    <div class="app-container">
+    <div class="app-container" id="mainContainer">
         <div class="canvas-area" id="canvasArea">
             <div class="canvas-wrapper" id="canvasWrapper">
                 <div id="bgLayer"></div>
@@ -125,8 +168,8 @@
                 <div id="threeContainer"></div>
                 
                 <div id="gameControls">
-                    <button class="game-pad-btn" id="btn-game-left"><span class="material-icons" style="font-size:2rem;">arrow_back</span></button>
-                    <button class="game-pad-btn" id="btn-game-right"><span class="material-icons" style="font-size:2rem;">arrow_forward</span></button>
+                    <button class="game-pad-btn" id="btn-game-left"><span class="material-icons" style="font-size:2.5rem;">arrow_back</span></button>
+                    <button class="game-pad-btn" id="btn-game-right"><span class="material-icons" style="font-size:2.5rem;">arrow_forward</span></button>
                 </div>
             </div>
         </div>
@@ -190,13 +233,6 @@
                 </button>
             </div>
             
-            <div id="gamePlayingArea" style="display:none; flex-direction:column; gap:8px; margin-top:5px;">
-                <div class="row" style="gap:10px;">
-                    <button id="btn-retry-game" class="btn-magic" style="background:linear-gradient(135deg, #ff7675, #fab1a0); height:40px; font-size:0.9rem; box-shadow:none; flex:1; display:none;" onclick="retryGame()"><span class="material-icons">refresh</span> もう一度挑戦する！</button>
-                    <button class="btn-magic" style="background:#57606f; height:40px; font-size:0.9rem; box-shadow:none; flex:1;" onclick="stopGameAndReturn()"><span class="material-icons">stop</span> 終了する</button>
-                </div>
-            </div>
-
             <p id="gameStatusLabel" style="font-size:0.75rem; color:#747d8c; text-align:center; margin: 5px 0 0 0;">🖯 画面をドラッグすると、いろいろな角度からチェックできます</p>
             <button class="btn-magic" id="btn-confirm-3d" style="background: var(--primary-color);" onclick="switchStep(4)">これで決定！次にすすむ <span class="material-icons">arrow_forward</span></button>
         </div>
@@ -262,7 +298,6 @@
         let isThreeInitialized = false;
         let paddle3D = null, ball3D = null, blocks3D = [];
         
-        // 初期位置を画面中央ではなく、画面上部（Z = -12）に変更
         let ballPhysics = { x: 0, z: -12, dx: 0.15, dz: 0.18, radius: 0.6, active: false };
         let moveLeft = false, moveRight = false;
         let gameAnimationId = null;
@@ -272,6 +307,14 @@
         const FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfNwyTLJ_-3FJx5oBbgzULdlWZ8TrVfyH6eHv5V4pXlAhP34Q/viewform";
 
         function initCanvasSize() {
+            // ゲーム全画面プレイ中の場合はサイズ更新をスキップ（またはリサイズのみ対応）
+            if(canvasArea.classList.contains('game-fullscreen')) {
+                if (isThreeInitialized && renderer) {
+                    renderer.setSize(window.innerWidth, window.innerHeight - 120);
+                }
+                return;
+            }
+
             const rect = canvasArea.getBoundingClientRect();
             const newWidth = Math.floor(rect.width);
             const newHeight = Math.floor(rect.height);
@@ -330,6 +373,8 @@
             if (unlocked === "true") {
                 isGameUnlocked = true;
                 applyGameUnlockUI();
+            } else {
+                isGameUnlocked = false;
             }
 
             const savedSketch = localStorage.getItem('dots_backup_sketch');
@@ -367,6 +412,13 @@
                 if(icon) icon.innerText = "sports_esports";
                 if(text) text.innerText = "自分だけの3Dステージで遊ぶ！";
                 if(msg) msg.style.display = "none";
+            } else if (btn) {
+                btn.disabled = true;
+                btn.style.background = "linear-gradient(135deg, #a1a1a1, #b2bec3)";
+                btn.style.cursor = "not-allowed";
+                if(icon) icon.innerText = "lock";
+                if(text) text.innerText = "送信＆アンケート後にアンロック";
+                if(msg) msg.style.display = "block";
             }
         }
 
@@ -462,7 +514,6 @@
             document.getElementById('btn-pan').onclick = () => setDotMode(dotMode === 'pan' ? 'pen' : 'pan');
         }
 
-        /* 左右ボタンの長押しメニュー表示やハイライト選択を完全防止する実装 */
         function setupGamePadControls() {
             const leftBtn = document.getElementById('btn-game-left');
             const rightBtn = document.getElementById('btn-game-right');
@@ -472,13 +523,11 @@
                 e.stopPropagation();
             };
 
-            // 左ボタン
             leftBtn.addEventListener('pointerdown', (e) => { preventBugs(e); moveLeft = true; });
             leftBtn.addEventListener('pointerup', (e) => { preventBugs(e); moveLeft = false; });
             leftBtn.addEventListener('pointercancel', (e) => { preventBugs(e); moveLeft = false; });
             leftBtn.addEventListener('contextmenu', preventBugs);
 
-            // 右ボタン
             rightBtn.addEventListener('pointerdown', (e) => { preventBugs(e); moveRight = true; });
             rightBtn.addEventListener('pointerup', (e) => { preventBugs(e); moveRight = false; });
             rightBtn.addEventListener('pointercancel', (e) => { preventBugs(e); moveRight = false; });
@@ -580,18 +629,29 @@
         function build3DGameField() {
             updateThreeMesh(); 
             
-            camera.position.set(0, 30, 28);
+            // 全画面モード移行後のアスペクト比を計算してカメラと描写サイズを設定
+            const w = window.innerWidth;
+            const h = window.innerHeight - 120;
+            const aspect = w / h;
+            const d = 20;
+            
+            camera.left = -d * aspect;
+            camera.right = d * aspect;
+            camera.top = d;
+            camera.bottom = -d;
+            camera.updateProjectionMatrix();
+            if(renderer) renderer.setSize(w, h);
+
+            camera.position.set(0, 30, 26);
             camera.lookAt(0, 0, 0);
             if(controls) controls.enabled = false; 
 
-            // パドルのクリーン配置
             const padGeo = new THREE.BoxGeometry(6, 1.2, 1);
             const padMat = new THREE.MeshStandardMaterial({ color: 0x6c5ce7, roughness: 0.2 });
             paddle3D = new THREE.Mesh(padGeo, padMat);
             paddle3D.position.set(0, 0.5, 13);
             scene.add(paddle3D);
 
-            // ボールのクリーン配置 (初期位置を上部 Z=-12 へマッピング)
             const ballGeo = new THREE.SphereGeometry(ballPhysics.radius, 16, 16);
             const ballMat = new THREE.MeshStandardMaterial({ color: 0xff7675 });
             ball3D = new THREE.Mesh(ballGeo, ballMat);
@@ -611,19 +671,25 @@
         function start3DGame() {
             if (!isGameUnlocked) return;
             
-            document.getElementById('gameMenuArea').style.display = 'none';
-            document.getElementById('gamePlayingArea').style.display = 'flex';
-            document.getElementById('btn-retry-game').style.display = 'none';
-            document.getElementById('btn-confirm-3d').style.display = 'none';
-            document.getElementById('gameControls').style.display = 'flex';
-
-            document.getElementById('gameStatusLabel').innerText = "自分が創り出した3Dの世界を攻略しよう！";
+            // ① 周りのUI（ヘッダー、タブ、コンテナ）を隠して、キャンバスを固定全画面化
+            document.getElementById('mainHeader').style.display = 'none';
+            document.getElementById('mainTabs').style.display = 'none';
+            document.querySelectorAll('.control-panel').forEach(p => p.style.display = 'none');
             
-            // 物理側の初期値を画面上部にセット
+            canvasArea.classList.add('game-fullscreen');
+            
+            // ② ゲームオーバーリトライ用・コントローラーUIをオーバーレイとして全画面前面に表示
+            document.getElementById('gameOverlayUI').style.display = 'flex';
+            document.getElementById('btn-fullscreen-retry').style.display = 'none';
+            document.getElementById('gameControls').style.display = 'flex';
+            document.getElementById('gameControls').classList.add('fullscreen-controls');
+
+            document.getElementById('gameFullscreenStatus').innerText = "3Dステージ攻略開始！";
+            
             ballPhysics.x = 0; 
             ballPhysics.z = -12;
             ballPhysics.dx = 0.16; 
-            ballPhysics.dz = 0.18; // 下（パドル側）に向かって進む
+            ballPhysics.dz = 0.18; 
             ballPhysics.active = true;
 
             build3DGameField();
@@ -633,8 +699,8 @@
         function runGamePhysicsLoop() {
             if (!ballPhysics || !ballPhysics.active) return;
 
-            if (moveLeft && paddle3D) paddle3D.position.x = Math.max(-stageWidth/2 + 3, paddle3D.position.x - 0.3);
-            if (moveRight && paddle3D) paddle3D.position.x = Math.min(stageWidth/2 - 3, paddle3D.position.x + 0.3);
+            if (moveLeft && paddle3D) paddle3D.position.x = Math.max(-stageWidth/2 + 3, paddle3D.position.x - 0.35);
+            if (moveRight && paddle3D) paddle3D.position.x = Math.min(stageWidth/2 - 3, paddle3D.position.x + 0.35);
 
             ballPhysics.x += ballPhysics.dx;
             ballPhysics.z += ballPhysics.dz;
@@ -651,9 +717,9 @@
             }
 
             if (ballPhysics.z > stageDepth / 2) {
-                document.getElementById('gameStatusLabel').innerText = "ゲームオーバー！「もう一度挑戦する」ボタンからリトライできます。";
+                document.getElementById('gameFullscreenStatus').innerText = "💀 GAME OVER";
                 ballPhysics.active = false;
-                document.getElementById('btn-retry-game').style.display = 'block';
+                document.getElementById('btn-fullscreen-retry').style.display = 'block';
             }
 
             let winToken = true;
@@ -670,9 +736,9 @@
             });
 
             if (winToken && ballPhysics.active) {
-                document.getElementById('gameStatusLabel').innerText = "🎉 見事な完全クリア！おめでとうございます！";
+                document.getElementById('gameFullscreenStatus').innerText = "🎉 STAGE CLEAR!";
                 ballPhysics.active = false;
-                document.getElementById('btn-retry-game').style.display = 'block';
+                document.getElementById('btn-fullscreen-retry').style.display = 'block';
             }
 
             if(ball3D) {
@@ -689,8 +755,8 @@
             if(paddle3D && scene) scene.remove(paddle3D);
             if(ball3D && scene) scene.remove(ball3D);
 
-            document.getElementById('btn-retry-game').style.display = 'none';
-            document.getElementById('gameStatusLabel').innerText = "ステージをリセットして再スタートします！";
+            document.getElementById('btn-fullscreen-retry').style.display = 'none';
+            document.getElementById('gameFullscreenStatus').innerText = "レディ... GO!";
 
             ballPhysics.x = 0; 
             ballPhysics.z = -12;
@@ -711,25 +777,24 @@
                 if(ball3D) { scene.remove(ball3D); ball3D = null; }
                 if(controls) {
                     controls.enabled = true;
-                    camera.position.set(25, 25, 25); 
-                    camera.lookAt(0, 0, 0);
                 }
             }
 
-            const gMenu = document.getElementById('gameMenuArea');
-            const gPlay = document.getElementById('gamePlayingArea');
-            const c3d = document.getElementById('btn-confirm-3d');
-            const gCtrl = document.getElementById('gameControls');
-            const gStatus = document.getElementById('gameStatusLabel');
+            // ① 全画面用クラスとUIを解除
+            canvasArea.classList.remove('game-fullscreen');
+            document.getElementById('gameOverlayUI').style.display = 'none';
+            document.getElementById('gameControls').style.display = 'none';
+            document.getElementById('gameControls').classList.remove('fullscreen-controls');
 
-            if(gMenu) gMenu.style.display = 'flex';
-            if(gPlay) gPlay.style.display = 'none';
-            if(c3d) c3d.style.display = 'flex';
-            if(gCtrl) gCtrl.style.display = 'none';
-            if(gStatus) gStatus.innerText = "🖯 画面をドラッグすると、いろいろな角度からチェックできます";
+            // ② メインエディターのUIを復元
+            document.getElementById('mainHeader').style.display = 'flex';
+            document.getElementById('mainTabs').style.display = 'flex';
             
-            updateThreeMesh();
-            applyGameUnlockUI();
+            // 元のSTEP03のサイズへキャンバスを再マッピング
+            lastCanvasWidth = 0; lastCanvasHeight = 0; 
+            initCanvasSize();
+            
+            switchStep(3);
         }
 
         function magicConvert() {
@@ -928,7 +993,7 @@
                 };
             }
         });
-        document.getElementById('btn-sketch-clear').onclick = () => { if(confirm("らくがきをぜんぶ消しますか？")) { sCtx.clearRect(0,0,sCanvas.width,sCanvas.height); saveHistory(1); autoSaveToStorage(); } };
+        document.getElementById('btn-sketch-clear').onclick = () => { if(confirm("らくがきをぜんぶ消しますか？")) { sCtx.clearRect(0,0,sCanvas.width,sCanvas.height); sCtx.fillStyle = '#ffffff'; sCtx.fillRect(0,0,sCanvas.width,sCanvas.height); saveHistory(1); autoSaveToStorage(); } };
 
         const dTools = {pen:'btn-pen', eraser:'btn-eraser', bucket:'btn-bucket', picker:'btn-picker'};
         Object.keys(dTools).forEach(k => { 
@@ -953,6 +1018,10 @@
         document.getElementById('uploadButton').onclick = async () => {
             const name = artNameInput.value.trim();
             if (!name) { alert("作品名を入力してください。"); artNameInput.focus(); return; }
+
+            // 新しく作品を送信する前に一度ゲームのアンロック状態をクリア
+            isGameUnlocked = false;
+            applyGameUnlockUI();
 
             const durationSeconds = Math.floor((Date.now() - startTime) / 1000);
             const uploadCanvas = document.createElement('canvas'); uploadCanvas.width = uploadCanvas.height = 512;
@@ -983,6 +1052,7 @@
                 const result = await response.json();
 
                 if(result.status === "success") {
+                    // アップロード成功後にアンロックフラグをセット
                     isGameUnlocked = true;
                     autoSaveToStorage(); 
 
@@ -995,7 +1065,6 @@
                     params.append("entry.46158305", name);
                     params.append("entry.1524592109", result.serial);
                     
-                    // ポップアップブロックを100%回避するため同一タブで遷移
                     window.location.href = `${FORM_URL}?${params.toString()}`;
                 } else {
                     loadingOverlay.style.display = 'none'; alert("エラー: " + result.message);
