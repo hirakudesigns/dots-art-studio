@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DOTS ART STUDIO - Magic Editor 3D with Game</title>
+    <title>DOTS ART STUDIO - Magic Editor 3D</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/controls/OrbitControls.js"></script>
     <style>
         :root { 
             --primary-color: #6c5ce7; 
@@ -14,15 +14,13 @@
             --card-bg: #ffffff; 
             --accent-color: #ff7675; 
             --save-green: #55efc4;
-            --game-blue: #00cec9;
-            --lock-gray: #a1a1a1;
         }
         body { font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; background-color: var(--bg-color); margin: 0; padding: 10px; overflow-x: hidden; }
         .header-area { width: 100%; max-width: 500px; display: flex; justify-content: center; align-items: center; padding: 5px 0; gap: 10px; }
         .header-logo { height: 24px; width: auto; }
         h1 { margin: 0; font-size: 1rem; color: #333; font-weight: 800; }
         
-        .step-tabs { display: flex; width: 100%; max-width: 500px; background: #e4e7eb; border-radius: 12px; padding: 4px; margin-bottom: 10px; box-sizing: border-box; }
+        .step-tabs { display: flex; width: 100%; max-width: 500px; background: #e4e7eb; border-radius: 12px; padding: 4px; margin-bottom: 10px; box-sizing: border-box; z-index: 100; }
         .tab { flex: 1; text-align: center; padding: 8px 0; font-size: 0.7rem; font-weight: bold; color: #747d8c; border-radius: 8px; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; align-items: center; gap: 2px; }
         .tab.active { background: var(--card-bg); color: var(--primary-color); box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
         .tab-num { font-size: 0.55rem; opacity: 0.7; }
@@ -40,74 +38,15 @@
             background: #fff; 
             touch-action: none; 
             overflow: hidden; 
-            transition: max-width 0.3s ease;
         }
-        /* ゲーム全画面プレイ用のスタイルクラス */
-        .canvas-area.game-fullscreen {
-            max-width: 100vw;
-            width: 100vw;
-            height: calc(100vh - 120px); 
-            aspect-ratio: auto;
-            border: none;
-            border-radius: 0;
-            box-shadow: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            z-index: 1000;
-        }
-
         .canvas-wrapper { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
         canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block; }
         #sketchCanvas { z-index: 2; background: transparent; }
-        #dotCanvas { z-index: 3; image-rendering: pixelated; width: 100%; height: 100%; display: none; transform-origin: 0 0; }
-        #gridCanvas { z-index: 10; position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; transform-origin: 0 0; }
+        #dotCanvas { z-index: 3; image-rendering: pixelated; width: 100%; height: 100%; display: none; }
+        #gridCanvas { z-index: 10; position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; }
         
         #threeContainer { z-index: 4; position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; }
         #bgLayer { z-index: 0; position:absolute; top:0; left:0; width:100%; height:100%; background-size: cover; background-position: center; display: none; }
-        
-        #videoPreview { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 5; display: none; }
-        #cameraOverlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 6; display: none; pointer-events: none; box-sizing: border-box; border: 30px solid rgba(0,0,0,0.4); }
-        .camera-guide { width: 100%; height: 100%; border: 3px dashed rgba(255,255,255,0.8); box-sizing: border-box; position: relative; }
-        
-        /* ゲーム操作用コントローラー */
-        #gameControls { position: absolute; bottom: 15px; left: 0; width: 100%; z-index: 1012; display: none; justify-content: center; gap: 50px; pointer-events: auto; }
-        #gameControls.fullscreen-controls {
-            position: fixed;
-            bottom: 20px;
-            left: 0;
-            width: 100vw;
-        }
-
-        .game-pad-btn { 
-            width: 85px; 
-            height: 60px; 
-            background: rgba(108,92,231,0.9); 
-            color: white; 
-            border-radius: 16px; 
-            border: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            -webkit-user-select: none;
-            user-select: none;
-            -webkit-touch-callout: none;
-        }
-
-        /* 全画面ゲーム時の終了・リトライボタン */
-        #gameOverlayUI {
-            position: fixed;
-            top: 10px;
-            left: 5%;
-            width: 90%;
-            z-index: 1015;
-            display: none;
-            justify-content: space-between;
-            gap: 10px;
-            pointer-events: auto;
-        }
 
         .control-panel { width: 100%; background: var(--card-bg); padding: 15px; border-radius: 20px; box-sizing: border-box; display: none; flex-direction: column; gap: 12px; }
         .control-panel.active { display: flex; }
@@ -116,11 +55,7 @@
         
         .btn { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; border-radius: 10px; background: #f1f2f6; color: #57606f; padding: 0; box-sizing: border-box; }
         .btn.active { background: var(--primary-color); color: white; }
-        
-        /* アイコン画像のサイズ・余白の統一設定 */
-        .btn img { width: 24px; height: 24px; object-fit: contain; padding: 10px; box-sizing: border-box; display: block; }
-        /* 画像アイコン専用の調整（パディングを消して綺麗に中央配置） */
-        .btn img.icon-img { width: 26px; height: 26px; padding: 0; }
+        .btn img { width: 24px; height: 24px; object-fit: contain; }
         
         .btn-magic { background: linear-gradient(135deg, #6c5ce7, #a29bfe); color: white; height: 55px; font-weight: 900; border-radius: 15px; border: none; cursor: pointer; width: 100%; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(108, 92, 231, 0.4); display: flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-upload { background: var(--primary-color); color: white; height: 55px; font-weight: 900; border-radius: 15px; border: none; cursor: pointer; width: 100%; font-size: 1.1rem; }
@@ -128,74 +63,49 @@
         #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(108, 92, 231, 0.85); z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; }
         .spinner { width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.3); border-top: 5px solid white; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        .palette-item { position: relative; display: inline-block; }
-        .color-chip { width: 30px; height: 30px; border-radius: 6px; cursor: pointer; border: 1px solid #ddd; }
-        .delete-badge { position: absolute; top: -5px; right: -5px; width: 14px; height: 14px; background: var(--accent-color); color: white; border-radius: 50%; font-size: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
     </style>
 </head>
 <body>
-
-    <div id="gameOverlayUI">
-        <button id="btn-fullscreen-retry" class="btn-magic" style="background:linear-gradient(135deg, #ff7675, #fab1a0); height:40px; font-size:0.85rem; box-shadow:none; flex:1; display:none;" onclick="retryGame()"><span class="material-icons">refresh</span> リトライ</button>
-        <div id="gameFullscreenStatus" style="flex:2; background:rgba(0,0,0,0.7); color:white; border-radius:10px; font-size:0.75rem; display:flex; align-items:center; justify-content:center; text-align:center; padding:0 5px;"></div>
-        <button class="btn-magic" style="background:#57606f; height:40px; font-size:0.85rem; box-shadow:none; flex:1;" onclick="stopGameAndReturn()"><span class="material-icons">close</span> 終了</button>
-    </div>
 
     <div id="loadingOverlay">
         <div class="spinner"></div>
         <div class="loading-text">作品をアップロード中...</div>
     </div>
 
-    <div class="header-area" id="mainHeader">
+    <div class="header-area">
         <img src="DOTS_PROJECT_logo_black.png" alt="DOTS" class="header-logo">
         <h1>MAGIC STUDIO 3D</h1>
     </div>
 
-    <div class="step-tabs" id="mainTabs">
+    <div class="step-tabs">
         <div class="tab active" id="tab-step1" onclick="switchStep(1)"><span class="tab-num">STEP 01</span>らくがき</div>
         <div class="tab" id="tab-step2" onclick="switchStep(2)"><span class="tab-num">STEP 02</span>どっと化</div>
         <div class="tab" id="tab-step3" onclick="switchStep(3)"><span class="tab-num">STEP 03</span>立体プレビュー</div>
         <div class="tab" id="tab-step4" onclick="switchStep(4)"><span class="tab-num">STEP 04</span>送信</div>
     </div>
 
-    <div class="app-container" id="mainContainer">
+    <div class="app-container">
         <div class="canvas-area" id="canvasArea">
-            <div class="canvas-wrapper" id="canvasWrapper">
+            <div class="canvas-wrapper">
                 <div id="bgLayer"></div>
-                <video id="videoPreview" autoplay playsinline muted></video>
-                <div id="cameraOverlay"><div class="camera-guide"></div></div>
                 <canvas id="sketchCanvas"></canvas>
                 <canvas id="dotCanvas" width="32" height="32"></canvas>
                 <canvas id="gridCanvas"></canvas>
                 <div id="threeContainer"></div>
-                
-                <div id="gameControls">
-                    <button class="game-pad-btn" id="btn-game-left"><span class="material-icons" style="font-size:2.5rem;">arrow_back</span></button>
-                    <button class="game-pad-btn" id="btn-game-right"><span class="material-icons" style="font-size:2.5rem;">arrow_forward</span></button>
-                </div>
             </div>
         </div>
         
-        <div class="row" id="history-row" style="gap:12px; margin: 5px 0;">
+        <div class="row" id="history-row" style="gap:20px; margin: 5px 0;">
             <button class="btn" id="btn-undo" style="border-radius:50%; background:#fff; box-shadow:0 3px 6px rgba(0,0,0,0.1);"><span class="material-icons">undo</span></button>
             <button class="btn" id="btn-redo" style="border-radius:50%; background:#fff; box-shadow:0 3px 6px rgba(0,0,0,0.1);"><span class="material-icons">redo</span></button>
-            <button class="btn" id="btn-zoom-in" style="border-radius:50%; background:#fff; box-shadow:0 3px 6px rgba(0,0,0,0.1); display:none;"><span class="material-icons">add</span></button>
-            <button class="btn" id="btn-zoom-out" style="border-radius:50%; background:#fff; box-shadow:0 3px 6px rgba(0,0,0,0.1); display:none;"><span class="material-icons">remove</span></button>
-            <button class="btn" id="btn-pan" style="border-radius:50%; background:#fff; box-shadow:0 3px 6px rgba(0,0,0,0.1); display:none;"><span class="material-icons">pan_tool</span></button>
         </div>
 
         <div class="control-panel active" id="panel-step1">
-            <div class="section-label">カメラ取り込み</div>
-            <div class="row" style="margin-bottom: 5px; gap:10px;">
-                <button class="btn" id="btn-camera-toggle" style="width:100%; border-radius:12px; background:#f1f2f6; font-weight:bold; font-size:0.8rem; height:45px; display:flex; align-items:center; justify-content:center; gap:6px;"><span class="material-icons">camera_alt</span> 専用用紙をカメラで読み込む</button>
-                <button class="btn" id="btn-camera-shutter" style="width:100%; border-radius:12px; background:var(--accent-color); color:white; font-weight:bold; font-size:0.8rem; height:45px; display:none; align-items:center; justify-content:center; gap:6px;"><span class="material-icons">photo_camera</span> シャッターを押す（ドット化）</button>
-            </div>
             <div class="section-label">らくがきツール</div>
             <div class="row">
                 <input type="color" id="sketchColor" value="#000000" style="width:40px; height:40px; border:none; background:none; cursor:pointer;">
                 <button class="btn active" id="btn-sketch-pen"><span class="material-icons">edit</span></button>
-                <button class="btn" id="btn-sketch-eraser"><img src="erazer.png" alt="消しゴム" class="icon-img"></button>
+                <button class="btn" id="btn-sketch-eraser"><img src="eraser.png" alt="消しゴム"></button>
                 <button class="btn" id="btn-sketch-bucket"><span class="material-icons">format_color_fill</span></button>
                 <button class="btn" id="btn-sketch-picker"><span class="material-icons">colorize</span></button>
                 <button class="btn" id="btn-sketch-clear" style="color:var(--accent-color); margin-left: auto;"><span class="material-icons">delete_outline</span></button>
@@ -209,7 +119,7 @@
             <div class="row">
                 <input type="color" id="colorPicker" value="#000000" style="width:40px; height:40px; border:none; background:none; cursor:pointer;">
                 <button class="btn active" id="btn-pen"><span class="material-icons">edit</span></button>
-                <button class="btn" id="btn-eraser"><img src="erazer.png" alt="消しゴム" class="icon-img"></button> 
+                <button class="btn" id="btn-eraser"><img src="eraser.png" alt="消しゴム"></button> 
                 <button class="btn" id="btn-bucket"><span class="material-icons">format_color_fill</span></button>
                 <button class="btn" id="btn-picker"><span class="material-icons">colorize</span></button>
                 <button class="btn" id="btn-toggle-grid" style="margin-left: auto;"><span class="material-icons">grid_on</span></button>
@@ -223,21 +133,10 @@
         </div>
 
         <div class="control-panel" id="panel-step3">
-            <div class="section-label">3D立体プレビュー & ミニゲーム</div>
-            <p style="font-size:0.8rem; color:#333; text-align:center; margin: 5px 0; font-weight: bold;">厚み（3.0）のブロックフィギュアに変身しました！</p>
-            
-            <div id="gameMenuArea" style="display:flex; flex-direction:column; gap:8px; margin-top:5px;">
-                <div id="gameLockedMessage" style="background:#f1f2f6; border-radius:12px; padding:12px; text-align:center; font-size:0.8rem; color:#57606f;">
-                    <span class="material-icons" style="vertical-align:middle; font-size:1.1rem; color:var(--accent-color);">lock</span>
-                    STEP 04で作品を送信してアンケートに答えると、この作品がそのままゲームの3Dステージになって遊べるようになります！
-                </div>
-                <button id="btn-start-game" class="btn-magic" style="background:linear-gradient(135deg, #a1a1a1, #b2bec3); height:48px; font-size:0.95rem; box-shadow:none; cursor:not-allowed;" disabled onclick="start3DGame()">
-                    <span id="gameBtnIcon" class="material-icons">lock</span> <span id="gameBtnText">送信＆アンケート後にアンロック</span>
-                </button>
-            </div>
-            
-            <p id="gameStatusLabel" style="font-size:0.75rem; color:#747d8c; text-align:center; margin: 5px 0 0 0;">🖯 画面をドラッグすると、いろいろな角度からチェックできます</p>
-            <button class="btn-magic" id="btn-confirm-3d" style="background: var(--primary-color);" onclick="switchStep(4)">これで決定！次にすすむ <span class="material-icons">arrow_forward</span></button>
+            <div class="section-label">3D立体プレビュー</div>
+            <p style="font-size:0.8rem; color:#333; text-align:center; margin: 5px 0; font-weight: bold;">存在感ばつぐんの厚み（3.0）のブロックフィギュアになりました！</p>
+            <p style="font-size:0.75rem; color:#747d8c; text-align:center; margin: 0 0 5px 0;">🖯 グルグル回して色々な角度からチェックできます</p>
+            <button class="btn-magic" style="background: var(--primary-color);" onclick="switchStep(4)">これで決定！次にすすむ <span class="material-icons">arrow_forward</span></button>
         </div>
 
         <div class="control-panel" id="panel-step4">
@@ -265,8 +164,6 @@
         
         const canvasArea = document.getElementById('canvasArea');
         const bgLayer = document.getElementById('bgLayer');
-        const videoPreview = document.getElementById('videoPreview');
-        const cameraOverlay = document.getElementById('cameraOverlay');
         const loadingOverlay = document.getElementById('loadingOverlay');
         const artNameInput = document.getElementById('artName');
         const paletteArea = document.getElementById('paletteArea');
@@ -277,51 +174,26 @@
         let currentStep = 1;
         let isDrawing = false;
         let sketchMode = 'pen';
-        let dotMode = 'pen'; 
+        let dotMode = 'pen';
         let historyStack = { 1: [], 2: [] };
-        let redoStack = { 1: [], 2: [] }; 
         let startTime = Date.now();
         let gridActive = true;
-        let cameraStream = null;
         
         let lastCanvasWidth = 0;
         let lastCanvasHeight = 0;
 
-        let zoomLevel = 1.0;
-        let panX = 0;
-        let panY = 0;
-        let isPanning = false;
-        let startPanX = 0, startPanY = 0;
-
         const VOXEL_HEIGHT = 3.0;
-        let isGameUnlocked = false;
 
-        // 3Dおよびゲーム物理変数
         let scene, camera, renderer, controls, voxelGroup;
         let isThreeInitialized = false;
-        let paddle3D = null, ball3D = null, blocks3D = [];
-        
-        let ballPhysics = { x: 0, z: -12, dx: 0.15, dz: 0.18, radius: 0.6, active: false };
-        let moveLeft = false, moveRight = false;
-        let gameAnimationId = null;
-        const stageWidth = 24, stageDepth = 28;
 
         const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbxLN0lTux5SRb8cI3lYp1sXBCEPHW4x4B-px7AguEjgvMHqA7wRipvF05iI5UiQJ_WknA/exec"; 
         const FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfNwyTLJ_-3FJx5oBbgzULdlWZ8TrVfyH6eHv5V4pXlAhP34Q/viewform";
 
         function initCanvasSize() {
-            if(canvasArea.classList.contains('game-fullscreen')) {
-                if (isThreeInitialized && renderer) {
-                    renderer.setSize(window.innerWidth, window.innerHeight - 120);
-                }
-                return;
-            }
-
             const rect = canvasArea.getBoundingClientRect();
             const newWidth = Math.floor(rect.width);
             const newHeight = Math.floor(rect.height);
-
-            if (newWidth <= 0 || newHeight <= 0) return;
 
             if (newWidth !== lastCanvasWidth || newHeight !== lastCanvasHeight) {
                 const tempSketch = document.createElement('canvas');
@@ -330,30 +202,47 @@
 
                 sCanvas.width = newWidth;
                 sCanvas.height = newHeight;
-                sCtx.lineCap = 'round'; sCtx.lineJoin = 'round'; sCtx.lineWidth = 8; 
+                sCtx.lineCap = 'round';
+                sCtx.lineJoin = 'round';
+                sCtx.lineWidth = 8; 
 
-                gCanvas.width = newWidth; gCanvas.height = newHeight;
+                gCanvas.width = newWidth;
+                gCanvas.height = newHeight;
 
                 if(tempSketch.width > 0) {
                     sCtx.drawImage(tempSketch, 0, 0, newWidth, newHeight);
                 }
-                lastCanvasWidth = newWidth; lastCanvasHeight = newHeight;
+
+                lastCanvasWidth = newWidth;
+                lastCanvasHeight = newHeight;
                 
                 drawGrid();
-                resetTransform();
-                if (isThreeInitialized && renderer) renderer.setSize(newWidth, newHeight);
+                if (isThreeInitialized && renderer) {
+                    renderer.setSize(newWidth, newHeight);
+                    updateCameraAspect();
+                }
             }
         }
 
         function drawGrid() {
             gCtx.clearRect(0, 0, gCanvas.width, gCanvas.height);
             if (!gridActive) return;
-            const w = gCanvas.width; const h = gCanvas.height;
-            const stepX = w / 32; const stepY = h / 32;
+
+            const w = gCanvas.width;
+            const h = gCanvas.height;
+            const stepX = w / 32;
+            const stepY = h / 32;
+
             gCtx.lineWidth = 0.8;
+
             for (let i = 1; i < 32; i++) {
                 gCtx.beginPath();
-                gCtx.strokeStyle = (i % 8 === 0) ? 'rgba(0, 0, 0, 0.45)' : 'rgba(0, 0, 0, 0.12)';
+                if (i % 8 === 0) {
+                    gCtx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
+                } else {
+                    gCtx.strokeStyle = 'rgba(0, 0, 0, 0.12)';
+                }
+                
                 gCtx.moveTo(i * stepX, 0); gCtx.lineTo(i * stepX, h);
                 gCtx.moveTo(0, i * stepY); gCtx.lineTo(w, i * stepY);
                 gCtx.stroke();
@@ -365,21 +254,12 @@
                 localStorage.setItem('dots_backup_sketch', sCanvas.toDataURL());
                 localStorage.setItem('dots_backup_dot', dCanvas.toDataURL());
                 localStorage.setItem('dots_backup_artname', artNameInput.value);
-                localStorage.setItem('dots_game_unlocked', isGameUnlocked ? "true" : "false");
             } catch (e) { console.warn("AutoSave failed:", e); }
         }
 
         function loadFromStorageBackup() {
             const savedName = localStorage.getItem('dots_backup_artname');
             if (savedName) artNameInput.value = savedName;
-
-            const unlocked = localStorage.getItem('dots_game_unlocked');
-            if (unlocked === "true") {
-                isGameUnlocked = true;
-                applyGameUnlockUI();
-            } else {
-                isGameUnlocked = false;
-            }
 
             const savedSketch = localStorage.getItem('dots_backup_sketch');
             if (savedSketch) {
@@ -397,173 +277,33 @@
         window.addEventListener('DOMContentLoaded', () => {
             initCanvasSize();
             dCtx.clearRect(0, 0, 32, 32);
-            saveHistory(2); saveHistory(1);
+            saveHistory(2);
+            saveHistory(1);
             loadFromStorageBackup();
-            setupCameraAndZoomButtons();
-            setupGamePadControls();
         });
-
-        function applyGameUnlockUI() {
-            const btn = document.getElementById('btn-start-game');
-            const icon = document.getElementById('gameBtnIcon');
-            const text = document.getElementById('gameBtnText');
-            const msg = document.getElementById('gameLockedMessage');
-
-            if (isGameUnlocked && btn) {
-                btn.disabled = false;
-                btn.style.background = "linear-gradient(135deg, #0984e3, #74b9ff)";
-                btn.style.cursor = "pointer";
-                if(icon) icon.innerText = "sports_esports";
-                if(text) text.innerText = "自分だけの3Dステージで遊ぶ！";
-                if(msg) msg.style.display = "none";
-            } else if (btn) {
-                btn.disabled = true;
-                btn.style.background = "linear-gradient(135deg, #a1a1a1, #b2bec3)";
-                btn.style.cursor = "not-allowed";
-                if(icon) icon.innerText = "lock";
-                if(text) text.innerText = "送信＆アンケート後にアンロック";
-                if(msg) msg.style.display = "block";
-            }
-        }
-
-        function stopCamera() {
-            if (cameraStream) {
-                cameraStream.getTracks().forEach(track => track.stop());
-                cameraStream = null;
-            }
-            videoPreview.style.display = 'none';
-            cameraOverlay.style.display = 'none';
-            document.getElementById('btn-camera-toggle').style.display = 'flex';
-            document.getElementById('btn-camera-shutter').style.display = 'none';
-        }
 
         function switchStep(step) {
             currentStep = step;
-            stopGameAndReturn();
-            stopCamera();
-
             document.querySelectorAll('.tab').forEach((t, i) => { t.classList.toggle('active', i === step - 1); });
             document.querySelectorAll('.control-panel').forEach((p, i) => { p.classList.toggle('active', i === step - 1); });
-            
             document.getElementById('history-row').style.display = (step <= 2) ? 'flex' : 'none';
-            
-            const isStep2 = (step === 2);
-            document.getElementById('btn-zoom-in').style.display = isStep2 ? 'block' : 'none';
-            document.getElementById('btn-zoom-out').style.display = isStep2 ? 'block' : 'none';
-            document.getElementById('btn-pan').style.display = isStep2 ? 'block' : 'none';
 
             sCanvas.style.display = (step === 1) ? 'block' : 'none';
             dCanvas.style.display = (step === 2 || step === 4) ? 'block' : 'none';
             threeContainer.style.display = (step === 3) ? 'block' : 'none';
-            gCanvas.style.display = (step === 2) ? 'block' : 'none';
             
-            if(step === 2) {
-                drawGrid();
-                applyTransform();
-            } else {
-                resetTransform();
-            }
-            if (step === 3) {
-                updateThreeMesh();
-                applyGameUnlockUI();
-            }
-            updateUndoRedoButtons();
+            gCanvas.style.display = (step === 2) ? 'block' : 'none';
+            if(step === 2) drawGrid();
+            if (step === 3) updateThreeMesh();
         }
 
         function goTo3DStep() {
-            if (!isThreeInitialized) initThree();
-            switchStep(3);
-        }
-
-        function setupCameraAndZoomButtons() {
-            const camToggle = document.getElementById('btn-camera-toggle');
-            const shutter = document.getElementById('btn-camera-shutter');
-
-            camToggle.onclick = async () => {
-                try {
-                    cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
-                    videoPreview.srcObject = cameraStream;
-                    videoPreview.style.display = 'block'; 
-                    cameraOverlay.style.display = 'block';
-                    camToggle.style.display = 'none'; 
-                    shutter.style.display = 'flex';
-                } catch (e) { alert("カメラの起動に失敗しました。カメラのアクセス権限を確認してください。"); }
-            };
-
-            shutter.onclick = () => {
-                try {
-                    dCtx.clearRect(0, 0, 32, 32);
-                    // カメラ映像を安全に32x32へ描写
-                    dCtx.drawImage(videoPreview, 0, 0, videoPreview.videoWidth || 640, videoPreview.videoHeight || 480, 0, 0, 32, 32);
-                    
-                    let imgData = dCtx.getImageData(0,0,32,32);
-                    let d = imgData.data;
-                    for(let i=0; i<d.length; i+=4) {
-                        let v = (d[i] + d[i+1] + d[i+2]) / 3;
-                        if(v > 140) { d[i+3] = 0; }
-                        else { d[i+3] = 255; d[i]=0; d[i+1]=0; d[i+2]=0; }
-                    }
-                    dCtx.putImageData(imgData, 0, 0);
-                    
-                    stopCamera();
-                    saveHistory(2); 
-                    autoSaveToStorage(); 
-                    switchStep(2);
-                } catch(e) { 
-                    console.error("Camera snapshot error:", e);
-                    stopCamera();
-                    switchStep(2); 
-                }
-            };
-
-            document.getElementById('btn-zoom-in').onclick = () => { zoomLevel = Math.min(4.0, zoomLevel + 0.3); applyTransform(); };
-            document.getElementById('btn-zoom-out').onclick = () => { zoomLevel = Math.max(1.0, zoomLevel - 0.3); if(zoomLevel === 1) { panX = 0; panY = 0; } applyTransform(); };
-            document.getElementById('btn-pan').onclick = () => setDotMode(dotMode === 'pan' ? 'pen' : 'pan');
-        }
-
-        function setupGamePadControls() {
-            const leftBtn = document.getElementById('btn-game-left');
-            const rightBtn = document.getElementById('btn-game-right');
-
-            const preventBugs = (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-            };
-
-            leftBtn.addEventListener('pointerdown', (e) => { preventBugs(e); moveLeft = true; });
-            leftBtn.addEventListener('pointerup', (e) => { preventBugs(e); moveLeft = false; });
-            leftBtn.addEventListener('pointercancel', (e) => { preventBugs(e); moveLeft = false; });
-            leftBtn.addEventListener('contextmenu', preventBugs);
-
-            rightBtn.addEventListener('pointerdown', (e) => { preventBugs(e); moveRight = true; });
-            rightBtn.addEventListener('pointerup', (e) => { preventBugs(e); moveRight = false; });
-            rightBtn.addEventListener('pointercancel', (e) => { preventBugs(e); moveRight = false; });
-            rightBtn.addEventListener('contextmenu', preventBugs);
-        }
-
-        function setDotMode(mode) {
-            dotMode = mode;
-            const dTools = {pen:'btn-pen', eraser:'btn-eraser', bucket:'btn-bucket', picker:'btn-picker'};
-            Object.values(dTools).forEach(id => {
-                const el = document.getElementById(id);
-                if(el) el.classList.remove('active');
-            });
-            const panBtn = document.getElementById('btn-pan');
-            if(panBtn) panBtn.classList.toggle('active', mode === 'pan');
-            if(mode !== 'pan' && dTools[mode]) {
-                const activeEl = document.getElementById(dTools[mode]);
-                if(activeEl) activeEl.classList.add('active');
+            if (!isThreeInitialized) {
+                initThree();
+            } else {
+                updateCameraAspect();
             }
-        }
-
-        function applyTransform() {
-            dCanvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
-            gCanvas.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
-        }
-
-        function resetTransform() {
-            zoomLevel = 1.0; panX = 0; panY = 0;
-            dCanvas.style.transform = ''; gCanvas.style.transform = '';
+            switchStep(3);
         }
 
         function initThree() {
@@ -578,15 +318,16 @@
 
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(rect.width, rect.height);
-            renderer.shadowMap.enabled = true;
             threeContainer.appendChild(renderer.domElement);
 
+            // OrbitControlsが正常に初期化できるように変更
             controls = new THREE.OrbitControls(camera, renderer.domElement);
-            controls.enableDamping = true; controls.dampingFactor = 0.1;
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.1;
 
             scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-            const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
-            dirLight.position.set(20, 40, 20); dirLight.castShadow = true;
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            dirLight.position.set(20, 40, 20);
             scene.add(dirLight);
 
             voxelGroup = new THREE.Group();
@@ -595,22 +336,34 @@
 
             function animate3D() {
                 requestAnimationFrame(animate3D);
-                if (currentStep === 3 && (!ballPhysics || !ballPhysics.active)) {
-                    if(controls) controls.update();
-                    if(renderer) renderer.render(scene, camera);
+                if (currentStep === 3) {
+                    controls.update();
+                    renderer.render(scene, camera);
                 }
             }
             animate3D();
+        }
+
+        // カメラのアスペクト比をコンテナの現在の実サイズに合わせる補正関数
+        function updateCameraAspect() {
+            if (!camera || !canvasArea) return;
+            const rect = canvasArea.getBoundingClientRect();
+            const aspect = rect.width / rect.height;
+            const d = 20;
+            camera.left = -d * aspect;
+            camera.right = d * aspect;
+            camera.top = d;
+            camera.bottom = -d;
+            camera.updateProjectionMatrix();
         }
 
         function updateThreeMesh() {
             if (!isThreeInitialized) return;
             while(voxelGroup.children.length > 0){
                 const obj = voxelGroup.children[0];
-                obj.geometry.dispose(); if(obj.material.dispose) obj.material.dispose();
+                obj.geometry.dispose(); obj.material.dispose();
                 voxelGroup.remove(obj);
             }
-            blocks3D = [];
 
             const imgData = dCtx.getImageData(0, 0, 32, 32).data;
             const boxGeo = new THREE.BoxGeometry(1, VOXEL_HEIGHT, 1);
@@ -626,192 +379,39 @@
                     });
                     const mesh = new THREE.Mesh(boxGeo, mat);
                     mesh.position.set(x - 16, VOXEL_HEIGHT / 2, y - 16);
-                    mesh.castShadow = true; mesh.receiveShadow = true;
                     voxelGroup.add(mesh);
                 }
             }
             voxelGroup.position.set(0, -VOXEL_HEIGHT / 2, 0);
         }
 
-        function build3DGameField() {
-            updateThreeMesh(); 
-            
-            const w = window.innerWidth;
-            const h = window.innerHeight - 120;
-            const aspect = w / h;
-            const d = 20;
-            
-            camera.left = -d * aspect;
-            camera.right = d * aspect;
-            camera.top = d;
-            camera.bottom = -d;
-            camera.updateProjectionMatrix();
-            if(renderer) renderer.setSize(w, h);
-
-            camera.position.set(0, 30, 26);
-            camera.lookAt(0, 0, 0);
-            if(controls) controls.enabled = false; 
-
-            const padGeo = new THREE.BoxGeometry(6, 1.2, 1);
-            const padMat = new THREE.MeshStandardMaterial({ color: 0x6c5ce7, roughness: 0.2 });
-            paddle3D = new THREE.Mesh(padGeo, padMat);
-            paddle3D.position.set(0, 0.5, 13);
-            scene.add(paddle3D);
-
-            const ballGeo = new THREE.SphereGeometry(ballPhysics.radius, 16, 16);
-            const ballMat = new THREE.MeshStandardMaterial({ color: 0xff7675 });
-            ball3D = new THREE.Mesh(ballGeo, ballMat);
-            ball3D.position.set(ballPhysics.x, 0.5, ballPhysics.z);
-            scene.add(ball3D);
-
-            blocks3D = [];
-            voxelGroup.children.forEach(mesh => {
-                blocks3D.push({
-                    mesh: mesh, alive: true,
-                    xMin: mesh.position.x - 0.5, xMax: mesh.position.x + 0.5,
-                    zMin: mesh.position.z - 0.5, zMax: mesh.position.z + 0.5
-                });
-            });
-        }
-
-        function start3DGame() {
-            if (!isGameUnlocked) return;
-            
-            document.getElementById('mainHeader').style.display = 'none';
-            document.getElementById('mainTabs').style.display = 'none';
-            document.querySelectorAll('.control-panel').forEach(p => p.style.display = 'none');
-            
-            canvasArea.classList.add('game-fullscreen');
-            
-            document.getElementById('gameOverlayUI').style.display = 'flex';
-            document.getElementById('btn-fullscreen-retry').style.display = 'none';
-            document.getElementById('gameControls').style.display = 'flex';
-            document.getElementById('gameControls').classList.add('fullscreen-controls');
-
-            document.getElementById('gameFullscreenStatus').innerText = "3Dステージ攻略開始！";
-            
-            ballPhysics.x = 0; 
-            ballPhysics.z = -12;
-            ballPhysics.dx = 0.16; 
-            ballPhysics.dz = 0.18; 
-            ballPhysics.active = true;
-
-            build3DGameField();
-            runGamePhysicsLoop();
-        }
-
-        function runGamePhysicsLoop() {
-            if (!ballPhysics || !ballPhysics.active) return;
-
-            if (moveLeft && paddle3D) paddle3D.position.x = Math.max(-stageWidth/2 + 3, paddle3D.position.x - 0.35);
-            if (moveRight && paddle3D) paddle3D.position.x = Math.min(stageWidth/2 - 3, paddle3D.position.x + 0.35);
-
-            ballPhysics.x += ballPhysics.dx;
-            ballPhysics.z += ballPhysics.dz;
-
-            const limitX = stageWidth / 2 - ballPhysics.radius;
-            if (ballPhysics.x < -limitX || ballPhysics.x > limitX) ballPhysics.dx *= -1;
-            if (ballPhysics.z < -stageDepth/2) ballPhysics.dz *= -1;
-
-            if (paddle3D && ballPhysics.z >= paddle3D.position.z - 0.6 && ballPhysics.z <= paddle3D.position.z + 0.6) {
-                if (ballPhysics.x >= paddle3D.position.x - 3 && ballPhysics.x <= paddle3D.position.x + 3) {
-                    ballPhysics.dz = -Math.abs(ballPhysics.dz);
-                    ballPhysics.dx = 0.25 * ((ballPhysics.x - paddle3D.position.x) / 3);
-                }
-            }
-
-            if (ballPhysics.z > stageDepth / 2) {
-                document.getElementById('gameFullscreenStatus').innerText = "💀 GAME OVER";
-                ballPhysics.active = false;
-                document.getElementById('btn-fullscreen-retry').style.display = 'block';
-            }
-
-            let winToken = true;
-            blocks3D.forEach(b => {
-                if (b.alive) {
-                    winToken = false;
-                    if (ballPhysics.x + ballPhysics.radius > b.xMin && ballPhysics.x - ballPhysics.radius < b.xMax &&
-                        ballPhysics.z + ballPhysics.radius > b.zMin && ballPhysics.z - ballPhysics.radius < b.zMax) {
-                        b.alive = false;
-                        voxelGroup.remove(b.mesh);
-                        ballPhysics.dz *= -1;
-                    }
-                }
-            });
-
-            if (winToken && ballPhysics.active) {
-                document.getElementById('gameFullscreenStatus').innerText = "🎉 STAGE CLEAR!";
-                ballPhysics.active = false;
-                document.getElementById('btn-fullscreen-retry').style.display = 'block';
-            }
-
-            if(ball3D) {
-                ball3D.position.x = ballPhysics.x;
-                ball3D.position.z = ballPhysics.z;
-            }
-
-            if(renderer && scene && camera) renderer.render(scene, camera);
-            gameAnimationId = requestAnimationFrame(runGamePhysicsLoop);
-        }
-
-        function retryGame() {
-            if(gameAnimationId) cancelAnimationFrame(gameAnimationId);
-            if(paddle3D && scene) scene.remove(paddle3D);
-            if(ball3D && scene) scene.remove(ball3D);
-
-            document.getElementById('btn-fullscreen-retry').style.display = 'none';
-            document.getElementById('gameFullscreenStatus').innerText = "レディ... GO!";
-
-            ballPhysics.x = 0; 
-            ballPhysics.z = -12;
-            ballPhysics.dx = 0.16; 
-            ballPhysics.dz = 0.18;
-            ballPhysics.active = true;
-
-            build3DGameField();
-            runGamePhysicsLoop();
-        }
-
-        function stopGameAndReturn() {
-            if(ballPhysics) ballPhysics.active = false;
-            if(gameAnimationId) cancelAnimationFrame(gameAnimationId);
-            
-            if(isThreeInitialized && scene) {
-                if(paddle3D) { scene.remove(paddle3D); paddle3D = null; }
-                if(ball3D) { scene.remove(ball3D); ball3D = null; }
-                if(controls) {
-                    controls.enabled = true;
-                }
-            }
-
-            canvasArea.classList.remove('game-fullscreen');
-            document.getElementById('gameOverlayUI').style.display = 'none';
-            document.getElementById('gameControls').style.display = 'none';
-            document.getElementById('gameControls').classList.remove('fullscreen-controls');
-
-            document.getElementById('mainHeader').style.display = 'flex';
-            document.getElementById('mainTabs').style.display = 'flex';
-            
-            lastCanvasWidth = 0; lastCanvasHeight = 0; 
-            initCanvasSize();
-            
-            switchStep(3);
-        }
-
         function magicConvert() {
-            const tempCanvas = document.createElement('canvas'); tempCanvas.width = tempCanvas.height = 32;
+            const tempCanvas = document.createElement('canvas'); 
+            tempCanvas.width = tempCanvas.height = 32;
             const tCtx = tempCanvas.getContext('2d');
-            tCtx.imageSmoothingEnabled = false; tCtx.drawImage(sCanvas, 0, 0, 32, 32);
+            tCtx.imageSmoothingEnabled = false; 
+            tCtx.drawImage(sCanvas, 0, 0, 32, 32);
             
-            const imgData = tCtx.getImageData(0, 0, 32, 32); const data = imgData.data;
+            const imgData = tCtx.getImageData(0, 0, 32, 32);
+            const data = imgData.data;
+            
             for (let i = 0; i < data.length; i += 4) {
-                if (data[i + 3] > 40) { 
+                let alpha = data[i + 3];
+                if (alpha > 40) { 
                     data[i + 3] = 255; 
-                    if(data[i] > 245 && data[i+1] > 245 && data[i+2] > 245) data[i + 3] = 0;
-                } else { data[i + 3] = 0; }
+                    if(data[i] > 245 && data[i+1] > 245 && data[i+2] > 245) {
+                        data[i + 3] = 0;
+                    }
+                } else {
+                    data[i + 3] = 0; 
+                }
             }
-            dCtx.clearRect(0, 0, 32, 32); dCtx.putImageData(imgData, 0, 0);
-            saveHistory(2); autoSaveToStorage(); switchStep(2);
+            dCtx.clearRect(0, 0, 32, 32);
+            dCtx.putImageData(imgData, 0, 0);
+            
+            saveHistory(2); 
+            autoSaveToStorage();
+            switchStep(2);
         }
 
         function generateRbxmXml() {
@@ -831,14 +431,15 @@
 
         function generateObjText() {
             const imgData = dCtx.getImageData(0, 0, 32, 32).data;
-            let obj = `# DOTS 3D OBJ Export\n`; let vCount = 1;
+            let obj = `# DOTS 3D OBJ Export\n`;
+            let vCount = 1;
             for (let y = 0; y < 32; y++) {
                 for (let x = 0; x < 32; x++) {
                     const idx = (y * 32 + x) * 4;
                     if (imgData[idx + 3] < 128) continue;
                     const px = x - 16, py = 0, pz = y - 16, h = VOXEL_HEIGHT;
                     obj += `v ${px} ${py} ${pz}\nv ${px+1} ${py} ${pz}\nv ${px+1} ${py+h} ${pz}\nv ${px} ${py+h} ${pz}\n`;
-                    obj += `v ${px} ${py} ${pz+1}\nv ${px+1} ${py+pz+1}\nv ${px+1} ${py+h} ${pz+1}\nv ${px} ${py+h} ${pz+1}\n`;
+                    obj += `v ${px} ${py} ${pz+1}\nv ${px+1} ${py} ${pz+1}\nv ${px+1} ${py+h} ${pz+1}\nv ${px} ${py+h} ${pz+1}\n`;
                     obj += `f ${vCount} ${vCount+1} ${vCount+2} ${vCount+3}\nf ${vCount+5} ${vCount+4} ${vCount+7} ${vCount+6}\n`;
                     obj += `f ${vCount} ${vCount+3} ${vCount+7} ${vCount+4}\nf ${vCount+1} ${vCount+5} ${vCount+6} ${vCount+2}\n`;
                     obj += `f ${vCount+3} ${vCount+2} ${vCount+6} ${vCount+7}\nf ${vCount} ${vCount+4} ${vCount+5} ${vCount+1}\n`;
@@ -868,7 +469,7 @@
 
         function executeCanvasPicker(ctx, x, y, width, height, targetPicker) {
             const imgData = ctx.getImageData(x, y, 1, 1).data;
-            if (imgData[3] === 0) return; 
+            if (imgData[3] === 0) return;
             const hex = "#" + ("000000" + ((imgData[0] << 16) | (imgData[1] << 8) | imgData[2]).toString(16)).slice(-6);
             targetPicker.value = hex;
         }
@@ -887,49 +488,56 @@
         window.addEventListener('touchend', stopDrawing);
 
         function startDrawing(e) {
-            if (currentStep > 2) return;
-            if (e.touches && dotMode !== 'pan') e.preventDefault(); 
+            if (currentStep > 2) return; // STEP3以降はお絵かき処理を完全にスルー（OrbitControlsを邪魔しない）
+            
+            // キャンバス内での描画時のみスクロールをガード
+            if (e.touches) e.preventDefault(); 
+            isDrawing = true; 
             const pos = getCanvasTouchPos(e);
             
             if (currentStep === 1) { 
-                isDrawing = true; const rx = Math.floor(pos.x), ry = Math.floor(pos.y);
-                if (sketchMode === 'bucket') { executeCanvasBucket(sCtx, rx, ry, sketchColor.value, sCanvas.width, sCanvas.height); stopDrawing(); }
-                else if (sketchMode === 'picker') { executeCanvasPicker(sCtx, rx, ry, sCanvas.width, sCanvas.height, sketchColor); stopDrawing(); }
-                else { sCtx.beginPath(); sCtx.moveTo(pos.x, pos.y); }
+                const rx = Math.floor(pos.x), ry = Math.floor(pos.y);
+                if (sketchMode === 'bucket') {
+                    executeCanvasBucket(sCtx, rx, ry, sketchColor.value, sCanvas.width, sCanvas.height);
+                    stopDrawing();
+                } else if (sketchMode === 'picker') {
+                    executeCanvasPicker(sCtx, rx, ry, sCanvas.width, sCanvas.height, sketchColor);
+                    stopDrawing();
+                } else {
+                    sCtx.beginPath(); sCtx.moveTo(pos.x, pos.y); 
+                }
             } else if (currentStep === 2) {
-                if (dotMode === 'pan') {
-                    isPanning = true; const p = e.touches ? e.touches[0] : e;
-                    startPanX = p.clientX - panX; startPanY = p.clientY - panY;
-                } else { isDrawing = true; handleDotAction(pos.x, pos.y); }
+                handleDotAction(pos.x, pos.y);
             }
         }
 
         function draw(e) {
-            if (currentStep > 2) return;
-            const pos = getCanvasTouchPos(e); const p = e.touches ? e.touches[0] : e;
+            if (!isDrawing || currentStep > 2) return;
+            if (e.touches) e.preventDefault();
+            const pos = getCanvasTouchPos(e);
             
-            if (currentStep === 1 && isDrawing) {
-                if (e.touches) e.preventDefault();
+            if (currentStep === 1) {
                 if (sketchMode === 'pen' || sketchMode === 'eraser') {
                     sCtx.strokeStyle = sketchMode === 'eraser' ? '#ffffff' : sketchColor.value;
                     sCtx.globalCompositeOperation = sketchMode === 'eraser' ? 'destination-out' : 'source-over';
                     sCtx.lineTo(pos.x, pos.y); sCtx.stroke();
                 }
             } else if (currentStep === 2) {
-                if (isPanning) { panX = p.clientX - startPanX; panY = p.clientY - startPanY; applyTransform(); }
-                else if (isDrawing) { if (e.touches) e.preventDefault(); handleDotAction(pos.x, pos.y); }
+                handleDotAction(pos.x, pos.y);
             }
         }
 
         function stopDrawing() { 
-            if (isDrawing && currentStep <= 2) { saveHistory(currentStep); autoSaveToStorage(); } 
-            isDrawing = false; isPanning = false;
+            if (isDrawing && currentStep <= 2) {
+                saveHistory(currentStep); 
+                autoSaveToStorage();
+            } 
+            isDrawing = false; 
         }
 
         function handleDotAction(clientX, clientY) {
             const rect = canvasArea.getBoundingClientRect();
-            const adjustedX = (clientX - panX) / zoomLevel; const adjustedY = (clientY - panY) / zoomLevel;
-            const x = Math.floor(adjustedX / (rect.width / 32)); const y = Math.floor(adjustedY / (rect.height / 32));
+            const x = Math.floor(clientX / (rect.width / 32)), y = Math.floor(clientY / (rect.height / 32));
             if (x < 0 || x >= 32 || y < 0 || y >= 32) return;
             
             if (dotMode === 'pen') { dCtx.fillStyle = colorPicker.value; dCtx.fillRect(x, y, 1, 1); }
@@ -940,66 +548,40 @@
 
         function saveHistory(step) {
             const cvs = step === 1 ? sCanvas : dCanvas;
-            if(!historyStack[step]) historyStack[step] = [];
             historyStack[step].push(cvs.toDataURL());
             if(historyStack[step].length > 30) historyStack[step].shift();
-            redoStack[step] = []; updateUndoRedoButtons();
         }
 
         document.getElementById('btn-undo').onclick = () => {
-            const stack = historyStack[currentStep]; const rStack = redoStack[currentStep];
+            const stack = historyStack[currentStep];
             if (stack && stack.length > 1) {
-                const current = stack.pop(); rStack.push(current); const prev = stack[stack.length - 1]; 
-                const img = new Image(); img.src = prev;
+                stack.pop(); const prev = stack[stack.length - 1]; const img = new Image(); img.src = prev;
                 img.onload = () => {
-                    if (currentStep === 1) { sCtx.clearRect(0, 0, sCanvas.width, sCanvas.height); sCtx.drawImage(img, 0, 0, sCanvas.width, sCanvas.height); }
-                    else { dCtx.clearRect(0, 0, 32, 32); dCtx.drawImage(img, 0, 0, 32, 32); }
-                    autoSaveToStorage(); updateUndoRedoButtons();
+                    if (currentStep === 1) {
+                        sCtx.clearRect(0, 0, sCanvas.width, sCanvas.height); sCtx.drawImage(img, 0, 0, sCanvas.width, sCanvas.height);
+                    } else {
+                        dCtx.clearRect(0, 0, 32, 32); dCtx.drawImage(img, 0, 0, 32, 32);
+                    }
+                    autoSaveToStorage();
                 };
             }
         };
-
-        document.getElementById('btn-redo').onclick = () => {
-            const stack = historyStack[currentStep]; const rStack = redoStack[currentStep];
-            if (rStack && rStack.length > 0) {
-                const next = rStack.pop(); stack.push(next); const img = new Image(); img.src = next;
-                img.onload = () => {
-                    if (currentStep === 1) { sCtx.clearRect(0, 0, sCanvas.width, sCanvas.height); sCtx.drawImage(img, 0, 0, sCanvas.width, sCanvas.height); }
-                    else { dCtx.clearRect(0, 0, 32, 32); dCtx.drawImage(img, 0, 0, 32, 32); }
-                    autoSaveToStorage(); updateUndoRedoButtons();
-                };
-            }
-        };
-
-        function updateUndoRedoButtons() {
-            const undoEl = document.getElementById('btn-undo');
-            const redoEl = document.getElementById('btn-redo');
-            if(undoEl) {
-                undoEl.disabled = (!historyStack[currentStep] || historyStack[currentStep].length <= 1);
-                undoEl.style.opacity = undoEl.disabled ? "0.4" : "1";
-            }
-            if(redoEl) {
-                redoEl.disabled = (!redoStack[currentStep] || redoStack[currentStep].length === 0);
-                redoEl.style.opacity = redoEl.disabled ? "0.4" : "1";
-            }
-        }
 
         const sTools = {pen:'btn-sketch-pen', eraser:'btn-sketch-eraser', bucket:'btn-sketch-bucket', picker:'btn-sketch-picker'};
         Object.keys(sTools).forEach(k => {
-            const el = document.getElementById(sTools[k]);
-            if(el) {
-                el.onclick = () => {
-                    sketchMode = k; Object.values(sTools).forEach(id => document.getElementById(id).classList.remove('active'));
-                    document.getElementById(sTools[k]).classList.add('active');
-                };
-            }
+            document.getElementById(sTools[k]).onclick = () => {
+                sketchMode = k; Object.values(sTools).forEach(id => document.getElementById(id).classList.remove('active'));
+                document.getElementById(sTools[k]).classList.add('active');
+            };
         });
-        document.getElementById('btn-sketch-clear').onclick = () => { if(confirm("らくがきをぜんぶ消しますか？")) { sCtx.clearRect(0,0,sCanvas.width,sCanvas.height); sCtx.fillStyle = '#ffffff'; sCtx.fillRect(0,0,sCanvas.width,sCanvas.height); saveHistory(1); autoSaveToStorage(); } };
+        document.getElementById('btn-sketch-clear').onclick = () => { if(confirm("らくがきをぜんぶ消しますか？")) { sCtx.clearRect(0,0,sCanvas.width,sCanvas.height); saveHistory(1); autoSaveToStorage(); } };
 
         const dTools = {pen:'btn-pen', eraser:'btn-eraser', bucket:'btn-bucket', picker:'btn-picker'};
-        Object.keys(dTools).forEach(k => { 
-            const el = document.getElementById(dTools[k]);
-            if(el) el.onclick = () => setDotMode(k); 
+        Object.keys(dTools).forEach(k => {
+            document.getElementById(dTools[k]).onclick = () => {
+                dotMode = k; Object.values(dTools).forEach(id => document.getElementById(id).classList.remove('active'));
+                document.getElementById(dTools[k]).classList.add('active');
+            };
         });
         document.getElementById('btn-toggle-grid').onclick = () => { gridActive = !gridActive; drawGrid(); };
 
@@ -1020,12 +602,11 @@
             const name = artNameInput.value.trim();
             if (!name) { alert("作品名を入力してください。"); artNameInput.focus(); return; }
 
-            isGameUnlocked = false;
-            applyGameUnlockUI();
-
             const durationSeconds = Math.floor((Date.now() - startTime) / 1000);
-            const uploadCanvas = document.createElement('canvas'); uploadCanvas.width = uploadCanvas.height = 512;
-            const uctx = uploadCanvas.getContext('2d'); uctx.imageSmoothingEnabled = false; 
+            const uploadCanvas = document.createElement('canvas');
+            uploadCanvas.width = uploadCanvas.height = 512;
+            const uctx = uploadCanvas.getContext('2d');
+            uctx.imageSmoothingEnabled = false; 
 
             if (bgLayer.style.display !== 'none' && bgLayer.style.backgroundImage) {
                 const bgImg = new Image(); bgImg.src = bgLayer.style.backgroundImage.slice(5, -2);
@@ -1035,9 +616,10 @@
             uctx.drawImage(dCanvas, 0, 0, 512, 512);
             
             const base64Data = uploadCanvas.toDataURL('image/png').split(',')[1];
-            const rbxmData = generateRbxmXml(); const objData = generateObjText();
+            const rbxmData = generateRbxmXml();
+            const objData = generateObjText();
 
-            if(!confirm(`「${name}」をアップロードしてアンケートに移動しますか？\n（回答完了後、STEP 03の専用ゲームがそのまま遊べます！）`)) return;
+            if(!confirm(`「${name}」をアップロードしてアンケートに移動しますか？`)) return;
 
             loadingOverlay.style.display = 'flex';
 
@@ -1045,31 +627,36 @@
                 const response = await fetch(GAS_ENDPOINT, {
                     method: "POST",
                     body: JSON.stringify({
-                        image: base64Data, rbxm: rbxmData, obj: objData,
-                        name: name, location: "WEB_MAGIC_3D_SINGLE_LOCK", duration: durationSeconds
+                        image: base64Data,
+                        rbxm: rbxmData,
+                        obj: objData,
+                        name: name, 
+                        location: "WEB_MAGIC_3D_MULTIOUT", 
+                        duration: durationSeconds
                     })
                 });
                 const result = await response.json();
 
                 if(result.status === "success") {
-                    isGameUnlocked = true;
-                    autoSaveToStorage(); 
+                    localStorage.removeItem('dots_backup_sketch');
+                    localStorage.removeItem('dots_backup_dot');
+                    localStorage.removeItem('dots_backup_artname');
 
                     try { await navigator.clipboard.writeText(result.serial); } catch(e) {}
                     loadingOverlay.style.display = 'none';
-                    
-                    alert(`アップロード成功！\n管理番号「${result.serial}」をコピーしました。\nOKを押すとこのタブのままアンケートページを開きます。回答後にブラウザの「戻る」で戻ってゲームを遊んでね！`);
+                    alert(`アップロード成功！\n管理番号「${result.serial}」をコピーしました。\nアンケートのご記入をお願いします。`);
                     
                     const params = new URLSearchParams();
                     params.append("entry.46158305", name);
                     params.append("entry.1524592109", result.serial);
-                    
                     window.location.href = `${FORM_URL}?${params.toString()}`;
                 } else {
-                    loadingOverlay.style.display = 'none'; alert("エラー: " + result.message);
+                    loadingOverlay.style.display = 'none';
+                    alert("エラー: " + result.message);
                 }
             } catch (error) {
-                loadingOverlay.style.display = 'none'; alert("通信エラーが発生しました。");
+                loadingOverlay.style.display = 'none';
+                alert("通信エラーが発生しました。");
             }
         };
     </script>
