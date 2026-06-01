@@ -7,7 +7,6 @@
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <script async src="https://docs.opencv.org/4.5.4/opencv.js" id="opencv-js"></script>
     <style>
         :root { 
             --primary-color: #6c5ce7; 
@@ -107,7 +106,6 @@
                 <canvas id="gridCanvas"></canvas>
                 <div id="threeContainer"></div>
                 
-                <!-- 3Dゲーム用パドル操作コントローラー -->
                 <div id="gameControls">
                     <button class="btn" id="btn-game-left" style="width:70px; height:50px; background:rgba(108,92,231,0.7); color:white; border-radius:12px;"><span class="material-icons" style="font-size:2rem;">arrow_back</span></button>
                     <button class="btn" id="btn-game-right" style="width:70px; height:50px; background:rgba(108,92,231,0.7); color:white; border-radius:12px;"><span class="material-icons" style="font-size:2rem;">arrow_forward</span></button>
@@ -125,15 +123,15 @@
 
         <div class="control-panel active" id="panel-step1">
             <div class="section-label">カメラ取り込み</div>
-            <div class="row" style="margin-bottom: 5px;">
-                <button class="btn" id="btn-camera-toggle" style="width:100%; border-radius:12px; background:#f1f2f6; font-weight:bold; font-size:0.8rem; gap:6px;"><span class="material-icons">camera_alt</span> 📷 専用用紙をカメラで読み込む</button>
-                <button class="btn" id="btn-camera-shutter" style="width:100%; border-radius:12px; background:var(--accent-color); color:white; font-weight:bold; font-size:0.8rem; gap:6px; display:none;"><span class="material-icons">photo_camera</span> 📸 シャッターを押す（ドット化）</button>
+            <div class="row" style="margin-bottom: 5px; gap:10px;">
+                <button class="btn" id="btn-camera-toggle" style="width:100%; border-radius:12px; background:#f1f2f6; font-weight:bold; font-size:0.8rem; height:45px; display:flex; align-items:center; justify-content:center; gap:6px;"><span class="material-icons">camera_alt</span> 専用用紙をカメラで読み込む</button>
+                <button class="btn" id="btn-camera-shutter" style="width:100%; border-radius:12px; background:var(--accent-color); color:white; font-weight:bold; font-size:0.8rem; height:45px; display:none; align-items:center; justify-content:center; gap:6px;"><span class="material-icons">photo_camera</span> シャッターを押す（ドット化）</button>
             </div>
             <div class="section-label">らくがきツール</div>
             <div class="row">
                 <input type="color" id="sketchColor" value="#000000" style="width:40px; height:40px; border:none; background:none; cursor:pointer;">
                 <button class="btn active" id="btn-sketch-pen"><span class="material-icons">edit</span></button>
-                <button class="btn" id="btn-sketch-eraser"><img src="eraser.png" alt="消しゴム"></button>
+                <button class="btn" id="btn-sketch-eraser"><span class="material-icons">cleaning_services</span></button>
                 <button class="btn" id="btn-sketch-bucket"><span class="material-icons">format_color_fill</span></button>
                 <button class="btn" id="btn-sketch-picker"><span class="material-icons">colorize</span></button>
                 <button class="btn" id="btn-sketch-clear" style="color:var(--accent-color); margin-left: auto;"><span class="material-icons">delete_outline</span></button>
@@ -147,7 +145,7 @@
             <div class="row">
                 <input type="color" id="colorPicker" value="#000000" style="width:40px; height:40px; border:none; background:none; cursor:pointer;">
                 <button class="btn active" id="btn-pen"><span class="material-icons">edit</span></button>
-                <button class="btn" id="btn-eraser"><img src="eraser.png" alt="消しゴム"></button> 
+                <button class="btn" id="btn-eraser"><span class="material-icons">cleaning_services</span></button> 
                 <button class="btn" id="btn-bucket"><span class="material-icons">format_color_fill</span></button>
                 <button class="btn" id="btn-picker"><span class="material-icons">colorize</span></button>
                 <button class="btn" id="btn-toggle-grid" style="margin-left: auto;"><span class="material-icons">grid_on</span></button>
@@ -160,25 +158,20 @@
             <button class="btn-magic" style="background: var(--primary-color);" onclick="goTo3DStep()">3Dボクセルにする！ <span class="material-icons">view_in_ar</span></button>
         </div>
 
-        <!-- STEP03: 3Dプレビュー & アンロック型ゲーム機動 -->
         <div class="control-panel" id="panel-step3">
             <div class="section-label">3D立体プレビュー & ミニゲーム</div>
             <p style="font-size:0.8rem; color:#333; text-align:center; margin: 5px 0; font-weight: bold;">厚み（3.0）のブロックフィギュアに変身しました！</p>
             
-            <!-- ロック・アンロック連動型ゲーム始動メニュー -->
             <div id="gameMenuArea" style="display:flex; flex-direction:column; gap:8px; margin-top:5px;">
-                <!-- ロック時表示 -->
                 <div id="gameLockedMessage" style="background:#f1f2f6; border-radius:12px; padding:12px; text-align:center; font-size:0.8rem; color:#57606f;">
                     <span class="material-icons" style="vertical-align:middle; font-size:1.1rem; color:var(--accent-color);">lock</span>
                     STEP 04で作品を送信してアンケートに答えると、この作品がそのままゲームの3Dステージになって遊べるようになります！
                 </div>
-                <!-- プレイボタン本体 -->
                 <button id="btn-start-game" class="btn-magic" style="background:linear-gradient(135deg, #a1a1a1, #b2bec3); height:48px; font-size:0.95rem; box-shadow:none; cursor:not-allowed;" disabled onclick="start3DGame()">
                     <span id="gameBtnIcon" class="material-icons">lock</span> <span id="gameBtnText">送信＆アンケート後にアンロック</span>
                 </button>
             </div>
             
-            <!-- プレイ中・リトライ用UIエリア -->
             <div id="gamePlayingArea" style="display:none; flex-direction:column; gap:8px; margin-top:5px;">
                 <div class="row" style="gap:10px;">
                     <button id="btn-retry-game" class="btn-magic" style="background:linear-gradient(135deg, #ff7675, #fab1a0); height:40px; font-size:0.9rem; box-shadow:none; flex:1; display:none;" onclick="retryGame()"><span class="material-icons">refresh</span> もう一度挑戦する！</button>
@@ -243,16 +236,13 @@
         let isPanning = false;
         let startPanX = 0, startPanY = 0;
 
-        // 厚み 3.0 固定
         const VOXEL_HEIGHT = 3.0;
-
-        // ゲームアンロック管理フラグ
         let isGameUnlocked = false;
 
         // 3Dおよびゲーム物理変数
         let scene, camera, renderer, controls, voxelGroup;
         let isThreeInitialized = false;
-        let paddle3D, ball3D, blocks3D = [];
+        let paddle3D = null, ball3D = null, blocks3D = [];
         let ballPhysics = { x: 0, z: 5, dx: 0.15, dz: -0.18, radius: 0.6, active: false };
         let moveLeft = false, moveRight = false;
         let gameAnimationId = null;
@@ -303,7 +293,6 @@
             }
         }
 
-        // ==================== 💾 リカバリー＆アンロック永続セーブ機能 ====================
         function autoSaveToStorage() {
             try {
                 localStorage.setItem('dots_backup_sketch', sCanvas.toDataURL());
@@ -344,21 +333,31 @@
             setupCameraAndZoomButtons();
         });
 
-        // アンロック状態をUIボタン群へクリーンに同期反映
         function applyGameUnlockUI() {
             const btn = document.getElementById('btn-start-game');
             const icon = document.getElementById('gameBtnIcon');
             const text = document.getElementById('gameBtnText');
             const msg = document.getElementById('gameLockedMessage');
 
-            if (isGameUnlocked) {
+            if (isGameUnlocked && btn) {
                 btn.disabled = false;
                 btn.style.background = "linear-gradient(135deg, #0984e3, #74b9ff)";
                 btn.style.cursor = "pointer";
-                icon.innerText = "sports_esports";
-                text.innerText = "自分だけの3Dステージで遊ぶ！";
+                if(icon) icon.innerText = "sports_esports";
+                if(text) text.innerText = "自分だけの3Dステージで遊ぶ！";
                 if(msg) msg.style.display = "none";
             }
+        }
+
+        function stopCamera() {
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
+            }
+            videoPreview.style.display = 'none';
+            cameraOverlay.style.display = 'none';
+            document.getElementById('btn-camera-toggle').style.display = 'flex';
+            document.getElementById('btn-camera-shutter').style.display = 'none';
         }
 
         function switchStep(step) {
@@ -389,7 +388,7 @@
             }
             if (step === 3) {
                 updateThreeMesh();
-                applyGameUnlockUI(); // ページをまたいだ時のアンロック整合
+                applyGameUnlockUI();
             }
             updateUndoRedoButtons();
         }
@@ -407,24 +406,36 @@
                 try {
                     cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
                     videoPreview.srcObject = cameraStream;
-                    videoPreview.style.display = 'block'; cameraOverlay.style.display = 'block';
-                    camToggle.style.display = 'none'; shutter.style.display = 'block';
-                } catch (e) { alert("カメラの起動に失敗しました。"); }
+                    videoPreview.style.display = 'block'; 
+                    cameraOverlay.style.display = 'block';
+                    camToggle.style.display = 'none'; 
+                    shutter.style.display = 'flex';
+                } catch (e) { alert("カメラの起動に失敗しました。カメラのアクセス権限を確認してください。"); }
             };
 
             shutter.onclick = () => {
                 try {
-                    dCtx.drawImage(videoPreview, 60, 60, 360, 360, 0, 0, 32, 32);
+                    // 比率を保って32x32のドットキャンバスの中央へマッピング描画
+                    dCtx.clearRect(0, 0, 32, 32);
+                    dCtx.drawImage(videoPreview, 0, 0, videoPreview.videoWidth, videoPreview.videoHeight, 0, 0, 32, 32);
+                    
                     let imgData = dCtx.getImageData(0,0,32,32);
                     let d = imgData.data;
                     for(let i=0; i<d.length; i+=4) {
                         let v = (d[i] + d[i+1] + d[i+2]) / 3;
-                        if(v > 135) { d[i+3] = 0; }
+                        // 簡易的な二値化(紙の白色を透過させる)
+                        if(v > 140) { d[i+3] = 0; }
                         else { d[i+3] = 255; }
                     }
                     dCtx.putImageData(imgData, 0, 0);
-                    saveHistory(2); autoSaveToStorage(); switchStep(2);
-                } catch(e) { switchStep(2); }
+                    saveHistory(2); 
+                    autoSaveToStorage(); 
+                    stopCamera();
+                    switchStep(2);
+                } catch(e) { 
+                    stopCamera();
+                    switchStep(2); 
+                }
             };
 
             document.getElementById('btn-zoom-in').onclick = () => { zoomLevel = Math.min(4.0, zoomLevel + 0.3); applyTransform(); };
@@ -435,9 +446,16 @@
         function setDotMode(mode) {
             dotMode = mode;
             const dTools = {pen:'btn-pen', eraser:'btn-eraser', bucket:'btn-bucket', picker:'btn-picker'};
-            Object.values(dTools).forEach(id => document.getElementById(id).classList.remove('active'));
-            document.getElementById('btn-pan').classList.toggle('active', mode === 'pan');
-            if(mode !== 'pan' && dTools[mode]) document.getElementById(dTools[mode]).classList.add('active');
+            Object.values(dTools).forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.classList.remove('active');
+            });
+            const panBtn = document.getElementById('btn-pan');
+            if(panBtn) panBtn.classList.toggle('active', mode === 'pan');
+            if(mode !== 'pan' && dTools[mode]) {
+                const activeEl = document.getElementById(dTools[mode]);
+                if(activeEl) activeEl.classList.add('active');
+            }
         }
 
         function applyTransform() {
@@ -450,7 +468,6 @@
             dCanvas.style.transform = ''; gCanvas.style.transform = '';
         }
 
-        // ==================== 🛠️ Three.js 立体エンジンベース ====================
         function initThree() {
             const rect = canvasArea.getBoundingClientRect();
             scene = new THREE.Scene();
@@ -480,9 +497,9 @@
 
             function animate3D() {
                 requestAnimationFrame(animate3D);
-                if (currentStep === 3 && !ballPhysics.active) {
-                    controls.update();
-                    renderer.render(scene, camera);
+                if (currentStep === 3 && (!ballPhysics || !ballPhysics.active)) {
+                    if(controls) controls.update();
+                    if(renderer) renderer.render(scene, camera);
                 }
             }
             animate3D();
@@ -518,29 +535,27 @@
             voxelGroup.position.set(0, -VOXEL_HEIGHT / 2, 0);
         }
 
-        // ==================== 🎮 専用3Dブロック崩しコア（リトライ・純粋単体化） ====================
         function build3DGameField() {
             updateThreeMesh(); 
             
             camera.position.set(0, 30, 28);
             camera.lookAt(0, 0, 0);
-            controls.enabled = false; 
+            if(controls) controls.enabled = false; 
 
-            // パドル生成
+            // パドルのクリーン配置
             const padGeo = new THREE.BoxGeometry(6, 1.2, 1);
             const padMat = new THREE.MeshStandardMaterial({ color: 0x6c5ce7, roughness: 0.2 });
             paddle3D = new THREE.Mesh(padGeo, padMat);
             paddle3D.position.set(0, 0.5, 13);
             scene.add(paddle3D);
 
-            // ボール生成
+            // ボールのクリーン配置
             const ballGeo = new THREE.SphereGeometry(ballPhysics.radius, 16, 16);
             const ballMat = new THREE.MeshStandardMaterial({ color: 0xff7675 });
             ball3D = new THREE.Mesh(ballGeo, ballMat);
             ball3D.position.set(0, 0.5, 5);
             scene.add(ball3D);
 
-            // 自分のドットモデルから当たり判定用ブロックを走査・マッピング
             blocks3D = [];
             voxelGroup.children.forEach(mesh => {
                 blocks3D.push({
@@ -552,11 +567,11 @@
         }
 
         function start3DGame() {
-            if (!isGameUnlocked) return; // 未アンロック状態の完全防御
+            if (!isGameUnlocked) return;
             
             document.getElementById('gameMenuArea').style.display = 'none';
             document.getElementById('gamePlayingArea').style.display = 'flex';
-            document.getElementById('btn-retry-game').style.display = 'none'; // 開始時はリトライ非表示
+            document.getElementById('btn-retry-game').style.display = 'none';
             document.getElementById('btn-confirm-3d').style.display = 'none';
             document.getElementById('gameControls').style.display = 'flex';
 
@@ -571,10 +586,10 @@
         }
 
         function runGamePhysicsLoop() {
-            if (!ballPhysics.active) return;
+            if (!ballPhysics || !ballPhysics.active) return;
 
-            if (moveLeft) paddle3D.position.x = Math.max(-stageWidth/2 + 3, paddle3D.position.x - 0.3);
-            if (moveRight) paddle3D.position.x = Math.min(stageWidth/2 - 3, paddle3D.position.x + 0.3);
+            if (moveLeft && paddle3D) paddle3D.position.x = Math.max(-stageWidth/2 + 3, paddle3D.position.x - 0.3);
+            if (moveRight && paddle3D) paddle3D.position.x = Math.min(stageWidth/2 - 3, paddle3D.position.x + 0.3);
 
             ballPhysics.x += ballPhysics.dx;
             ballPhysics.z += ballPhysics.dz;
@@ -583,18 +598,17 @@
             if (ballPhysics.x < -limitX || ballPhysics.x > limitX) ballPhysics.dx *= -1;
             if (ballPhysics.z < -stageDepth/2) ballPhysics.dz *= -1;
 
-            if (ballPhysics.z >= paddle3D.position.z - 0.6 && ballPhysics.z <= paddle3D.position.z + 0.6) {
+            if (paddle3D && ballPhysics.z >= paddle3D.position.z - 0.6 && ballPhysics.z <= paddle3D.position.z + 0.6) {
                 if (ballPhysics.x >= paddle3D.position.x - 3 && ballPhysics.x <= paddle3D.position.x + 3) {
                     ballPhysics.dz = -Math.abs(ballPhysics.dz);
                     ballPhysics.dx = 0.25 * ((ballPhysics.x - paddle3D.position.x) / 3);
                 }
             }
 
-            // 失敗（ゲームオーバー）時のリトライ誘導
             if (ballPhysics.z > stageDepth / 2) {
                 document.getElementById('gameStatusLabel').innerText = "ゲームオーバー！「もう一度挑戦する」ボタンからリトライできます。";
                 ballPhysics.active = false;
-                document.getElementById('btn-retry-game').style.display = 'block'; // 再挑戦ボタン出現
+                document.getElementById('btn-retry-game').style.display = 'block';
             }
 
             let winToken = true;
@@ -613,21 +627,22 @@
             if (winToken && ballPhysics.active) {
                 document.getElementById('gameStatusLabel').innerText = "🎉 見事な完全クリア！おめでとうございます！";
                 ballPhysics.active = false;
-                document.getElementById('btn-retry-game').style.display = 'block'; // クリア後のリトライも可能に
+                document.getElementById('btn-retry-game').style.display = 'block';
             }
 
-            ball3D.position.x = ballPhysics.x;
-            ball3D.position.z = ballPhysics.z;
+            if(ball3D) {
+                ball3D.position.x = ballPhysics.x;
+                ball3D.position.z = ballPhysics.z;
+            }
 
-            renderer.render(scene, camera);
+            if(renderer && scene && camera) renderer.render(scene, camera);
             gameAnimationId = requestAnimationFrame(runGamePhysicsLoop);
         }
 
-        // 「再挑戦（リトライ）」処理の実装
         function retryGame() {
             if(gameAnimationId) cancelAnimationFrame(gameAnimationId);
-            if(paddle3D) scene.remove(paddle3D);
-            if(ball3D) scene.remove(ball3D);
+            if(paddle3D && scene) scene.remove(paddle3D);
+            if(ball3D && scene) scene.remove(ball3D);
 
             document.getElementById('btn-retry-game').style.display = 'none';
             document.getElementById('gameStatusLabel').innerText = "ステージをリセットして再スタートします！";
@@ -642,27 +657,35 @@
         }
 
         function stopGameAndReturn() {
-            ballPhysics.active = false;
+            if(ballPhysics) ballPhysics.active = false;
             if(gameAnimationId) cancelAnimationFrame(gameAnimationId);
             
-            if(isThreeInitialized) {
-                if(paddle3D) scene.remove(paddle3D);
-                if(ball3D) scene.remove(ball3D);
-                controls.enabled = true;
-                camera.position.set(25, 25, 25); camera.lookAt(0, 0, 0);
+            if(isThreeInitialized && scene) {
+                if(paddle3D) { scene.remove(paddle3D); paddle3D = null; }
+                if(ball3D) { scene.remove(ball3D); ball3D = null; }
+                if(controls) {
+                    controls.enabled = true;
+                    camera.position.set(25, 25, 25); 
+                    camera.lookAt(0, 0, 0);
+                }
             }
 
-            document.getElementById('gameMenuArea').style.display = 'flex';
-            document.getElementById('gamePlayingArea').style.display = 'none';
-            document.getElementById('btn-confirm-3d').style.display = 'flex';
-            document.getElementById('gameControls').style.display = 'none';
-            document.getElementById('gameStatusLabel').innerText = "🖯 画面をドラッグすると、いろいろな角度からチェックできます";
+            const gMenu = document.getElementById('gameMenuArea');
+            const gPlay = document.getElementById('gamePlayingArea');
+            const c3d = document.getElementById('btn-confirm-3d');
+            const gCtrl = document.getElementById('gameControls');
+            const gStatus = document.getElementById('gameStatusLabel');
+
+            if(gMenu) gMenu.style.display = 'flex';
+            if(gPlay) gPlay.style.display = 'none';
+            if(c3d) c3d.style.display = 'flex';
+            if(gCtrl) gCtrl.style.display = 'none';
+            if(gStatus) gStatus.innerText = "🖯 画面をドラッグすると、いろいろな角度からチェックできます";
             
             updateThreeMesh();
             applyGameUnlockUI();
         }
 
-        // ==================== 🪄 マジックドット化・コンバート ====================
         function magicConvert() {
             const tempCanvas = document.createElement('canvas'); tempCanvas.width = tempCanvas.height = 32;
             const tCtx = tempCanvas.getContext('2d');
@@ -679,7 +702,6 @@
             saveHistory(2); autoSaveToStorage(); switchStep(2);
         }
 
-        // ==================== 📦 ファイル各種生成処理 ====================
         function generateRbxmXml() {
             const imgData = dCtx.getImageData(0, 0, 32, 32).data;
             let xml = `<roblox xmlns:xd="http://www.w3.org/2006/xd" version="4">\n  <Item class="Folder" referent="RBX0">\n    <Properties>\n      <string name="Name">${artNameInput.value.trim() || "VoxelModel"}</string>\n    </Properties>\n`;
@@ -806,6 +828,7 @@
 
         function saveHistory(step) {
             const cvs = step === 1 ? sCanvas : dCanvas;
+            if(!historyStack[step]) historyStack[step] = [];
             historyStack[step].push(cvs.toDataURL());
             if(historyStack[step].length > 30) historyStack[step].shift();
             redoStack[step] = []; updateUndoRedoButtons();
@@ -837,23 +860,35 @@
         };
 
         function updateUndoRedoButtons() {
-            document.getElementById('btn-undo').disabled = (!historyStack[currentStep] || historyStack[currentStep].length <= 1);
-            document.getElementById('btn-redo').disabled = (!redoStack[currentStep] || redoStack[currentStep].length === 0);
-            document.getElementById('btn-undo').style.opacity = document.getElementById('btn-undo').disabled ? "0.4" : "1";
-            document.getElementById('btn-redo').style.opacity = document.getElementById('btn-redo').disabled ? "0.4" : "1";
+            const undoEl = document.getElementById('btn-undo');
+            const redoEl = document.getElementById('btn-redo');
+            if(undoEl) {
+                undoEl.disabled = (!historyStack[currentStep] || historyStack[currentStep].length <= 1);
+                undoEl.style.opacity = undoEl.disabled ? "0.4" : "1";
+            }
+            if(redoEl) {
+                redoEl.disabled = (!redoStack[currentStep] || redoStack[currentStep].length === 0);
+                redoEl.style.opacity = redoEl.disabled ? "0.4" : "1";
+            }
         }
 
         const sTools = {pen:'btn-sketch-pen', eraser:'btn-sketch-eraser', bucket:'btn-sketch-bucket', picker:'btn-sketch-picker'};
         Object.keys(sTools).forEach(k => {
-            document.getElementById(sTools[k]).onclick = () => {
-                sketchMode = k; Object.values(sTools).forEach(id => document.getElementById(id).classList.remove('active'));
-                document.getElementById(sTools[k]).classList.add('active');
-            };
+            const el = document.getElementById(sTools[k]);
+            if(el) {
+                el.onclick = () => {
+                    sketchMode = k; Object.values(sTools).forEach(id => document.getElementById(id).classList.remove('active'));
+                    document.getElementById(sTools[k]).classList.add('active');
+                };
+            }
         });
         document.getElementById('btn-sketch-clear').onclick = () => { if(confirm("らくがきをぜんぶ消しますか？")) { sCtx.clearRect(0,0,sCanvas.width,sCanvas.height); saveHistory(1); autoSaveToStorage(); } };
 
         const dTools = {pen:'btn-pen', eraser:'btn-eraser', bucket:'btn-bucket', picker:'btn-picker'};
-        Object.keys(dTools).forEach(k => { document.getElementById(dTools[k]).onclick = () => setDotMode(k); });
+        Object.keys(dTools).forEach(k => { 
+            const el = document.getElementById(dTools[k]);
+            if(el) el.onclick = () => setDotMode(k); 
+        });
         document.getElementById('btn-toggle-grid').onclick = () => { gridActive = !gridActive; drawGrid(); };
 
         document.getElementById('btn-save-palette').onclick = () => {
@@ -874,7 +909,6 @@
         document.getElementById('btn-game-right').onpointerdown = () => moveRight = true;
         document.getElementById('btn-game-right').onpointerup = () => moveRight = false;
 
-        // ==================== 送信 & 強制アンロックハンドラ ====================
         document.getElementById('uploadButton').onclick = async () => {
             const name = artNameInput.value.trim();
             if (!name) { alert("作品名を入力してください。"); artNameInput.focus(); return; }
@@ -908,9 +942,8 @@
                 const result = await response.json();
 
                 if(result.status === "success") {
-                    // アップロード成功時点でゲームを永続アンロック
                     isGameUnlocked = true;
-                    autoSaveToStorage();
+                    autoSaveToStorage(); // アンロックと作品データを保持
 
                     try { await navigator.clipboard.writeText(result.serial); } catch(e) {}
                     loadingOverlay.style.display = 'none';
@@ -921,7 +954,6 @@
                     params.append("entry.46158305", name);
                     params.append("entry.1524592109", result.serial);
                     
-                    // アンケート送信ウィンドウを別タブで開き、自分自身はSTEP03（ゲーム画面）へスマートに戻す
                     window.open(`${FORM_URL}?${params.toString()}`, '_blank');
                     switchStep(3);
                 } else {
