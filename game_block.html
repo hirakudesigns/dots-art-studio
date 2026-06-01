@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DOTS ブロック崩し - 限定特典ステージ</title>
+    <title>DOTS ブロック崩し - パワーアップステージ</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
         :root { 
@@ -19,9 +19,10 @@
             overflow: hidden;
             display: flex;
             flex-direction: column;
+            user-select: none;
+            -webkit-user-select: none;
         }
         
-        /* 上部ヘッダー（作品名表示） */
         .game-header {
             width: 100%; height: 44px; background: rgba(0,0,0,0.4);
             display: flex; align-items: center; justify-content: space-between;
@@ -34,51 +35,69 @@
             display: flex; align-items: center; justify-content: center; padding: 5px;
         }
 
-        /* ゲームメインエリア（全画面） */
-        .game-container {
-            flex: 1; width: 100%; position: relative; background: #000;
-        }
+        .game-container { flex: 1; width: 100%; position: relative; background: #050508; }
         canvas { display: block; width: 100%; height: 100%; }
 
-        /* タイトル画面・オーバーレイ */
+        /* 操作案内（スライドガイド） */
+        .slide-guide-area {
+            position: absolute; bottom: 35px; left: 5%; width: 90%; height: 40px;
+            border: 2px dashed rgba(108, 92, 231, 0.4); border-radius: 20px;
+            display: flex; align-items: center; justify-content: center;
+            color: rgba(108, 92, 231, 0.7); font-size: 0.8rem; font-weight: bold;
+            pointer-events: none; z-index: 3; transition: opacity 0.5s;
+            background: rgba(108, 92, 231, 0.05);
+        }
+        .slide-guide-area span { margin: 0 10px; animation: blink 1.5s infinite; }
+        @keyframes blink { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+
+        /* タイトル画面オーバーレイ */
         .game-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(17, 17, 22, 0.95);
+            background: rgba(17, 17, 22, 0.96);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            padding: 20px; text-align: center; z-index: 5;
-            transition: opacity 0.3s ease;
+            padding: 20px; text-align: center; z-index: 5; transition: opacity 0.3s ease;
         }
         .overlay-title { color: #fff; font-size: 1.8rem; font-weight: 900; margin-bottom: 5px; text-shadow: 0 0 10px var(--primary-color); }
-        .overlay-subtitle { color: #a1a1a1; font-size: 0.85rem; margin-top: 0; margin-bottom: 30px; }
+        .overlay-subtitle { color: #a1a1a1; font-size: 0.85rem; margin-top: 0; margin-bottom: 20px; }
         
         .art-preview-box {
-            width: 120px; height: 120px; background: #222; border-radius: 12px;
-            margin-bottom: 30px; border: 2px solid rgba(255,255,255,0.1);
+            width: 110px; height: 110px; background: #222; border-radius: 12px;
+            margin-bottom: 20px; border: 2px solid rgba(255,255,255,0.1);
             display: flex; align-items: center; justify-content: center; overflow: hidden;
         }
         #titlePreviewCanvas { width: 100%; height: 100%; image-rendering: pixelated; }
 
+        /* 操作説明ビジュアルアニメ */
+        .how-to-play-visual {
+            display: flex; flex-direction: column; align-items: center; gap: 5px;
+            color: #a1a1a1; font-size: 0.75rem; margin-bottom: 25px;
+        }
+        .mock-paddle-bar {
+            width: 80px; height: 8px; background: var(--primary-color); border-radius: 4px; position: relative;
+        }
+        .mock-hand-icon {
+            position: absolute; top: 5px; left: 30px; color: #fff;
+            animation: handMove 2s infinite ease-in-out;
+        }
+        @keyframes handMove {
+            0%, 100% { left: 10px; }
+            50% { left: 50px; }
+        }
+
         .btn-start-game {
             background: linear-gradient(135deg, #20bf6b, #0be881); color: white;
-            padding: 15px 40px; font-size: 1.2rem; font-weight: 900;
+            padding: 14px 45px; font-size: 1.15rem; font-weight: 900;
             border: none; border-radius: 50px; cursor: pointer;
             display: flex; align-items: center; gap: 8px;
             box-shadow: 0 6px 20px rgba(32, 191, 107, 0.4);
-            animation: pulse 2s infinite;
-        }
-        @keyframes pulse {
-            0% { transform: scale(1); box-shadow: 0 6px 20px rgba(32, 191, 107, 0.4); }
-            50% { transform: scale(1.04); box-shadow: 0 6px 30px rgba(32, 191, 107, 0.6); }
-            100% { transform: scale(1); box-shadow: 0 6px 20px rgba(32, 191, 107, 0.4); }
         }
 
-        /* リトライ・おわるボタン（画面下部またはゲームオーバー時） */
         .game-controls-ui {
-            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%);
             display: none; gap: 15px; width: 90%; max-width: 320px; z-index: 6;
         }
         .btn-ui {
-            flex: 1; height: 44px; border: none; border-radius: 10px; font-weight: bold;
+            flex: 1; height: 46px; border: none; border-radius: 10px; font-weight: bold;
             font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
@@ -88,23 +107,33 @@
 </head>
 <body>
 
-    <!-- ヘッダーエリア -->
     <div class="game-header">
         <h1 class="game-title">🎨 DOTS STAGE: <span id="target-art-name" class="art-name">読み込み中...</span></h1>
         <button class="btn-close-top" onclick="closeGameWindow()"><span class="material-icons">close</span></button>
     </div>
 
-    <!-- ゲーム本体全画面エリア -->
     <div class="game-container" id="gameContainer">
         <canvas id="gameCanvas"></canvas>
 
-        <!-- タイトル画面オーバーレイ -->
+        <div class="slide-guide-area" id="slideGuide">
+            <span class="material-icons">west</span>
+            <span>ここを指で左右に動かしてね！</span>
+            <span class="material-icons">east</span>
+        </div>
+
         <div class="game-overlay" id="titleOverlay">
             <h2 class="overlay-title">DOTS BLOCK CRASH</h2>
-            <p class="overlay-subtitle">きみが作ったドット絵の世界であそぼう！</p>
+            <p class="overlay-subtitle">きみのドット絵がゲームのステージになったよ！</p>
             
             <div class="art-preview-box">
                 <canvas id="titlePreviewCanvas" width="32" height="32"></canvas>
+            </div>
+
+            <div class="how-to-play-visual">
+                <div class="mock-paddle-bar">
+                    <span class="material-icons mock-hand-icon">touch_app</span>
+                </div>
+                <span>画面の下をさわってパドルをうごかそう</span>
             </div>
 
             <button class="btn-start-game" onclick="clickStartButton()">
@@ -112,7 +141,6 @@
             </button>
         </div>
 
-        <!-- ゲーム中・終了後の簡易UI（必要なときだけ表示） -->
         <div class="game-controls-ui" id="gameControlsUI">
             <button class="btn-ui btn-ui-retry" onclick="initGameStage()"><span class="material-icons">refresh</span>もう一度</button>
             <button class="btn-ui btn-ui-close" onclick="closeGameWindow()"><span class="material-icons">exit_to_app</span>おわる</button>
@@ -125,17 +153,23 @@
         const artNameLabel = document.getElementById('target-art-name');
         const titleOverlay = document.getElementById('titleOverlay');
         const gameControlsUI = document.getElementById('gameControlsUI');
+        const slideGuide = document.getElementById('slideGuide');
         const titlePreviewCanvas = document.getElementById('titlePreviewCanvas');
         const tpCtx = titlePreviewCanvas.getContext('2d');
 
         let gameBlocks = [];
+        let balls = []; // 🔵 配列管理化（マルチボール対応）
+        let items = []; // 📦 ドロップアイテム配列
         let paddle = { x: 0, y: 0, width: 90, height: 12 };
-        let ball = { x: 0, y: 0, vx: 0, vy: 0, radius: 7, speed: 5 };
+        
+        let globalBallSpeed = 5;
+        let penetrateTimer = 0; // ⚡ 貫通アイテムのタイマーカウンタ
+        
         let gameAnimFrame = null;
         let isGameRunning = false;
         let isGameOverState = false;
+        let hasPlayerMoved = false; // 操作案内消去フラグ
         
-        // データのバックアップを保持する隠しキャンバス
         const hiddenCanvas = document.createElement('canvas');
         hiddenCanvas.width = hiddenCanvas.height = 32;
         const hCtx = hiddenCanvas.getContext('2d');
@@ -145,7 +179,6 @@
             canvas.width = container.clientWidth;
             canvas.height = container.clientHeight;
             
-            // パドルのサイズや位置を画面に合わせて再調整
             paddle.width = Math.min(canvas.width * 0.25, 100); 
             paddle.y = canvas.height - 50; 
             if (!isGameRunning && !isGameOverState) {
@@ -156,9 +189,7 @@
 
         function loadTargetVoxelData() {
             const urlParams = new URLSearchParams(window.location.search);
-            let serial = urlParams.get('serial') || localStorage.getItem('dots_latest_serial') || '---';
             let name = urlParams.get('name') || localStorage.getItem('dots_latest_name') || 'まいさくひん';
-            
             artNameLabel.innerText = name;
 
             const savedMatrix = localStorage.getItem('dots_latest_matrix');
@@ -166,62 +197,47 @@
                 const img = new Image();
                 img.src = savedMatrix;
                 img.onload = () => {
-                    hCtx.clearRect(0, 0, 32, 32);
-                    hCtx.drawImage(img, 0, 0, 32, 32);
-                    
-                    // タイトル画面用のプレビューにも描画
-                    tpCtx.clearRect(0, 0, 32, 32);
-                    tpCtx.drawImage(img, 0, 0, 32, 32);
-                    
+                    hCtx.clearRect(0, 0, 32, 32); hCtx.drawImage(img, 0, 0, 32, 32);
+                    tpCtx.clearRect(0, 0, 32, 32); tpCtx.drawImage(img, 0, 0, 32, 32);
                     initGameStage();
                 };
             } else {
-                // ダミーデータ生成（データがない場合）
-                hCtx.fillStyle = '#6c5ce7';
-                hCtx.fillRect(4, 8, 24, 8);
-                tpCtx.fillStyle = '#6c5ce7';
-                tpCtx.fillRect(4, 8, 24, 8);
+                hCtx.fillStyle = '#6c5ce7'; hCtx.fillRect(4, 8, 24, 8);
+                tpCtx.fillStyle = '#6c5ce7'; tpCtx.fillRect(4, 8, 24, 8);
                 initGameStage();
             }
         }
 
         function initGameStage() {
-            if (isGameRunning) {
-                isGameRunning = false;
-                cancelAnimationFrame(gameAnimFrame);
-            }
+            if (gameAnimFrame) cancelAnimationFrame(gameAnimFrame);
+            isGameRunning = false;
             isGameOverState = false;
+            hasPlayerMoved = false;
+            penetrateTimer = 0;
             gameControlsUI.style.display = 'none';
+            slideGuide.style.opacity = '1';
 
             gameBlocks = [];
+            balls = [];
+            items = [];
+
             const imgData = hCtx.getImageData(0, 0, 32, 32).data;
-            
-            // 🛑 横に潰れるのを防ぐ：画面幅ベースで「正方形（等倍）」のドットサイズを割り出す
             const blockSize = canvas.width / 32; 
-            
-            // ドット配置の開始Y座標（上部に少しマージンを空ける）
-            const startOffsetY = 40; 
+            const startOffsetY = 50; 
 
             for (let y = 0; y < 32; y++) {
                 for (let x = 0; x < 32; x++) {
                     const idx = (y * 32 + x) * 4;
-                    const r = imgData[idx];
-                    const g = imgData[idx+1];
-                    const b = imgData[idx+2];
-                    const a = imgData[idx+3];
+                    const r = imgData[idx]; const g = imgData[idx+1]; const b = imgData[idx+2]; const a = imgData[idx+3];
 
-                    // 1. 透明ピクセルをスキップ
+                    // 🛑 白背景用対策：a(アルファ)が低い透明部、または完全に真っ白に近い部分（消しゴム残り）はスキップ
                     if (a < 128) continue;
-                    
-                    // 2. 🟢 黒色（RGBがすべて20以下の極めて暗い色）を壁と認識せずスキップ
-                    if (r <= 20 && g <= 20 && b <= 20) continue;
+                    if (r >= 250 && g >= 250 && b >= 250) continue;
 
-                    // ブロックとして登録（サイズは縦横一律の正方形）
+                    // 🟢 黒（0,0,0）も条件から除外されたため、パーツとしてそのまま配置されます！
                     gameBlocks.push({
-                        x: x * blockSize,
-                        y: y * blockSize + startOffsetY,
-                        w: blockSize - 0.5, // 境界線を見せるためわずかに小さく
-                        h: blockSize - 0.5,
+                        x: x * blockSize, y: y * blockSize + startOffsetY,
+                        w: blockSize - 0.6, h: blockSize - 0.6,
                         color: `rgb(${r},${g},${b})`
                     });
                 }
@@ -229,25 +245,24 @@
             initGameStagePositions();
         }
 
-        // ボールとパドルの初期位置計算
         function initGameStagePositions() {
             paddle.x = (canvas.width - paddle.width) / 2;
-            ball.x = canvas.width / 2;
-            ball.y = paddle.y - 15;
-            ball.vx = 0;
-            ball.vy = 0;
+            balls = [{
+                x: canvas.width / 2,
+                y: paddle.y - 15,
+                vx: 0, vy: 0,
+                radius: 7
+            }];
             drawGameScene();
         }
 
         function drawGameScene() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // 背景に薄い近未来風のグリッドを敷く（全画面化の演出効果）
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
-            ctx.lineWidth = 1;
-            const space = 40;
-            for(let x=0; x<canvas.width; x+=space) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); ctx.stroke(); }
-            for(let y=0; y<canvas.height; y+=space) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.stroke(); }
+            // 近未来背景グリッド
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)'; ctx.lineWidth = 1;
+            for(let x=0; x<canvas.width; x+=40) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); ctx.stroke(); }
+            for(let y=0; y<canvas.height; y+=40) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.stroke(); }
 
             // ブロック描画
             gameBlocks.forEach(b => {
@@ -255,19 +270,41 @@
                 ctx.fillRect(b.x, b.y, b.w, b.h);
             });
 
-            // パドル描画
-            ctx.fillStyle = '#6c5ce7';
-            ctx.shadowColor = '#6c5ce7';
-            ctx.shadowBlur = 8;
-            ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
-            ctx.shadowBlur = 0; // シャドウを戻す
+            // 📦 アイテムカプセルの描画
+            items.forEach(item => {
+                ctx.beginPath();
+                ctx.arc(item.x, item.y, 9, 0, Math.PI * 2);
+                ctx.fillStyle = item.type === 'multi' ? '#20bf6b' : '#ffb8b8'; // 緑 or 金
+                if(item.type === 'penetrate') {
+                    ctx.fillStyle = '#f5cd79';
+                    ctx.shadowColor = '#f5cd79'; ctx.shadowBlur = 10;
+                }
+                ctx.fill();
+                ctx.closePath();
+                ctx.shadowBlur = 0;
 
-            // ボール描画
-            ctx.beginPath();
-            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-            ctx.fillStyle = '#ff7675';
-            ctx.fill();
-            ctx.closePath();
+                // 文字ラベルを内包
+                ctx.fillStyle = '#000'; ctx.font = 'bold 9px sans-serif'; ctx.textAlign = 'center';
+                ctx.fillText(item.type === 'multi' ? '3' : '★', item.x, item.y + 3);
+            });
+
+            // パドル描画
+            ctx.fillStyle = penetrateTimer > 0 ? '#f5cd79' : '#6c5ce7';
+            if(penetrateTimer > 0) { ctx.shadowColor = '#f5cd79'; ctx.shadowBlur = 12; }
+            ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
+            ctx.shadowBlur = 0;
+
+            // 🔵 全ボールの描画
+            balls.forEach(ball => {
+                ctx.beginPath();
+                ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+                // ⚡ 貫通時はゴールドに光る
+                ctx.fillStyle = penetrateTimer > 0 ? '#f5cd79' : '#ff7675';
+                if(penetrateTimer > 0) { ctx.shadowColor = '#f5cd79'; ctx.shadowBlur = 8; }
+                ctx.fill();
+                ctx.closePath();
+                ctx.shadowBlur = 0;
+            });
         }
 
         function clickStartButton() {
@@ -280,9 +317,8 @@
 
         function countdownAndStart() {
             initGameStage();
-            // 最初の射出ベクトルを設定
-            ball.vx = (Math.random() - 0.5) * 3;
-            ball.vy = -ball.speed;
+            balls[0].vx = (Math.random() - 0.5) * 3;
+            balls[0].vy = -globalBallSpeed;
             isGameRunning = true;
             gameLoop();
         }
@@ -295,51 +331,87 @@
         }
 
         function updatePhysics() {
-            ball.x += ball.vx;
-            ball.y += ball.vy;
-
-            // 左右の壁跳ね返り
-            if (ball.x - ball.radius < 0) { ball.x = ball.radius; ball.vx *= -1; }
-            if (ball.x + ball.radius > canvas.width) { ball.x = canvas.width - ball.radius; ball.vx *= -1; }
-            
-            // 天井跳ね返り
-            if (ball.y - ball.radius < 0) { ball.y = ball.radius; ball.vy *= -1; }
-
-            // パドルとの衝突
-            if (ball.y + ball.radius >= paddle.y && ball.y - ball.radius <= paddle.y + paddle.height) {
-                if (ball.x >= paddle.x && ball.x <= paddle.x + paddle.width) {
-                    ball.vy = -Math.abs(ball.vy);
-                    // 当たった位置で反射角度を変える
-                    let hitPos = (ball.x - paddle.x) / paddle.width;
-                    let angle = (hitPos - 0.5) * (Math.PI * 0.4); // 最大左右45度程度
-                    ball.vx = ball.speed * Math.sin(angle);
-                    ball.vy = -ball.speed * Math.cos(angle);
-                }
+            // ⚡ 貫通無敵タイマーカウントダウン
+            if (penetrateTimer > 0) {
+                penetrateTimer--;
             }
 
-            // ブロックとの衝突判定
-            for (let i = gameBlocks.length - 1; i >= 0; i--) {
-                let b = gameBlocks[i];
-                if (ball.x + ball.radius > b.x && ball.x - ball.radius < b.x + b.w &&
-                    ball.y + ball.radius > b.y && ball.y - ball.radius < b.y + b.h) {
-                    
-                    // 衝突した方向を割り出して跳ね返す（簡易判定）
-                    let overlapX = Math.min(ball.x + ball.radius - b.x, b.x + b.w - (ball.x - ball.radius));
-                    let overlapY = Math.min(ball.y + ball.radius - b.y, b.y + b.h - (ball.y - ball.radius));
+            // 📦 アイテムの移動とパドル回収判定
+            for (let i = items.length - 1; i >= 0; i--) {
+                let item = items[i];
+                item.y += 2.2; // 落下速度
 
-                    if (overlapX < overlapY) {
-                        ball.vx *= -1;
-                    } else {
-                        ball.vy *= -1;
+                // パドルキャッチ判定
+                if (item.y + 9 >= paddle.y && item.y - 9 <= paddle.y + paddle.height &&
+                    item.x >= paddle.x && item.x <= paddle.x + paddle.width) {
+                    
+                    activateItemEffect(item.type, item.x, item.y);
+                    items.splice(i, 1);
+                    continue;
+                }
+                // 画面外脱落
+                if (item.y > canvas.height) items.splice(i, 1);
+            }
+
+            // 🔵 ボール群の物理移動計算
+            for (let i = balls.length - 1; i >= 0; i--) {
+                let ball = balls[i];
+                ball.x += ball.vx;
+                ball.y += ball.vy;
+
+                // 壁跳ね返り
+                if (ball.x - ball.radius < 0) { ball.x = ball.radius; ball.vx *= -1; }
+                if (ball.x + ball.radius > canvas.width) { ball.x = canvas.width - ball.radius; ball.vx *= -1; }
+                if (ball.y - ball.radius < 0) { ball.y = ball.radius; ball.vy *= -1; }
+
+                // パドルとのバウンド
+                if (ball.y + ball.radius >= paddle.y && ball.y - ball.radius <= paddle.y + paddle.height) {
+                    if (ball.x >= paddle.x && ball.x <= paddle.x + paddle.width) {
+                        ball.vy = -Math.abs(ball.vy);
+                        let hitPos = (ball.x - paddle.x) / paddle.width;
+                        let angle = (hitPos - 0.5) * (Math.PI * 0.4);
+                        ball.vx = globalBallSpeed * Math.sin(angle);
+                        ball.vy = -globalBallSpeed * Math.cos(angle);
                     }
-                    
-                    gameBlocks.splice(i, 1);
-                    break;
+                }
+
+                // ブロック群との衝突判定
+                let ballDestroyedBlock = false;
+                for (let j = gameBlocks.length - 1; j >= 0; j--) {
+                    let b = gameBlocks[j];
+                    if (ball.x + ball.radius > b.x && ball.x - ball.radius < b.x + b.w &&
+                        ball.y + ball.radius > b.y && ball.y - ball.radius < b.y + b.h) {
+                        
+                        // ⚡ 貫通アイテムが【無効】な時だけ弾き返す
+                        if (penetrateTimer <= 0) {
+                            let overlapX = Math.min(ball.x + ball.radius - b.x, b.x + b.w - (ball.x - ball.radius));
+                            let overlapY = Math.min(ball.y + ball.radius - b.y, b.y + b.h - (ball.y - ball.radius));
+                            if (overlapX < overlapY) ball.vx *= -1; else ball.vy *= -1;
+                        }
+
+                        // 📦 アイテムを確率でドロップ（15%の確率）
+                        if (Math.random() < 0.15) {
+                            items.push({
+                                x: b.x + b.w/2,
+                                y: b.y + b.h,
+                                type: Math.random() > 0.5 ? 'multi' : 'penetrate'
+                            });
+                        }
+
+                        gameBlocks.splice(j, 1);
+                        ballDestroyedBlock = true;
+                        break;
+                    }
+                }
+
+                // デッドゾーン（画面最下部）落ち
+                if (ball.y > canvas.height) {
+                    balls.splice(i, 1);
                 }
             }
 
-            // ゲームオーバー判定
-            if (ball.y > canvas.height) {
+            // 全滅によるゲームオーバー判定
+            if (balls.length === 0) {
                 endGameSession(false);
             }
 
@@ -349,18 +421,31 @@
             }
         }
 
+        // ⚡ 特典アイテムの効果発動ロジック
+        function activateItemEffect(type, x, y) {
+            if (type === 'multi') {
+                // 🟢 【マルチボール】：現在の全ボールをベースに分裂させて3つにする
+                let baseBall = balls[0] || { x: paddle.x + paddle.width/2, y: paddle.y - 15, vx: 0, vy: -5, radius: 7 };
+                balls.push({ x: baseBall.x, y: baseBall.y, vx: -3, vy: -4, radius: 7 });
+                balls.push({ x: baseBall.x, y: baseBall.y, vx: 3, vy: -4, radius: 7 });
+            } else if (type === 'penetrate') {
+                // 🟡 【貫通ゴールドボール】：5秒間（約300フレーム）無敵貫通モード
+                penetrateTimer = 300; 
+            }
+        }
+
         function endGameSession(isWin) {
             isGameRunning = false;
             isGameOverState = true;
-            cancelAnimationFrame(gameAnimFrame);
+            if(gameAnimFrame) cancelAnimationFrame(gameAnimFrame);
             
             setTimeout(() => {
                 if (isWin) {
-                    alert("すごーい！ぜんぶ崩せたね！ステージクリア！🎉");
+                    alert("すごーい！ぜんぶ壊せたね！ステージクリア！🎉");
                 } else {
-                    alert("あちゃー！ゲームオーバー！もう一回やってみよう！");
+                    alert("あちゃー！ゲームオーバー！もう一回挑戦しよう！");
                 }
-                gameControlsUI.style.display = 'flex'; // 下部コントロールUIを出現させる
+                gameControlsUI.style.display = 'flex';
             }, 100);
         }
 
@@ -370,10 +455,20 @@
             if (targetX < 0) targetX = 0;
             if (targetX > canvas.width - paddle.width) targetX = canvas.width - paddle.width;
             paddle.x = targetX;
-            if (!isGameRunning && !isGameOverState) ball.x = paddle.x + paddle.width / 2; // 開始前はボールが追従
+            
+            // 初めて操作したら操作ガイドをフェードアウト消去
+            if(!hasPlayerMoved) {
+                hasPlayerMoved = true;
+                slideGuide.style.opacity = '0';
+            }
+
+            // ゲーム開始前はボールがパドルの上に乗って付随する
+            if (!isGameRunning && !isGameOverState && balls.length > 0) {
+                balls[0].x = paddle.x + paddle.width / 2;
+            }
         }
 
-        // 全画面でのパドル操作（マウス＆タッチ）
+        // 直接移動を快適・直感的に行うためのイベントフック
         canvas.addEventListener('mousemove', (e) => { movePaddle(e.clientX); });
         canvas.addEventListener('touchmove', (e) => { 
             if(e.touches.length > 0) {
@@ -384,11 +479,7 @@
 
         function closeGameWindow() {
             if(confirm("ゲームをおわりますか？")) {
-                if(window.history.length > 1) {
-                    window.history.back();
-                } else {
-                    window.close();
-                }
+                if(window.history.length > 1) window.history.back(); else window.close();
             }
         }
 
