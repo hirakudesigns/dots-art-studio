@@ -77,8 +77,8 @@
             display: flex; flex-direction: column; align-items: center; gap: 5px;
             color: #a1a1a1; font-size: 0.75rem; margin-bottom: 25px;
         }
-        .mock-paddle-bar { width: 80px; height: 8px; background: #00d2d3; border-radius: 4px; position: relative; }
-        .mock-hand-icon { position: absolute; top: 5px; left: 30px; color: #fff; animation: handMove 2s infinite ease-in-out; }
+        .mock-paddle-bar { width: 80px; height: 12px; background: #00d2d3; border-radius: 4px; position: relative; }
+        .mock-hand-icon { position: absolute; top: 8px; left: 30px; color: #fff; animation: handMove 2s infinite ease-in-out; }
         @keyframes handMove { 0%, 100% { left: 10px; } 50% { left: 50px; } }
 
         .btn-start-game {
@@ -121,7 +121,7 @@
 
         <div class="game-overlay" id="titleOverlay">
             <h2 class="overlay-title">DOTS BLOCK CRASH</h2>
-            <p class="overlay-subtitle">時間がたつとドット絵がせまってくるぞ！</p>
+            <p class="overlay-subtitle">イラストが下までせまってきたら負けちゃうぞ！</p>
             
             <div class="art-preview-box">
                 <canvas id="titlePreviewCanvas" width="32" height="32"></canvas>
@@ -158,14 +158,15 @@
         let gameBlocks = [];
         let balls = []; 
         let items = []; 
-        let paddle = { x: 0, y: 0, width: 90, height: 12 };
+        
+        // 🟥 スライドバー（パドル）の縦幅を少し太く修正 (12 -> 18)
+        let paddle = { x: 0, y: 0, width: 90, height: 18 };
         
         let globalBallSpeed = 5.5;
         let penetrateTimer = 0; 
         
-        // 🕒 迫ってくる演出用のタイマー変数
         let blockAdvanceTimer = 0;
-        let currentBlockSize = 0; // 1マスのサイズを保持
+        let currentBlockSize = 0; 
         
         let gameAnimFrame = null;
         let isGameRunning = false;
@@ -218,7 +219,7 @@
             hasPlayerMoved = false;
             isFirstShotFired = false; 
             penetrateTimer = 0;
-            blockAdvanceTimer = 0; // タイマー初期化
+            blockAdvanceTimer = 0; 
             gameControlsUI.style.display = 'none';
             slideGuide.style.opacity = '1';
 
@@ -238,7 +239,6 @@
                     if (a < 128) continue;
                     if (r >= 210 && g >= 210 && b >= 210) continue; 
 
-                    // 立体感は無しにし、綺麗な正方形フラットブロックに
                     gameBlocks.push({
                         x: x * currentBlockSize, y: y * currentBlockSize + startOffsetY,
                         w: currentBlockSize - 0.6, h: currentBlockSize - 0.6,
@@ -261,7 +261,6 @@
             }];
         }
 
-        // 全画面カバーの洗練された紫ネオン3Dパース背景
         function drawCyberBackground() {
             let grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
             grad.addColorStop(0, '#04010a');
@@ -298,16 +297,13 @@
         function drawGameScene() {
             drawCyberBackground();
 
-            // 🎨 フラットな美しい正方形ブロック
             gameBlocks.forEach(b => {
                 ctx.fillStyle = b.color;
                 ctx.fillRect(b.x, b.y, b.w, b.h);
-                // サイバー感を出すうっすらとした細い枠線
                 ctx.strokeStyle = 'rgba(255,255,255,0.12)';
                 ctx.strokeRect(b.x, b.y, b.w, b.h);
             });
 
-            // アイテムカプセルの描画
             items.forEach(item => {
                 ctx.beginPath();
                 ctx.arc(item.x, item.y, 9, 0, Math.PI * 2);
@@ -319,13 +315,12 @@
                 ctx.fillText(item.type === 'multi' ? '2' : '★', item.x, item.y + 3.5);
             });
 
-            // パドル描画
+            // パドル描画（太さ18pxにアップ）
             ctx.fillStyle = penetrateTimer > 0 ? '#f5cd79' : '#00d2d3';
             if(penetrateTimer > 0) { ctx.shadowColor = '#f5cd79'; ctx.shadowBlur = 15; }
             ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
             ctx.shadowBlur = 0;
 
-            // ボール描画
             balls.forEach(ball => {
                 ctx.beginPath();
                 ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
@@ -355,17 +350,11 @@
         function updatePhysics() {
             if (penetrateTimer > 0) penetrateTimer--;
 
-            // 🕒 最初の1投が放たれたら、イラストを少しずつ下に近づけるカウンター作動
             if (isFirstShotFired) {
                 blockAdvanceTimer++;
-                // 10秒(60Hz = 600フレーム)経過したら発動
                 if (blockAdvanceTimer >= 600) {
                     blockAdvanceTimer = 0;
-                    
-                    // すべてのブロックを1マス（1段分）下にシフト
-                    gameBlocks.forEach(b => {
-                        b.y += currentBlockSize;
-                    });
+                    gameBlocks.forEach(b => { b.y += currentBlockSize; });
                 }
             }
 
@@ -384,19 +373,15 @@
             }
 
             // ボール物理
-            let lowestBlockY = 0; // 最下部のブロック位置監視用
-            
             for (let i = balls.length - 1; i >= 0; i--) {
                 let ball = balls[i];
                 ball.x += ball.vx;
                 ball.y += ball.vy;
 
-                // 壁反射
                 if (ball.x - ball.radius < 0) { ball.x = ball.radius; ball.vx *= -1; }
                 if (ball.x + ball.radius > canvas.width) { ball.x = canvas.width - ball.radius; ball.vx *= -1; }
                 if (ball.y - ball.radius < 0) { ball.y = ball.radius; ball.vy *= -1; }
 
-                // パドル反射
                 if (ball.y + ball.radius >= paddle.y && ball.y - ball.radius <= paddle.y + paddle.height) {
                     if (ball.x >= paddle.x && ball.x <= paddle.x + paddle.width) {
                         ball.vy = -Math.abs(ball.vy);
@@ -407,13 +392,8 @@
                     }
                 }
 
-                // ブロック衝突
                 for (let j = gameBlocks.length - 1; j >= 0; j--) {
                     let b = gameBlocks[j];
-                    
-                    // 最下部ブロックの位置をリアルタイム記憶
-                    if (b.y + b.h > lowestBlockY) lowestBlockY = b.y + b.h;
-
                     if (ball.x + ball.radius > b.x && ball.x - ball.radius < b.x + b.w &&
                         ball.y + ball.radius > b.y && ball.y - ball.radius < b.y + b.h) {
                         
@@ -423,30 +403,23 @@
                             if (overlapX < overlapY) ball.vx *= -1; else ball.vy *= -1;
                         }
 
-                        // 🟢 出現率は「6%」をキープ
                         if (Math.random() < 0.06) {
-                            items.push({
-                                x: b.x + b.w/2, y: b.y + b.h,
-                                type: Math.random() > 0.4 ? 'multi' : 'penetrate'
-                            });
+                            items.push({ x: b.x + b.w/2, y: b.y + b.h, type: Math.random() > 0.4 ? 'multi' : 'penetrate' });
                         }
-
                         gameBlocks.splice(j, 1);
                         break;
                     }
                 }
-
                 if (ball.y > canvas.height) balls.splice(i, 1);
             }
 
-            // 🛑 侵略ゲームオーバー判定：ブロックがパドルの高さ（または画面底）を超えたら即アウト
+            // 🟥 イラストが下まで来てしまったら「負け」
             if (gameBlocks.length > 0) {
-                // まだボールが当たっていないブロックも考慮するため、全ブロックの最下部を正確に再チェック
                 let maxBlockY = 0;
                 gameBlocks.forEach(b => { if(b.y + b.h > maxBlockY) maxBlockY = b.y + b.h; });
                 
                 if (maxBlockY >= paddle.y) {
-                    endGameSession(false);
+                    endGameSession(false); // 負け判定で終了
                     return;
                 }
             }
@@ -462,19 +435,20 @@
                     balls.push({ x: b.x, y: b.y, vx: -b.vx || -2, vy: b.vy, radius: 7 });
                 }
             } else if (type === 'penetrate') {
-                penetrateTimer = 180; // 3秒
+                penetrateTimer = 180; 
             }
         }
 
         function endGameSession(isWin) {
             isGameRunning = false;
+            isGameOverState = true;
             if(gameAnimFrame) cancelAnimationFrame(gameAnimFrame);
             
             setTimeout(() => {
                 if (isWin) {
                     alert("すごーい！ぜんぶ崩せたね！ステージクリア！🎉");
                 } else {
-                    alert("イラストに押しつぶされちゃった！もう一回やってみよう！");
+                    alert("イラストに押しつぶされちゃった！きみの負け！👾");
                 }
                 gameControlsUI.style.display = 'flex';
             }, 100);
@@ -518,10 +492,9 @@
             if(e.touches.length > 0) handleInputMove(e.touches[0].clientX);
         }, { passive: false });
 
+        // 🟥 「おわる」処理：ドット絵アプリのURLへ直接リダイレクト遷移
         function closeGameWindow() {
-            if(confirm("ゲームをおわりますか？")) {
-                if(window.history.length > 1) window.history.back(); else window.close();
-            }
+            window.location.href = "https://hirakudesigns.github.io/dots-art-studio/";
         }
 
         window.addEventListener('resize', resizeCanvas);
