@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DOTS ブロック崩し - 限定特典ステージ</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        :root { 
+            --primary-color: #6c5ce7; 
+            --bg-color: #f1f2f6;
+            --card-bg: #ffffff; 
+            --accent-color: #ff7675; 
+        }
+        body { font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; background-color: var(--bg-color); margin: 0; padding: 15px; }
+        
+        .title-area { text-align: center; margin-bottom: 10px; }
+        h1 { margin: 0; font-size: 1.2rem; color: #2f3542; font-weight: 800; }
+        .subtitle { font-size: 0.75rem; color: #747d8c; margin: 2px 0 0 0; }
+
+        .game-wrapper {
+            position: relative; 
+            width: 100%; 
+            aspect-ratio: 1 / 1;
+            max-width: 360px;
+            border: 4px solid var(--card-bg); 
+            border-radius: 16px; 
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15); 
+            background: #111;
+            overflow: hidden;
+            touch-action: none;
+        }
+        canvas { display: block; width: 100%; height: 100%; background: #111; }
+
+        .control-panel {
+            width: 100%;
+            max-width: 360px;
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 20px;
+            box-sizing: border-box;
+            margin-top: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+
+        .btn-main { background: linear-gradient(135deg, #20bf6b, #0be881); color: white; height: 50px; font-weight: 900; border-radius: 12px; border: none; cursor: pointer; font-size: 1.05rem; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 12px rgba(32, 191, 107, 0.3); }
+        .btn-sub { background: #f1f2f6; color: #57606f; height: 44px; font-weight: bold; border-radius: 10px; border: none; cursor: pointer; font-size: 0.9rem; flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px; }
+        .row { display: flex; gap: 10px; width: 100%; }
+    </style>
+</head>
+<body>
+
+    <div class="title-area">
+        <h1>DOTS ブロック崩し</h1>
+        <p class="subtitle">さくひん名: <span id="target-art-name">読み込み中...</span></p>
+    </div>
+
+    <div class="game-wrapper">
+        <canvas id="gameCanvas"></canvas>
+    </div>
+
+    <div class="control-panel">
+        <button class="btn-main" id="btn-start" onclick="startGame()"><span class="material-icons">play_arrow</span>ゲームをスタート！</button>
+        <div class="row">
+            <button class="btn-sub" onclick="initGameStage()"><span class="material-icons">refresh</span>さいちょうせん</button>
+            <button class="btn-sub" onclick="closeGameWindow()" style="color: var(--accent-color);"><span class="material-icons">close</span>とじる</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const artNameLabel = document.getElementById('target-art-name');
+
+        let gameBlocks = [];
+        let paddle = { x: 0, y: 0, width: 70, height: 10 };
+        let ball = { x: 0, y: 0, vx: 3, vy: -3, radius: 6 };
+        let gameAnimFrame = null;
+        let isGameRunning = false;
+        
+        // ドット再現用の一時隠しキャンバス
+        const hiddenCanvas = document.createElement('canvas');
+        hiddenCanvas.width = hiddenCanvas.height = 32;
+        const hCtx = hiddenCanvas.getContext('2d');
+
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = Math.floor(rect.width);
+            canvas.height = Math.floor(rect.height);
+            if (!isGameRunning) drawGameStatic();
+        }
+
+        // URLパラメータ、またはLocalStorageからドット絵データを復元して準備
+        function loadTargetVoxelData() {
+            const urlParams = new URLSearchParams(window.location.search);
+            let serial = urlParams.get('serial') || localStorage.getItem('dots_latest_serial') || '---';
+            let name = urlParams.get('name') || localStorage.getItem('dots_latest_name') || 'まいさくひん';
+            
+            artNameLabel.innerText = `${name} (${serial})`;
+
+            const savedMatrix = localStorage.getItem('dots_latest_matrix');
+            if (savedMatrix) {
+                const img = new Image();
+                img.src = savedMatrix;
+                img.onload = () => {
+                    hCtx.clearRect(0, 0, 32, 32);
+                    hCtx.drawImage(img, 0, 0, 32, 32);
+                    initGameStage();
+                };
+            } else {
+                // 万が一データがない場合の仮ブロック配置
+                hCtx.fillStyle = '#6c5ce7';
+                hCtx.fillRect(4, 4, 24, 8);
+                initGameStage();
+            }
+        }
+
+        function initGameStage() {
+            if (isGameRunning) {
+                isGameRunning = false;
+                cancelAnimationFrame(gameAnimFrame);
+            }
+
+            gameBlocks = [];
+            const imgData = hCtx.getImageData(0, 0, 32, 32).data;
+            const bw = canvas.width / 32;
+            const bh = (canvas.height * 0.45) / 32; // 画面上部45%の領域に展開
+
+            for (let y = 0; y < 32; y++) {
+                for (let x = 0; x < 32; x++) {
+                    const idx = (y * 32 + x) * 4;
+                    if (imgData[idx + 3] >= 128) {
+                        gameBlocks.push({
+                            x: x * bw,
+                            y: y * bh,
+                            w: bw - 0.5,
+                            h: bh - 0.5,
+                            color: `rgb(${imgData[idx]},${imgData[idx+1]},${imgData[idx+2]})`
+                        });
+                    }
+                }
+            }
+
+            paddle.width = canvas.width * 0.22;
+            paddle.x = (canvas.width - paddle.width) / 2;
+            paddle.y = canvas.height - 30;
+
+            ball.x = canvas.width / 2;
+            ball.y = paddle.y - 15;
+            ball.vx = 2.5 * (Math.random() > 0.5 ? 1 : -1);
+            ball.vy = -3.5;
+
+            drawGameStatic();
+            document.getElementById('btn-start').style.display = 'flex';
+        }
+
+        function drawGameStatic() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // ブロックの描画
+            gameBlocks.forEach(b => {
+                ctx.fillStyle = b.color;
+                ctx.fillRect(b.x, b.y, b.w, b.h);
+            });
+
+            // パドルの描画
+            ctx.fillStyle = '#6c5ce7';
+            ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
+
+            // ボールの描画
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.fillStyle = '#ff7675';
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        function startGame() {
+            if (isGameRunning) return;
+            isGameRunning = true;
+            document.getElementById('btn-start').style.display = 'none';
+            gameLoop();
+        }
+
+        function gameLoop() {
+            if (!isGameRunning) return;
+            updatePhysics();
+            drawGameStatic();
+            gameAnimFrame = requestAnimationFrame(gameLoop);
+        }
+
+        function updatePhysics() {
+            ball.x += ball.vx;
+            ball.y += ball.vy;
+
+            // 壁バウンド
+            if (ball.x - ball.radius < 0 || ball.x + ball.radius > canvas.width) ball.vx *= -1;
+            if (ball.y - ball.radius < 0) ball.vy *= -1;
+
+            // パドルバウンド
+            if (ball.y + ball.radius >= paddle.y && ball.y - ball.radius <= paddle.y + paddle.height) {
+                if (ball.x >= paddle.x && ball.x <= paddle.x + paddle.width) {
+                    ball.vy = -Math.abs(ball.vy);
+                    let hitPos = (ball.x - paddle.x) / paddle.width;
+                    ball.vx = 6 * (hitPos - 0.5); // 当たる位置で反射角を変化
+                }
+            }
+
+            // ブロックとの衝突判定
+            for (let i = gameBlocks.length - 1; i >= 0; i--) {
+                let b = gameBlocks[i];
+                if (ball.x + ball.radius > b.x && ball.x - ball.radius < b.x + b.w &&
+                    ball.y + ball.radius > b.y && ball.y - ball.radius < b.y + b.h) {
+                    ball.vy *= -1;
+                    gameBlocks.splice(i, 1);
+                    break;
+                }
+            }
+
+            // ゲームオーバー判定
+            if (ball.y > canvas.height) {
+                isGameRunning = false;
+                cancelAnimationFrame(gameAnimFrame);
+                alert("ゲームオーバー！もう一回チャレンジしよう！");
+                initGameStage();
+            }
+
+            // クリア判定
+            if (gameBlocks.length === 0) {
+                isGameRunning = false;
+                cancelAnimationFrame(gameAnimFrame);
+                alert("すごーい！ステージクリア！おめでとう！🎉");
+                initGameStage();
+            }
+        }
+
+        function movePaddle(clientX) {
+            const rect = canvas.getBoundingClientRect();
+            let targetX = clientX - rect.left - paddle.width / 2;
+            if (targetX < 0) targetX = 0;
+            if (targetX > canvas.width - paddle.width) targetX = canvas.width - paddle.width;
+            paddle.x = targetX;
+        }
+
+        // マウス＆タッチのパドル操作イベント登録
+        canvas.addEventListener('mousemove', (e) => { if(isGameRunning) movePaddle(e.clientX); });
+        canvas.addEventListener('touchmove', (e) => { 
+            if(isGameRunning && e.touches.length > 0) {
+                e.preventDefault();
+                movePaddle(e.touches[0].clientX);
+            }
+        }, { passive: false });
+
+        function closeGameWindow() {
+            if(confirm("ゲームをおわりますか？")) {
+                // タブを閉じるか、元のスタジオに戻す
+                if(window.history.length > 1) {
+                    window.history.back();
+                } else {
+                    window.close();
+                }
+            }
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        window.addEventListener('DOMContentLoaded', () => {
+            resizeCanvas();
+            loadTargetVoxelData();
+        });
+    </script>
+</body>
+</html>
