@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DOTS ART STUDIO - Magic Editor 3D & Game</title>
+    <title>DOTS ART STUDIO - Magic Editor 3D</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/controls/OrbitControls.js"></script>
@@ -49,9 +49,6 @@
         #bgLayer { z-index: 1; position:absolute; top:0; left:0; width:100%; height:100%; display: none; overflow: hidden; pointer-events: none; }
         #bgVideo { width: 100%; height: 100%; object-fit: cover; }
 
-        #gameContainer { z-index: 20; position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; background: #222; }
-        #gameCanvas { width: 100%; height: 100%; background: #111; }
-
         .control-panel { width: 100%; background: var(--card-bg); padding: 15px; border-radius: 20px; box-sizing: border-box; display: none; flex-direction: column; gap: 12px; }
         .control-panel.active { display: flex; }
         .section-label { font-size: 0.65rem; color: #a1a1a1; font-weight: bold; text-transform: uppercase; margin-bottom: -5px; }
@@ -96,15 +93,14 @@
                 <canvas id="dotCanvas" width="32" height="32"></canvas>
                 <canvas id="gridCanvas"></canvas>
                 <div id="threeContainer"></div>
-                
-                <div id="gameContainer">
-                    <canvas id="gameCanvas"></canvas>
-                </div>
             </div>
         </div>
         
-        <div class="row" id="history-row" style="gap:20px; margin: 5px 0;">
+        <div class="row" id="history-row" style="gap:15px; margin: 5px 0;">
             <button class="btn" id="btn-undo" style="border-radius:50%; background:#fff; box-shadow:0 3px 6px rgba(0,0,0,0.1);"><span class="material-icons">undo</span></button>
+            
+            <button class="btn" id="btn-sketch-camera" style="border-radius:50%; background:#e3f2fd; color:#1e88e5; box-shadow:0 3px 6px rgba(0,0,0,0.1); width:50px; height:50px;"><span class="material-icons" style="font-size:28px;">photo_camera</span></button>
+            
             <button class="btn" id="btn-redo" style="border-radius:50%; background:#fff; box-shadow:0 3px 6px rgba(0,0,0,0.1);"><span class="material-icons">redo</span></button>
         </div>
 
@@ -117,13 +113,9 @@
                 <button class="btn" id="btn-sketch-bucket"><span class="material-icons">format_color_fill</span></button>
                 <button class="btn" id="btn-sketch-picker"><span class="material-icons">colorize</span></button>
                 
-                <button class="btn" id="btn-sketch-camera" style="background:#e3f2fd; color:#1e88e5; font-size:0.75rem; width:auto; padding:0 8px; gap:4px;">
-                    <span class="material-icons">photo_camera</span><span id="camera-btn-text">かみの絵をスキャン</span>
-                </button>
-                
-                <button class="btn" id="btn-sketch-clear" style="color:var(--accent-color); margin-left: auto;"><span class="material-icons">delete_outline</span></button>
+                <button class="btn" id="btn-sketch-clear" style="color:var(--accent-color);"><span class="material-icons">delete_outline</span></button>
             </div>
-            <p style="font-size:0.75rem; color:#747d8c; text-align:center; margin: 5px 0;">画面に描くか、カメラで紙の絵をパシャッと写してみよう！</p>
+            <p style="font-size:0.75rem; color:#747d8c; text-align:center; margin: 5px 0;">上のカメラボタンで紙の絵をパシャッとスキャンすることもできるよ！</p>
             <button class="btn-magic" onclick="magicConvert()"><span class="material-icons">auto_awesome</span> ドット絵に変身させる！</button>
         </div>
 
@@ -165,14 +157,6 @@
 
             <button class="btn-upload" id="uploadButton">作品をアップロード！</button>
         </div>
-
-        <div class="control-panel" id="panel-game">
-            <div class="section-label">特典ゲーム：DOTS ブロック崩し</div>
-            <p style="font-size:0.8rem; color:#333; text-align:center; margin: 5px 0; font-weight: bold;">あなたが作ったドット絵がブロックステージになりました！</p>
-            <div class="row" style="justify-content:space-around;">
-                <button class="btn-magic" style="background:#20bf6b; height:44px; font-size:0.9rem;" onclick="startGame()">ゲームスタート</button>
-            </div>
-        </div>
     </div>
 
     <script>
@@ -192,8 +176,6 @@
         const colorPicker = document.getElementById('colorPicker');
         const sketchColor = document.getElementById('sketchColor');
         const threeContainer = document.getElementById('threeContainer');
-        const gameContainer = document.getElementById('gameContainer');
-        const gameCanvas = document.getElementById('gameCanvas');
 
         let currentStep = 1;
         let isDrawing = false;
@@ -274,10 +256,12 @@
             }
         }
 
-        // ==================== 📷 STEP1専用：カメラ・スキャンロジック ====================
+        // ==================== 📷 背面カメラ制御ロジック ====================
         async function toggleCamera() {
+            if (currentStep !== 1) return; // STEP1以外では動作させない
+
+            const camBtn = document.getElementById('btn-sketch-camera');
             if (!isCameraActive) {
-                // カメラを起動して背景ストリーミング開始
                 try {
                     const constraints = {
                         video: { facingMode: "environment", width: { ideal: 640 }, height: { ideal: 640 } },
@@ -290,15 +274,14 @@
                     bgLayer.style.display = "block";
                     
                     isCameraActive = true;
-                    document.getElementById('btn-sketch-camera').style.background = '#ff7675';
-                    document.getElementById('btn-sketch-camera').style.color = '#fff';
-                    document.getElementById('camera-btn-text').innerText = "パシャッ！（しゃったー）";
+                    camBtn.style.background = '#ff7675';
+                    camBtn.style.color = '#fff';
                 } catch (err) {
                     console.error("Camera failed:", err);
                     alert("カメラの起動に失敗しました。カメラのアクセス権限を確認してください。");
                 }
             } else {
-                // シャッターを切り、現在の映像フレームをキャンバスに写し取って固定する
+                // シャッター処理
                 try {
                     sCtx.globalCompositeOperation = 'source-over';
                     sCtx.drawImage(bgVideo, 0, 0, sCanvas.width, sCanvas.height);
@@ -320,9 +303,9 @@
             bgLayer.style.display = "none";
             
             isCameraActive = false;
-            document.getElementById('btn-sketch-camera').style.background = '#e3f2fd';
-            document.getElementById('btn-sketch-camera').style.color = '#1e88e5';
-            document.getElementById('camera-btn-text').innerText = "かみの絵をスキャン";
+            const camBtn = document.getElementById('btn-sketch-camera');
+            camBtn.style.background = '#e3f2fd';
+            camBtn.style.color = '#1e88e5';
         }
 
         document.getElementById('btn-sketch-camera').onclick = toggleCamera;
@@ -364,7 +347,11 @@
             currentStep = step;
             document.querySelectorAll('.tab').forEach((t, i) => { t.classList.toggle('active', i === step - 1); });
             document.querySelectorAll('.control-panel').forEach((p, i) => { p.classList.toggle('active', i === step - 1); });
+            
+            // 履歴行（カメラ含む）の表示制御：STEP1, STEP2のときだけ表示
             document.getElementById('history-row').style.display = (step <= 2) ? 'flex' : 'none';
+            // カメラボタンの個別制御：STEP1のときのみ有効に見せる
+            document.getElementById('btn-sketch-camera').style.visibility = (step === 1) ? 'visible' : 'hidden';
 
             sCanvas.style.display = (step === 1) ? 'block' : 'none';
             dCanvas.style.display = (step === 2 || step === 4) ? 'block' : 'none';
@@ -374,7 +361,6 @@
             if(step === 2) drawGrid();
             if (step === 3) updateThreeMesh();
 
-            // STEP1から離れる時はカメラを自動で安全にクローズ
             if (step !== 1 && isCameraActive) {
                 stopCameraMode();
             }
@@ -491,41 +477,6 @@
             saveHistory(2); 
             autoSaveToStorage();
             switchStep(2);
-        }
-
-        function generateRbxmXml() {
-            const imgData = dCtx.getImageData(0, 0, 32, 32).data;
-            let xml = `<roblox xmlns:xd="http://www.w3.org/2006/xd" version="4">\n  <Item class="Folder" referent="RBX0">\n    <Properties>\n      <string name="Name">${artNameInput.value.trim() || "VoxelModel"}</string>\n    </Properties>\n`;
-            let partCount = 1;
-            for (let y = 0; y < 32; y++) {
-                for (let x = 0; x < 32; x++) {
-                    const idx = (y * 32 + x) * 4;
-                    if (imgData[idx + 3] < 128) continue;
-                    xml += `    <Item class="Part" referent="RBX_Part_${partCount}">\n      <Properties>\n        <string name="Name">V_${partCount}</string>\n        <bool name="Anchored">true</bool>\n        <Color3 name="Color"><R>${(imgData[idx]/255).toFixed(6)}</R><G>${(imgData[idx+1]/255).toFixed(6)}</G><B>${(imgData[idx+2]/255).toFixed(6)}</B></Color3>\n        <CoordinateFrame name="CFrame">\n          <X>${x - 16}</X><Y>${VOXEL_HEIGHT / 2}</Y><Z>${y - 16}</Z>\n          <R00>1</R00><R01>0</R01><R02>0</R02><R10>0</R10><R11>1</R11><R12>0</R12><R20>0</R20><R21>0</R21><R22>1</R22>\n        </CoordinateFrame>\n        <Vector3 name="size"><X>1</X><Y>${VOXEL_HEIGHT.toFixed(2)}</Y><Z>1</Z></Vector3>\n        <token name="Material">256</token>\n      </Properties>\n    </Item>\n`;
-                    partCount++;
-                }
-            }
-            return xml + `  </Item>\n</roblox>\n`;
-        }
-
-        function generateObjText() {
-            const imgData = dCtx.getImageData(0, 0, 32, 32).data;
-            let obj = `# DOTS 3D OBJ Export\n`;
-            let vCount = 1;
-            for (let y = 0; y < 32; y++) {
-                for (let x = 0; x < 32; x++) {
-                    const idx = (y * 32 + x) * 4;
-                    if (imgData[idx + 3] < 128) continue;
-                    const px = x - 16, py = 0, pz = y - 16, h = VOXEL_HEIGHT;
-                    obj += `v ${px} ${py} ${pz}\nv ${px+1} ${py} ${pz}\nv ${px+1} ${py+h} ${pz}\nv ${px} ${py+h} ${pz}\n`;
-                    obj += `v ${px} ${py} ${pz+1}\nv ${px+1} ${py+h} ${pz+1}\nv ${px+1} ${py+h} ${pz+1}\nv ${px} ${py+h} ${pz+1}\n`;
-                    obj += `f ${vCount} ${vCount+1} ${vCount+2} ${vCount+3}\nf ${vCount+5} ${vCount+4} ${vCount+7} ${vCount+6}\n`;
-                    obj += `f ${vCount} ${vCount+3} ${vCount+7} ${vCount+4}\nf ${vCount+1} ${vCount+5} ${vCount+6} ${vCount+2}\n`;
-                    obj += `f ${vCount+3} ${vCount+2} ${vCount+6} ${vCount+7}\nf ${vCount} ${vCount+4} ${vCount+5} ${vCount+1}\n`;
-                    vCount += 8;
-                }
-            }
-            return obj;
         }
 
         function executeCanvasBucket(ctx, startX, startY, fillHex, width, height) {
@@ -666,17 +617,13 @@
             const col = colorPicker.value; const item = document.createElement('div'); item.className = 'palette-item';
             const chip = document.createElement('div'); chip.className = 'color-chip'; chip.style.backgroundColor = col;
             chip.onclick = () => colorPicker.value = col;
-            const del = document.createElement('div'); del.className = 'delete-badge'; del.innerHTML = '×'; del.onclick = () => item.remove();
+            const del = document.createElement('div'); del.innerHTML = '×'; del.onclick = () => item.remove();
             item.appendChild(chip); item.appendChild(del); paletteArea.appendChild(item);
         };
 
         artNameInput.oninput = autoSaveToStorage;
 
-        document.getElementById('bgSelect').onchange = (e) => {
-            const val = e.target.value; bgLayer.style.backgroundImage = val ? `url(${val})` : ''; bgLayer.style.display = val ? 'block' : 'none';
-        };
-
-        // ==================== 🏹 アップロード・送信処理 ====================
+        // ==================== 🏹 送信・外部引き継ぎ処理 ====================
         document.getElementById('uploadButton').onclick = async () => {
             const name = artNameInput.value.trim();
             if (!name) { alert("作品名を入力してください。"); artNameInput.focus(); return; }
@@ -689,20 +636,11 @@
             uctx.imageSmoothingEnabled = false; 
 
             const bgSelect = document.getElementById('bgSelect').value;
-            if (bgSelect) {
-                const bgImg = new Image(); bgImg.src = bgSelect;
-                try {
-                    await new Promise(resolve => { bgImg.onload = resolve; bgImg.onerror = resolve; });
-                    uctx.drawImage(bgImg, 0, 0, 512, 512);
-                } catch(e){}
-            }
             uctx.drawImage(dCanvas, 0, 0, 512, 512);
             
             const base64Data = uploadCanvas.toDataURL('image/png').split(',')[1];
-            const rbxmData = generateRbxmXml();
-            const objData = generateObjText();
 
-            if(!confirm(`「${name}」をアップロードして、アンケートおよび限定特典ゲームをアンロックしますか？`)) return;
+            if(!confirm(`「${name}」をアップロードして、アンケートに進みますか？`)) return;
 
             loadingOverlay.style.display = 'flex';
 
@@ -711,8 +649,6 @@
                     method: "POST",
                     body: JSON.stringify({
                         image: base64Data,
-                        rbxm: rbxmData,
-                        obj: objData,
                         name: name, 
                         location: "WEB_MAGIC_3D_MULTIOUT", 
                         duration: durationSeconds
@@ -721,21 +657,24 @@
                 const result = await response.json();
 
                 if(result.status === "success") {
+                    // アップロード成功時はローカルストレージをクリア
                     localStorage.removeItem('dots_backup_sketch');
                     localStorage.removeItem('dots_backup_dot');
                     localStorage.removeItem('dots_backup_artname');
 
-                    try { await navigator.clipboard.writeText(result.serial); } catch(e) {}
-                    loadingOverlay.style.display = 'none';
-                    
-                    alert(`アップロード成功！\n管理番号「${result.serial}」をコピーしました。\nOKを押すと、限定ブロック崩しゲームが解放されます！`);
-                    
-                    unlockGameMode();
+                    // 最後に遊んだゲームデータとしてローカルストレージにドット絵とシリアルを一時退避
+                    localStorage.setItem('dots_latest_serial', result.serial);
+                    localStorage.setItem('dots_latest_name', name);
+                    localStorage.setItem('dots_latest_matrix', dCanvas.toDataURL());
 
+                    loadingOverlay.style.display = 'none';
+                    alert(`アップロードが完了しました！\nOKを押すとアンケート画面に移動します。アンケート送信後に限定特典ゲームが始まります！`);
+                    
+                    // Googleフォームへパラメータを付与して遷移
                     const params = new URLSearchParams();
-                    params.append("entry.46158305", name);
-                    params.append("entry.1524592109", result.serial);
-                    window.open(`${FORM_URL}?${params.toString()}`, '_blank');
+                    params.append("entry.46158305", name);      // 作品名
+                    params.append("entry.1524592109", result.serial);  // 管理シリアル
+                    window.location.href = `${FORM_URL}?${params.toString()}`;
                     
                 } else {
                     loadingOverlay.style.display = 'none';
@@ -746,162 +685,6 @@
                 alert("通信エラーが発生しました。");
             }
         };
-
-        // ==================== 🎮 特典：ブロック崩しゲームロジック ====================
-        let gameBlocks = [];
-        let paddle = { x: 0, y: 0, width: 60, height: 10 };
-        let ball = { x: 0, y: 0, vx: 3, vy: -3, radius: 6 };
-        let gameAnimFrame = null;
-        let isGameRunning = false;
-
-        function unlockGameMode() {
-            currentStep = 5;
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.control-panel').forEach(p => p.classList.remove('active'));
-            document.getElementById('panel-game').classList.add('active');
-            
-            sCanvas.style.display = 'none';
-            dCanvas.style.display = 'none';
-            threeContainer.style.display = 'none';
-            gCanvas.style.display = 'none';
-            bgLayer.style.display = 'none';
-            
-            gameContainer.style.display = 'block';
-            resizeGameCanvas();
-            initGameStage();
-        }
-
-        function resizeGameCanvas() {
-            const rect = canvasArea.getBoundingClientRect();
-            gameCanvas.width = rect.width;
-            gameCanvas.height = rect.height;
-        }
-
-        function initGameStage() {
-            gameBlocks = [];
-            const imgData = dCtx.getImageData(0, 0, 32, 32).data;
-            const bw = gameCanvas.width / 32;
-            const bh = (gameCanvas.height * 0.5) / 32;
-
-            for (let y = 0; y < 32; y++) {
-                for (let x = 0; x < 32; x++) {
-                    const idx = (y * 32 + x) * 4;
-                    if (imgData[idx + 3] >= 128) {
-                        gameBlocks.push({
-                            x: x * bw,
-                            y: y * bh,
-                            w: bw - 0.5,
-                            h: bh - 0.5,
-                            color: `rgb(${imgData[idx]},${imgData[idx+1]},${imgData[idx+2]})`
-                        });
-                    }
-                }
-            }
-
-            paddle.width = gameCanvas.width * 0.2;
-            paddle.x = (gameCanvas.width - paddle.width) / 2;
-            paddle.y = gameCanvas.height - 25;
-
-            ball.x = gameCanvas.width / 2;
-            ball.y = paddle.y - 15;
-            ball.vx = 2.5 * (Math.random() > 0.5 ? 1 : -1);
-            ball.vy = -3.5;
-
-            drawGameStatic();
-        }
-
-        function drawGameStatic() {
-            const gCtx = gameCanvas.getContext('2d');
-            gCtx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
-
-            gameBlocks.forEach(b => {
-                gCtx.fillStyle = b.color;
-                gCtx.fillRect(b.x, b.y, b.w, b.h);
-            });
-
-            gCtx.fillStyle = varColor('--primary-color', '#6c5ce7');
-            gCtx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
-
-            gCtx.beginPath();
-            gCtx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-            gCtx.fillStyle = '#ff7675';
-            gCtx.fill();
-            gCtx.closePath();
-        }
-
-        function varColor(varName, fallback) {
-            return getComputedStyle(document.documentElement).getPropertyValue(varName).trim() || fallback;
-        }
-
-        function startGame() {
-            if (isGameRunning) return;
-            isGameRunning = true;
-            initGameStage();
-            gameLoop();
-        }
-
-        function gameLoop() {
-            if (!isGameRunning) return;
-            updateGameObjects();
-            drawGameStatic();
-            gameAnimFrame = requestAnimationFrame(gameLoop);
-        }
-
-        function updateGameObjects() {
-            ball.x += ball.vx;
-            ball.y += ball.vy;
-
-            if (ball.x - ball.radius < 0 || ball.x + ball.radius > gameCanvas.width) ball.vx *= -1;
-            if (ball.y - ball.radius < 0) ball.vy *= -1;
-
-            if (ball.y + ball.radius >= paddle.y && ball.y - ball.radius <= paddle.y + paddle.height) {
-                if (ball.x >= paddle.x && ball.x <= paddle.x + paddle.width) {
-                    ball.vy = -Math.abs(ball.vy);
-                    let hitPos = (ball.x - paddle.x) / paddle.width;
-                    ball.vx = 6 * (hitPos - 0.5);
-                }
-            }
-
-            for (let i = gameBlocks.length - 1; i >= 0; i--) {
-                let b = gameBlocks[i];
-                if (ball.x + ball.radius > b.x && ball.x - ball.radius < b.x + b.w &&
-                    ball.y + ball.radius > b.y && ball.y - ball.radius < b.y + b.h) {
-                    ball.vy *= -1;
-                    gameBlocks.splice(i, 1);
-                    break;
-                }
-            }
-
-            if (ball.y > gameCanvas.height) {
-                isGameRunning = false;
-                cancelAnimationFrame(gameAnimFrame);
-                alert("ゲームオーバー！もう一回チャレンジしよう！");
-                initGameStage();
-            }
-
-            if (gameBlocks.length === 0) {
-                isGameRunning = false;
-                cancelAnimationFrame(gameAnimFrame);
-                alert("すごーい！ステージクリア！おめでとう！🎉");
-            }
-        }
-
-        function movePaddle(clientX) {
-            const rect = gameCanvas.getBoundingClientRect();
-            let targetX = clientX - rect.left - paddle.width / 2;
-            if (targetX < 0) targetX = 0;
-            if (targetX > gameCanvas.width - paddle.width) targetX = gameCanvas.width - paddle.width;
-            paddle.x = targetX;
-        }
-
-        gameCanvas.addEventListener('mousemove', (e) => { if(isGameRunning) movePaddle(e.clientX); });
-        gameCanvas.addEventListener('touchmove', (e) => { 
-            if(isGameRunning && e.touches.length > 0) {
-                e.preventDefault();
-                movePaddle(e.touches[0].clientX);
-            }
-        }, { passive: false });
-
     </script>
 </body>
 </html>
