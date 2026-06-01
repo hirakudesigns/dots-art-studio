@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DOTS ブロック崩し - ネオサイバーステージ</title>
+    <title>DOTS ブロック崩し - インベーダーステージ</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
         :root { 
@@ -106,7 +106,7 @@
 <body>
 
     <div class="game-header">
-        <h1 class="game-title">🔮 NEON CYBER STAGE: <span id="target-art-name" class="art-name">読み込み中...</span></h1>
+        <h1 class="game-title">🔮 ATTACK STAGE: <span id="target-art-name" class="art-name">読み込み中...</span></h1>
         <button class="btn-close-top" onclick="closeGameWindow()"><span class="material-icons">close</span></button>
     </div>
 
@@ -121,7 +121,7 @@
 
         <div class="game-overlay" id="titleOverlay">
             <h2 class="overlay-title">DOTS BLOCK CRASH</h2>
-            <p class="overlay-subtitle">きみのドット絵が3Dネオン空間になった！</p>
+            <p class="overlay-subtitle">時間がたつとドット絵がせまってくるぞ！</p>
             
             <div class="art-preview-box">
                 <canvas id="titlePreviewCanvas" width="32" height="32"></canvas>
@@ -162,6 +162,10 @@
         
         let globalBallSpeed = 5.5;
         let penetrateTimer = 0; 
+        
+        // 🕒 迫ってくる演出用のタイマー変数
+        let blockAdvanceTimer = 0;
+        let currentBlockSize = 0; // 1マスのサイズを保持
         
         let gameAnimFrame = null;
         let isGameRunning = false;
@@ -214,6 +218,7 @@
             hasPlayerMoved = false;
             isFirstShotFired = false; 
             penetrateTimer = 0;
+            blockAdvanceTimer = 0; // タイマー初期化
             gameControlsUI.style.display = 'none';
             slideGuide.style.opacity = '1';
 
@@ -221,10 +226,10 @@
             balls = [];
             items = [];
 
-            const imgData = hCtx.getImageData(0, 0, 32, 32).data;
-            const blockSize = canvas.width / 32; 
+            currentBlockSize = canvas.width / 32; 
             const startOffsetY = 15; 
 
+            const imgData = hCtx.getImageData(0, 0, 32, 32).data;
             for (let y = 0; y < 32; y++) {
                 for (let x = 0; x < 32; x++) {
                     const idx = (y * 32 + x) * 4;
@@ -233,14 +238,11 @@
                     if (a < 128) continue;
                     if (r >= 210 && g >= 210 && b >= 210) continue; 
 
-                    // 🟥 3D影用の少し暗い色を事前計算して保持しておく
-                    const shadowColor = `rgb(${Math.max(0, r - 50)}, ${Math.max(0, g - 50)}, ${Math.max(0, b - 50)})`;
-
+                    // 立体感は無しにし、綺麗な正方形フラットブロックに
                     gameBlocks.push({
-                        x: x * blockSize, y: y * blockSize + startOffsetY,
-                        w: blockSize - 1.5, h: blockSize - 1.5, // 3Dの隙間を出すためサイズ微調整
-                        color: `rgb(${r},${g},${b})`,
-                        shadowColor: shadowColor // 影の色
+                        x: x * currentBlockSize, y: y * currentBlockSize + startOffsetY,
+                        w: currentBlockSize - 0.6, h: currentBlockSize - 0.6,
+                        color: `rgb(${r},${g},${b})`
                     });
                 }
             }
@@ -259,9 +261,8 @@
             }];
         }
 
-        // 🌌 紫ネオンを極めた「全画面3Dパース」背景の描画
+        // 全画面カバーの洗練された紫ネオン3Dパース背景
         function drawCyberBackground() {
-            // 1. 宇宙空間の深みグラデーション
             let grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
             grad.addColorStop(0, '#04010a');
             grad.addColorStop(0.4, '#0a0314');
@@ -269,78 +270,40 @@
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // 2. 画面全体に広がる紫の放射状パース線
             ctx.strokeStyle = 'rgba(255, 0, 255, 0.08)';
             ctx.lineWidth = 1;
             
-            let vanishingPointX = canvas.width / 2; // 消失点を画面の中央上部に設定
+            let vanishingPointX = canvas.width / 2; 
             let vanishingPointY = canvas.height * 0.15;
 
-            // 左右・下全ての画面端へ放射線を広げる（全画面カバー）
             let numLines = 40;
             for (let i = 0; i <= numLines; i++) {
                 let angle = (Math.PI * 2) * (i / numLines);
-                // 画面外まで十分届く長さで線を引く
                 let targetX = vanishingPointX + Math.cos(angle) * canvas.width * 1.5;
                 let targetY = vanishingPointY + Math.sin(angle) * canvas.height * 1.5;
-
-                ctx.beginPath();
-                ctx.moveTo(vanishingPointX, vanishingPointY);
-                ctx.lineTo(targetX, targetY);
-                ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(vanishingPointX, vanishingPointY); ctx.lineTo(targetX, targetY); ctx.stroke();
             }
 
-            // 3. 妖しく光るネオンパープルの水平グリッド（下部に行くほどパースで広がる）
             for (let j = 0; j < 16; j++) {
                 let yBase = vanishingPointY + (canvas.height - vanishingPointY) * Math.pow(j / 15, 2.3);
-                
-                // ネオンの光彩演出
                 ctx.strokeStyle = `rgba(239, 68, 180, ${0.02 + (j/15) * 0.18})`;
                 ctx.lineWidth = 1 + (j / 15) * 1.5;
                 ctx.shadowColor = '#ff00ff';
-                ctx.shadowBlur = j > 10 ? 8 : 0; // 手前ほど妖しく発光
-                
-                ctx.beginPath();
-                ctx.moveTo(0, yBase);
-                ctx.lineTo(canvas.width, yBase);
-                ctx.stroke();
+                ctx.shadowBlur = j > 10 ? 8 : 0; 
+                ctx.beginPath(); ctx.moveTo(0, yBase); ctx.lineTo(canvas.width, yBase); ctx.stroke();
             }
-            ctx.shadowBlur = 0; // 描画状態を戻す
+            ctx.shadowBlur = 0; 
         }
 
         function drawGameScene() {
-            // 背景描画
             drawCyberBackground();
 
-            // 🎨 ブロックの「疑似3Dボクセル調」描画
+            // 🎨 フラットな美しい正方形ブロック
             gameBlocks.forEach(b => {
-                let thickness = Math.max(2, b.w * 0.18); // 立体感の厚み
-
-                // 1. 厚み（立体影の部分：右面と下面）の描画
-                ctx.fillStyle = b.shadowColor;
-                
-                // 右側の厚み
-                ctx.beginPath();
-                ctx.moveTo(b.x + b.w, b.y);
-                ctx.lineTo(b.x + b.w + thickness, b.y + thickness);
-                ctx.lineTo(b.x + b.w + thickness, b.y + b.h + thickness);
-                ctx.lineTo(b.x + b.w, b.y + b.h);
-                ctx.fill();
-
-                // 下側の厚み
-                ctx.beginPath();
-                ctx.moveTo(b.x, b.y + b.h);
-                ctx.lineTo(b.x + thickness, b.y + b.h + thickness);
-                ctx.lineTo(b.x + b.w + thickness, b.y + b.h + thickness);
-                ctx.lineTo(b.x + b.w, b.y + b.h);
-                ctx.fill();
-
-                // 2. ブロックの正面（メインカラー）
                 ctx.fillStyle = b.color;
                 ctx.fillRect(b.x, b.y, b.w, b.h);
-
-                // ネオンのサイバーグリッド感を追加
-                ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+                // サイバー感を出すうっすらとした細い枠線
+                ctx.strokeStyle = 'rgba(255,255,255,0.12)';
                 ctx.strokeRect(b.x, b.y, b.w, b.h);
             });
 
@@ -390,8 +353,21 @@
         }
 
         function updatePhysics() {
-            // 🟡 3秒（180フレーム）の貫通タイマー
             if (penetrateTimer > 0) penetrateTimer--;
+
+            // 🕒 最初の1投が放たれたら、イラストを少しずつ下に近づけるカウンター作動
+            if (isFirstShotFired) {
+                blockAdvanceTimer++;
+                // 10秒(60Hz = 600フレーム)経過したら発動
+                if (blockAdvanceTimer >= 600) {
+                    blockAdvanceTimer = 0;
+                    
+                    // すべてのブロックを1マス（1段分）下にシフト
+                    gameBlocks.forEach(b => {
+                        b.y += currentBlockSize;
+                    });
+                }
+            }
 
             // アイテム移動と回収
             for (let i = items.length - 1; i >= 0; i--) {
@@ -408,6 +384,8 @@
             }
 
             // ボール物理
+            let lowestBlockY = 0; // 最下部のブロック位置監視用
+            
             for (let i = balls.length - 1; i >= 0; i--) {
                 let ball = balls[i];
                 ball.x += ball.vx;
@@ -432,6 +410,10 @@
                 // ブロック衝突
                 for (let j = gameBlocks.length - 1; j >= 0; j--) {
                     let b = gameBlocks[j];
+                    
+                    // 最下部ブロックの位置をリアルタイム記憶
+                    if (b.y + b.h > lowestBlockY) lowestBlockY = b.y + b.h;
+
                     if (ball.x + ball.radius > b.x && ball.x - ball.radius < b.x + b.w &&
                         ball.y + ball.radius > b.y && ball.y - ball.radius < b.y + b.h) {
                         
@@ -441,7 +423,7 @@
                             if (overlapX < overlapY) ball.vx *= -1; else ball.vy *= -1;
                         }
 
-                        // 🟢 【確率再調整】：出現率を 15% -> 6% へシビアに変更！
+                        // 🟢 出現率は「6%」をキープ
                         if (Math.random() < 0.06) {
                             items.push({
                                 x: b.x + b.w/2, y: b.y + b.h,
@@ -455,6 +437,18 @@
                 }
 
                 if (ball.y > canvas.height) balls.splice(i, 1);
+            }
+
+            // 🛑 侵略ゲームオーバー判定：ブロックがパドルの高さ（または画面底）を超えたら即アウト
+            if (gameBlocks.length > 0) {
+                // まだボールが当たっていないブロックも考慮するため、全ブロックの最下部を正確に再チェック
+                let maxBlockY = 0;
+                gameBlocks.forEach(b => { if(b.y + b.h > maxBlockY) maxBlockY = b.y + b.h; });
+                
+                if (maxBlockY >= paddle.y) {
+                    endGameSession(false);
+                    return;
+                }
             }
 
             if (balls.length === 0 && isFirstShotFired) endGameSession(false);
@@ -480,7 +474,7 @@
                 if (isWin) {
                     alert("すごーい！ぜんぶ崩せたね！ステージクリア！🎉");
                 } else {
-                    alert("ゲームオーバー！もう一回やってみよう！");
+                    alert("イラストに押しつぶされちゃった！もう一回やってみよう！");
                 }
                 gameControlsUI.style.display = 'flex';
             }, 100);
