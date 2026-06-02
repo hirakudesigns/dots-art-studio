@@ -96,9 +96,9 @@
 
     <div class="step-tabs">
         <div class="tab active" id="tab-step1" onclick="switchStep(1)"><span class="tab-num">STEP 01</span>らくがき</div>
-        <div class="tab" id="tab-step2" onclick="switchStep(2)"><span class="tab-num">STEP 02</span>どっと化</div>
-        <div class="tab" id="tab-step3" onclick="switchStep(3)"><span class="tab-num">STEP 03</span>立体プレビュー</div>
-        <div class="tab" id="tab-step4" onclick="switchStep(4)"><span class="tab-num">STEP 04</span>送信</div>
+        <div class="tab" id="tab-step2" onclick="switchStep(2)"><span class="tab-num">STEP 02</span>ドット変身</div>
+        <div class="tab" id="tab-step3" onclick="switchStep(3)"><span class="tab-num">STEP 03</span>3Dかくにん</div>
+        <div class="tab" id="tab-step4" onclick="switchStep(4)"><span class="tab-num">STEP 04</span>できあがり</div>
     </div>
 
     <div class="app-container">
@@ -121,7 +121,7 @@
         </div>
 
         <div class="control-panel active" id="panel-step1">
-            <div class="section-label">らくがき・スキャンツール</div>
+            <div class="section-label">らくがきツール</div>
             <div class="row">
                 <input type="color" id="sketchColor" value="#000000" style="width:40px; height:40px; border:none; background:none; cursor:pointer;">
                 <button class="btn active" id="btn-sketch-pen"><span class="material-icons">edit</span></button>
@@ -131,12 +131,12 @@
                 
                 <button class="btn" id="btn-sketch-clear" style="color:var(--accent-color);"><span class="material-icons">delete_outline</span></button>
             </div>
-            <p id="camera-guide-text" style="font-size:0.75rem; color:#747d8c; text-align:center; margin: 5px 0;">上のカメラボタンで紙の絵をパシャッとスキャンすることもできるよ！</p>
-            <button class="btn-magic" onclick="magicConvert()"><span class="material-icons">auto_awesome</span> ドット絵に変身させる！</button>
+            <p id="camera-guide-text" style="font-size:0.75rem; color:#747d8c; text-align:center; margin: 5px 0;">紙に描いたらくがきをスキャンすることもできるよ！</p>
+            <button class="btn-magic" onclick="magicConvert()"><span class="material-icons">auto_awesome</span> ドット絵に変身！</button>
         </div>
 
         <div class="control-panel" id="panel-step2">
-            <div class="section-label">ドット微調整ツール</div>
+            <div class="section-label">ドット絵 調整ツール</div>
             <div class="row">
                 <input type="color" id="colorPicker" value="#000000" style="width:40px; height:40px; border:none; background:none; cursor:pointer;">
                 <button class="btn active" id="btn-pen"><span class="material-icons">edit</span></button>
@@ -145,30 +145,33 @@
                 <button class="btn" id="btn-picker"><span class="material-icons">colorize</span></button>
                 <button class="btn" id="btn-toggle-grid" style="margin-left: auto;"><span class="material-icons">grid_on</span></button>
             </div>
-            <div class="section-label">カラーパレット</div>
+            <div class="section-label">登録した色（好きな色を登録できるよ）</div>
             <div class="row" style="justify-content: space-between;">
                 <div id="paletteArea" class="row" style="min-height:30px; justify-content:flex-start; gap:6px;"></div>
                 <button class="btn" id="btn-save-palette" style="width:auto; padding:0 8px; font-size:0.7rem; height:34px;">色を登録</button>
             </div>
-            <button class="btn-magic" style="background: var(--primary-color);" onclick="goTo3DStep()">3Dボクセルにする！ <span class="material-icons">view_in_ar</span></button>
+            <button class="btn-magic" style="background: var(--primary-color);" onclick="goTo3DStep()">3Dに変身！ <span class="material-icons">view_in_ar</span></button>
         </div>
 
         <div class="control-panel" id="panel-step3">
-            <div class="section-label">3D立体プレビュー</div>
-            <p style="font-size:0.8rem; color:#333; text-align:center; margin: 5px 0; font-weight: bold;">存在感ばつぐんの厚み（3.0）のブロックフィギュアになりました！</p>
-            <p style="font-size:0.75rem; color:#747d8c; text-align:center; margin: 0 0 5px 0;">🖯 グルグル回して色々な角度からチェックできます</p>
-            <button class="btn-magic" style="background: var(--primary-color);" onclick="switchStep(4)">これで決定！次にすすむ <span class="material-icons">arrow_forward</span></button>
+            <div class="section-label">君の作品が立体になるとこんな感じ！</div>
+            <p style="font-size:0.8rem; color:#333; text-align:center; margin: 5px 0; font-weight: bold;">色が抜けていないか確認してね！白い部分ちゃんと塗れてるかな？</p>
+            <p style="font-size:0.75rem; color:#747d8c; text-align:center; margin: 0 0 5px 0;">指でグルグル回すと、色々な角度からチェックできるよ！</p>
+            <button class="btn-magic" style="background: var(--primary-color);" onclick="switchStep(4)">これで決定！ <span class="material-icons">arrow_forward</span></button>
         </div>
 
         <div class="control-panel" id="panel-step4">
-            <div class="section-label">作品の名前</div>
+            <div class="section-label">素敵な作品に名前をつけてあげてね【必須】</div>
             <input type="text" id="artName" placeholder="作品の名前を入力..." style="width:100%; height:45px; border-radius:10px; border:2px solid #ddd; padding:0 10px; box-sizing:border-box;">
 
-            <div class="section-label">完成背景デザイン</div>
+            <div class="section-label">背景デザイン（ワークショップなどで使用します）</div>
             <select id="bgSelect" class="sidebar-select" style="width: 100%; height: 40px; border-radius: 10px; border: 2px solid #f1f2f6; padding: 0 10px; font-weight: bold; color: #57606f;">
                 <option value="">背景なし（透明）</option>
                 <option value="bg1.jpg">背景デザイン1</option>
                 <option value="bg2.jpg">背景デザイン2</option>
+                <option value="bg3.jpg">背景デザイン3</option>
+                <option value="bg4.jpg">背景デザイン4</option>
+                <option value="bg5.jpg">背景デザイン5</option>
             </select>
 
             <button class="btn-upload" id="uploadButton">作品をアップロード！</button>
@@ -809,7 +812,7 @@
                     localStorage.setItem('dots_latest_matrix', dCanvas.toDataURL());
 
                     loadingOverlay.style.display = 'none';
-                    alert(`アップロードが完了しました！\nOKを押すとアンケート画面に移動します。アンケート送信後に限定特典ゲームが始まります！`);
+                    alert(`アップロードが完了しました！\nOKを押すとアンケート画面に移動します。アンケート送信後に簡単なゲームが出来るよ！`);
                     
                     const params = new URLSearchParams();
                     params.append("entry.46158305", name);      
