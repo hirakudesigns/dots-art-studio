@@ -274,16 +274,18 @@
             }
         }
 
-        // ==================== 📷 背面カメラ・制限スキャン制御ロジック ====================
+       // ==================== 📷 背面カメラ・制限スキャン・フラッシュ制御 ====================
+        let trackForFlash = null; // 🟥 ライト制御用のトラック保持変数
+
         async function toggleCamera() {
             if (currentStep !== 1) return;
 
             const camBtn = document.getElementById('btn-sketch-camera');
             
-            // 状態1: カメラが起動していない場合 ➔ 起動処理
+            // 状態1: カメラが起動していない場合 ➔ 起動処理 ＆ ライトオン
             if (!isCameraActive && !isCameraPreviewMode) {
                 try {
-                    // 高解像度で取得することで切り抜き後の画質低下を防ぐ
+                    // 高解像度かつ背面カメラを指定
                     const constraints = {
                         video: { facingMode: "environment", width: { ideal: 1024 }, height: { ideal: 1024 } },
                         audio: false
@@ -294,7 +296,21 @@
                     bgLayer.style.backgroundImage = "none";
                     bgLayer.style.display = "block";
                     
-                    // 🟥 ガイド枠用CSSクラスを追加
+                    // 🟥 強制フラッシュ（ライト常時点灯）処理
+                    // ビデオの映像トラックを取り出し、スマホが対応していればトーチ（torch）をONにする
+                    const videoTrack = videoStream.getVideoTracks()[0];
+                    if (videoTrack) {
+                        trackForFlash = videoTrack;
+                        const capabilities = videoTrack.getCapabilities();
+                        // ブラウザや端末が「ライト（torch）」に対応しているかチェック
+                        if (capabilities.torch) {
+                            await videoTrack.applyConstraints({
+                                advanced: [{ torch: true }]
+                            });
+                        }
+                    }
+
+                    // ガイド枠用CSSクラスを追加
                     canvasArea.classList.add('camera-active');
                     
                     isCameraActive = true;
@@ -308,53 +324,83 @@
                     alert("カメラの起動に失敗しました。カメラのアクセス権限を確認してください。");
                 }
             } 
-            // 状態2: ストリーミング中 ➔ シャッターを切ってプレビュー確認へ
+            // 状態2: ストリーミング中 ➔ シャッターを切ってプレビュー確認へ（※まだライトは点けたまま確認できます）
             else if (isCameraActive && !isCameraPreviewMode) {
                 try {
                     sCtx.clearRect(0, 0, sCanvas.width, sCanvas.height);
                     sCtx.globalCompositeOperation = 'source-over';
                     
-                    // 🟥 ターゲットエリアのトリミング計算 (中央の70%エリア)
-                    // ビデオ本来の解像度から中央を算出
+                    // ターゲットエリアのトリミング計算 (中央の70%エリア)
                     const vW = bgVideo.videoWidth;
                     const vH = bgVideo.videoHeight;
                     const minSize = Math.min(vW, vH);
                     
-                    // L字ガイドに対応するビデオ側の座標・サイズ
                     const cropSize = minSize * 0.70; 
                     const cropX = (vW - cropSize) / 2;
                     const cropY = (vH - cropSize) / 2;
 
-                    // ガイド内側だけを抽出してキャンバスいっぱいに等倍描画
                     sCtx.drawImage(
                         bgVideo, 
-                        cropX, cropY, cropSize, cropSize, // 元ビデオの抽出エリア
-                        0, 0, sCanvas.width, sCanvas.height // キャンバス全面へ
+                        cropX, cropY, cropSize, cropSize,
+                        0, 0, sCanvas.width, sCanvas.height
                     );
 
-                    // ビデオを一時停止してフリーズ（静止画確認）状態にする
                     bgVideo.pause();
-                    canvasArea.classList.remove('camera-active'); // ガイドを隠す
+                    canvasArea.classList.remove('camera-active');
                     
                     isCameraActive = false;
                     isCameraPreviewMode = true;
                     
-                    // ボタンを「チェック（確定）」マークに変更
                     camBtn.style.background = '#10b981'; // 確定はグリーン
                     camBtn.innerHTML = '<span class="material-icons" style="font-size:28px;">check</span>';
-                    cameraGuideText.innerText = "綺麗に撮れたかな？OKならもう一度ボタンを押してね！(直したい時はお絵かきツールで消すか、もう一度撮り直してね)";
+                    cameraGuideText.innerText = "綺麗に撮れたかな？OKならもう一度ボタンを押してね！(撮り直す時は戻るボタンを押してね)";
                     cameraGuideText.style.color = "#10b981";
                 } catch(e) { 
                     console.error("Capture failed:", e); 
                     stopCameraMode();
                 }
             }
-            // 状態3: 静止画プレビュー確認中 ➔ 確定してカメラ終了
+            // 状態3: 静止画プレビュー確認中 ➔ 確定してカメラ終了 ＆ ライトオフ
             else if (isCameraPreviewMode) {
                 saveHistory(1);
                 autoSaveToStorage();
                 stopCameraMode();
             }
+        }
+
+        async function stopCameraMode() {
+            // 🟥 カメラ終了時にライトを安全に消灯する
+            if (trackForFlash) {
+                try {
+                    const capabilities = trackForFlash.getCapabilities();
+                    if (capabilities.torch) {
+                        await trackForFlash.applyConstraints({
+                            advanced: [{ torch: false }]
+                        });
+                    }
+                } catch (e) { console.warn("Flash off failed:", e); }
+                trackForFlash = null;
+            }
+
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+            }
+            bgVideo.srcObject = null;
+            bgVideo.style.display = "none";
+            bgLayer.style.display = "none";
+            canvasArea.classList.remove('camera-active');
+            
+            isCameraActive = false;
+            isCameraPreviewMode = false;
+            
+            const camBtn = document.getElementById('btn-sketch-camera');
+            camBtn.style.background = '#e3f2fd';
+            camBtn.style.color = '#1e88e5';
+            camBtn.innerHTML = '<span class="material-icons" style="font-size:28px;">photo_camera</span>';
+            
+            cameraGuideText.innerText = "上のカメラボタンで紙の絵をパシャッとスキャンすることもできるよ！";
+            cameraGuideText.style.color = "#747d8c";
         }
 
         function stopCameraMode() {
