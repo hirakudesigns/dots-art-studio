@@ -520,33 +520,45 @@
         }
 
         function magicConvert() {
-            const tempCanvas = document.createElement('canvas'); 
-            tempCanvas.width = tempCanvas.height = 32;
-            const tCtx = tempCanvas.getContext('2d');
-            tCtx.imageSmoothingEnabled = false; 
-            tCtx.drawImage(sCanvas, 0, 0, 32, 32);
+    const tempCanvas = document.createElement('canvas'); 
+    tempCanvas.width = tempCanvas.height = 32;
+    const tCtx = tempCanvas.getContext('2d');
+    tCtx.imageSmoothingEnabled = false; 
+    tCtx.drawImage(sCanvas, 0, 0, 32, 32);
+    
+    const imgData = tCtx.getImageData(0, 0, 32, 32);
+    const data = imgData.data;
+    
+    for (let i = 0; i < data.length; i += 4) {
+        let r = data[i];
+        let g = data[i + 1];
+        let b = data[i + 2];
+        let alpha = data[i + 3];
+
+        if (alpha > 40) { 
+            data[i + 3] = 255; 
             
-            const imgData = tCtx.getImageData(0, 0, 32, 32);
-            const data = imgData.data;
+            // 🟥 【改善ロジック】
+            // RGBの平均値が「190以上（少し暗めの薄いグレー）」で、かつ
+            // 赤・緑・青の色味に差がない（カラフルではなく、白〜グレー〜黒の無彩色である）場合、
+            // それは「紙の色」または「影」とみなして、自動で透明（0）にします。
+            const avg = (r + g + b) / 3;
+            const isGrayScale = Math.max(r, g, b) - Math.min(r, g, b) < 25; // 色味の偏りが少ないか
             
-            for (let i = 0; i < data.length; i += 4) {
-                let alpha = data[i + 3];
-                if (alpha > 40) { 
-                    data[i + 3] = 255; 
-                    if(data[i] > 245 && data[i+1] > 245 && data[i+2] > 245) {
-                        data[i + 3] = 0;
-                    }
-                } else {
-                    data[i + 3] = 0; 
-                }
+            if (avg > 180 && isGrayScale) {
+                data[i + 3] = 0; // 影や白背景を透明化
             }
-            dCtx.clearRect(0, 0, 32, 32);
-            dCtx.putImageData(imgData, 0, 0);
-            
-            saveHistory(2); 
-            autoSaveToStorage();
-            switchStep(2);
+        } else {
+            data[i + 3] = 0; 
         }
+    }
+    dCtx.clearRect(0, 0, 32, 32);
+    dCtx.putImageData(imgData, 0, 0);
+    
+    saveHistory(2); 
+    autoSaveToStorage();
+    switchStep(2);
+}
 
         function executeCanvasBucket(ctx, startX, startY, fillHex, width, height) {
             const imageData = ctx.getImageData(0, 0, width, height), data = imageData.data;
