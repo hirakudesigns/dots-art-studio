@@ -1,0 +1,15 @@
+{
+  "name": "dots-balance-bridge",
+  "version": "1.0.0",
+  "description": "Mac用 Wiiバランスボード・ゲームコントローラー変換ツール",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "node-hid": "^3.0.0",
+    "robotjs": "^0.6.0"
+  },
+  "author": "Hiraku Designs",
+  "license": "MIT"
+}
