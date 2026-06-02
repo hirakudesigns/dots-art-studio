@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>DOTS ART STUDIO - Magic Editor 3D</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -14,9 +14,8 @@
             --card-bg: #ffffff; 
             --accent-color: #ff7675; 
             --save-green: #55efc4;
-            --cyber-neon: #ff00ff; /* ガイド用のネオンカラー */
+            --cyber-neon: #ff00ff;
         }
-        /* 🛠️ 修正: overflow-x を排除し、通常の縦スクロールを優位に */
         body { font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; background-color: var(--bg-color); margin: 0; padding: 10px; min-height: 100vh; -webkit-text-size-adjust: 100%; }
         .header-area { width: 100%; max-width: 500px; display: flex; justify-content: center; align-items: center; padding: 5px 0; gap: 10px; }
         .header-logo { height: 24px; width: auto; }
@@ -29,7 +28,6 @@
 
         .app-container { width: 100%; max-width: 500px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
 
-        /* 🛠️ 修正: touch-action を 2Dキャンバスエリア内だけで制御 */
         .canvas-area { 
             position: relative; 
             width: 100%; 
@@ -39,10 +37,10 @@
             border-radius: 12px; 
             box-shadow: 0 5px 15px rgba(0,0,0,0.1); 
             background: #fff; 
-            touch-action: none; /* キャンバス上でのブラウザスクロールを抑制 */
+            touch-action: none; 
             overflow: hidden; 
         }
-        .canvas-wrapper { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        .canvas-wrapper { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform-origin: center center; transition: transform 0.1s ease-out; }
         canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block; }
         #sketchCanvas { z-index: 2; background: transparent; }
         #dotCanvas { z-index: 3; image-rendering: pixelated; width: 100%; height: 100%; display: none; }
@@ -50,11 +48,10 @@
         
         #threeContainer { z-index: 4; position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; }
         
-        /* カメラ背景レイヤーの調整 */
         #bgLayer { z-index: 1; position:absolute; top:0; left:0; width:100%; height:100%; display: none; overflow: hidden; pointer-events: none; }
         #bgVideo { width: 100%; height: 100%; object-fit: cover; }
 
-        /* 新設: カメラ起動中のみ出現するL字型撮影ガイド（中央70%のエリアを制限） */
+        /* 撮影ガイド */
         .canvas-area.camera-active::before {
             content: ''; position: absolute; top: 15%; left: 15%; width: 70%; height: 70%;
             border: 3px dashed rgba(255, 0, 255, 0.6); box-shadow: 0 0 0 2000px rgba(0, 0, 0, 0.4);
@@ -66,6 +63,12 @@
             text-shadow: 0 2px 4px rgba(0,0,0,0.8); z-index: 6; pointer-events: none;
         }
 
+        /* 背景デザイン表示用のプレビューレイヤー（できあがりステップでのみ前面表示） */
+        #designPreviewLayer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 2; display: none; background-size: cover; background-position: center; pointer-events: none;
+        }
+
         .control-panel { width: 100%; background: var(--card-bg); padding: 15px; border-radius: 20px; box-sizing: border-box; display: none; flex-direction: column; gap: 12px; }
         .control-panel.active { display: flex; }
         .section-label { font-size: 0.65rem; color: #a1a1a1; font-weight: bold; text-transform: uppercase; margin-bottom: -5px; }
@@ -75,6 +78,10 @@
         .btn.active { background: var(--primary-color); color: white; }
         .btn img { width: 24px; height: 24px; object-fit: contain; }
         
+        /* iOS/Android共通カラーピッカーボタン用スタイル */
+        .color-picker-wrapper { width: 44px; height: 44px; border-radius: 10px; overflow: hidden; position: relative; border: 2px solid #ddd; box-sizing: border-box; cursor: pointer; }
+        .color-picker-wrapper input[type="color"] { position: absolute; top: -10px; left: -10px; width: 64px; height: 64px; border: none; padding: 0; margin: 0; cursor: pointer; background: none; }
+
         .btn-magic { background: linear-gradient(135deg, #6c5ce7, #a29bfe); color: white; height: 55px; font-weight: 900; border-radius: 15px; border: none; cursor: pointer; width: 100%; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(108, 92, 231, 0.4); display: flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-upload { background: var(--primary-color); color: white; height: 55px; font-weight: 900; border-radius: 15px; border: none; cursor: pointer; width: 100%; font-size: 1.1rem; }
 
@@ -82,7 +89,6 @@
         .spinner { width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.3); border-top: 5px solid white; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* パレット用の簡易調整用追加スタイル */
         .palette-item { display: flex; align-items: center; background: #f1f2f6; border-radius: 6px; padding: 2px 4px; gap: 4px; }
         .color-chip { width: 20px; height: 20px; border-radius: 4px; border: 1px solid #ccc; cursor: pointer; }
     </style>
@@ -108,8 +114,10 @@
 
     <div class="app-container">
         <div class="canvas-area" id="canvasArea">
-            <div class="canvas-wrapper">
+            <div class="canvas-wrapper" id="canvasWrapper">
                 <div id="bgLayer"><video id="bgVideo" autoplay playsinline muted></video></div>
+                <div id="designPreviewLayer"></div>
+                
                 <canvas id="sketchCanvas"></canvas>
                 <canvas id="dotCanvas" width="32" height="32"></canvas>
                 <canvas id="gridCanvas"></canvas>
@@ -117,16 +125,22 @@
             </div>
         </div>
         
-        <div class="row" id="history-row" style="gap:15px; margin: 5px 0;">
+        <div class="row" id="history-row" style="gap:10px; margin: 5px 0;">
+            <button class="btn" id="btn-zoom-in" style="border-radius:50%; background:#fff; box-shadow:0 3px 6px rgba(0,0,0,0.1);"><span class="material-icons">zoom_in</span></button>
             <button class="btn" id="btn-undo" style="border-radius:50%; background:#fff; box-shadow:0 3px 6px rgba(0,0,0,0.1);"><span class="material-icons">undo</span></button>
-            <button class="btn" id="btn-sketch-camera" style="border-radius:50%; background:#e3f2fd; color:#1e88e5; box-shadow:0 3px 6px rgba(0,0,0,0.1); width:50px; height:50px;"><span class="material-icons" style="font-size:28px;">photo_camera</span></button>
+            <button class="btn" id="btn-pan" style="border-radius:50%; background:#fff; box-shadow:0 3px 6px rgba(0,0,0,0.1);"><span class="material-icons">pan_tool</span></button>
             <button class="btn" id="btn-redo" style="border-radius:50%; background:#fff; box-shadow:0 3px 6px rgba(0,0,0,0.1);"><span class="material-icons">redo</span></button>
+            <button class="btn" id="btn-zoom-out" style="border-radius:50%; background:#fff; box-shadow:0 3px 6px rgba(0,0,0,0.1);"><span class="material-icons">zoom_out</span></button>
+            
+            <button class="btn" id="btn-sketch-camera" style="border-radius:50%; background:#e3f2fd; color:#1e88e5; box-shadow:0 3px 6px rgba(0,0,0,0.1); width:46px; height:46px;"><span class="material-icons" style="font-size:24px;">photo_camera</span></button>
         </div>
 
         <div class="control-panel active" id="panel-step1">
             <div class="section-label">らくがきツール</div>
             <div class="row">
-                <input type="color" id="sketchColor" value="#000000" style="width:40px; height:40px; border:none; background:none; cursor:pointer;">
+                <div class="color-picker-wrapper" id="sketchColorWrapper">
+                    <input type="color" id="sketchColor" value="#000000">
+                </div>
                 <button class="btn active" id="btn-sketch-pen"><span class="material-icons">edit</span></button>
                 <button class="btn" id="btn-sketch-eraser"><img src="eraser.png" alt="消しゴム"></button>
                 <button class="btn" id="btn-sketch-bucket"><span class="material-icons">format_color_fill</span></button>
@@ -140,12 +154,15 @@
         <div class="control-panel" id="panel-step2">
             <div class="section-label">ドット絵 調整ツール</div>
             <div class="row">
-                <input type="color" id="colorPicker" value="#000000" style="width:40px; height:40px; border:none; background:none; cursor:pointer;">
+                <div class="color-picker-wrapper" id="colorPickerWrapper">
+                    <input type="color" id="colorPicker" value="#000000">
+                </div>
                 <button class="btn active" id="btn-pen"><span class="material-icons">edit</span></button>
                 <button class="btn" id="btn-eraser"><img src="eraser.png" alt="消しゴム"></button> 
                 <button class="btn" id="btn-bucket"><span class="material-icons">format_color_fill</span></button>
                 <button class="btn" id="btn-picker"><span class="material-icons">colorize</span></button>
-                <button class="btn" id="btn-toggle-grid" style="margin-left: auto;"><span class="material-icons">grid_on</span></button>
+                <button class="btn" id="btn-toggle-grid"><span class="material-icons">grid_on</span></button>
+                <button class="btn" id="btn-dot-clear" style="color:var(--accent-color); margin-left: auto;"><span class="material-icons">delete_outline</span></button>
             </div>
             <div class="section-label">登録した色（好きな色を登録できるよ）</div>
             <div class="row" style="justify-content: space-between;">
@@ -163,10 +180,10 @@
         </div>
 
         <div class="control-panel" id="panel-step4">
-            <div class="section-label">素敵な作品に名前をつけてあげね【必須】</div>
+            <div class="section-label">素敵な作品に名前をつけてあげてね【必須】</div>
             <input type="text" id="artName" placeholder="作品の名前を入力..." style="width:100%; height:45px; border-radius:10px; border:2px solid #ddd; padding:0 10px; box-sizing:border-box;">
 
-            <div class="section-label" style="margin-top: 10px;">背景デザイン（ワークショップなどで使用します）</div>
+            <div class="section-label" style="margin-top: 10px;">背景デザイン（画面プレビューのみ連動）</div>
             <select id="bgSelect" class="sidebar-select" style="width: 100%; height: 40px; border-radius: 10px; border: 2px solid #f1f2f6; padding: 0 10px; font-weight: bold; color: #57606f;">
                 <option value="">背景なし（透明）</option>
                 <option value="bg1.jpg">背景デザイン1</option>
@@ -189,6 +206,8 @@
         const gCtx = gCanvas.getContext('2d');
         
         const canvasArea = document.getElementById('canvasArea');
+        const canvasWrapper = document.getElementById('canvasWrapper');
+        const designPreviewLayer = document.getElementById('designPreviewLayer');
         const bgLayer = document.getElementById('bgLayer');
         const bgVideo = document.getElementById('bgVideo');
         const loadingOverlay = document.getElementById('loadingOverlay');
@@ -198,12 +217,17 @@
         const sketchColor = document.getElementById('sketchColor');
         const threeContainer = document.getElementById('threeContainer');
         const cameraGuideText = document.getElementById('camera-guide-text');
+        const bgSelect = document.getElementById('bgSelect');
 
         let currentStep = 1;
         let isDrawing = false;
         let sketchMode = 'pen';
-        let dotMode = 'pen';
+        let dotMode = 'pen'; // 'pen', 'eraser', 'bucket', 'picker', 'pan'
+        
+        // 🛠️ 修正: undo/redo用の履歴スタック構造の最適化
         let historyStack = { 1: [], 2: [] };
+        let undoIndex = { 1: -1, 2: -1 };
+
         let startTime = Date.now();
         let gridActive = true;
         
@@ -214,13 +238,24 @@
         let lastCanvasWidth = 0;
         let lastCanvasHeight = 0;
 
-        const VOXEL_HEIGHT = 3.0;
+        // 🛠️ 追加: ズーム & 手のひらツール(Pan)用変数
+        let zoomScale = 1.0;
+        let panX = 0;
+        let panY = 0;
+        let isPanning = false;
+        let startPanX = 0;
+        let startPanY = 0;
 
+        const VOXEL_HEIGHT = 3.0;
         let scene, camera, renderer, controls, voxelGroup;
         let isThreeInitialized = false;
 
-        const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbyUGyIE6nsZQjvigGkhMFQZU-lojHBOchuNuZBqp_zn2jovD7zIuYEQdWwcbXu0WKbbLg/exec"; 
+        const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbxLN0lTux5SRb8cI3lYp1sXBCEPHW4x4B-px7AguEjgvMHqA7wRipvF05iI5UiQJ_WknA/exec"; 
         const FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfNwyTLJ_-3FJx5oBbgzULdlWZ8TrVfyH6eHv5V4pXlAhP34Q/viewform";
+
+        // iOS/Androidでの確実なカラーピッカータップ動作のためのラッパー設定
+        document.getElementById('sketchColorWrapper').onclick = () => sketchColor.click();
+        document.getElementById('colorPickerWrapper').onclick = () => colorPicker.click();
 
         function initCanvasSize() {
             const rect = canvasArea.getBoundingClientRect();
@@ -279,7 +314,7 @@
             }
         }
 
-        // ==================== 📷 背面カメラ・制限スキャン・フラッシュ制御 ====================
+        // 📷 カメラ・スキャン制御
         let trackForFlash = null;
 
         async function toggleCamera() {
@@ -311,12 +346,12 @@
                     isCameraActive = true;
                     camBtn.style.background = '#e11d48'; 
                     camBtn.style.color = '#fff';
-                    camBtn.innerHTML = '<span class="material-icons" style="font-size:28px;">camera</span>';
+                    camBtn.innerHTML = '<span class="material-icons" style="font-size:24px;">camera</span>';
                     cameraGuideText.innerText = "四角いガイドの中に紙の絵を合わせて、カメラボタンを押してね！";
                     cameraGuideText.style.color = "var(--cyber-neon)";
                 } catch (err) {
                     console.error("Camera failed:", err);
-                    alert("カメラの起動に失敗しました。カメラのアクセス権限を確認してください。");
+                    alert("カメラの起動に失敗しました。アクセスの許可を確認してください。");
                 }
             } 
             else if (isCameraActive && !isCameraPreviewMode) {
@@ -345,8 +380,8 @@
                     isCameraPreviewMode = true;
                     
                     camBtn.style.background = '#10b981'; 
-                    camBtn.innerHTML = '<span class="material-icons" style="font-size:28px;">check</span>';
-                    cameraGuideText.innerText = "綺麗に撮れたかな？OKならもう一度ボタンを押してね！(撮り直す時は戻るボタンを押してね)";
+                    camBtn.innerHTML = '<span class="material-icons" style="font-size:24px;">check</span>';
+                    cameraGuideText.innerText = "綺麗に撮れたかな？OKならもう一度ボタンを押してね！(撮り直す時は戻るボタン)";
                     cameraGuideText.style.color = "#10b981";
                 } catch(e) { 
                     console.error("Capture failed:", e); 
@@ -386,7 +421,7 @@
             const camBtn = document.getElementById('btn-sketch-camera');
             camBtn.style.background = '#e3f2fd';
             camBtn.style.color = '#1e88e5';
-            camBtn.innerHTML = '<span class="material-icons" style="font-size:28px;">photo_camera</span>';
+            camBtn.innerHTML = '<span class="material-icons" style="font-size:24px;">photo_camera</span>';
             
             cameraGuideText.innerText = "上のカメラボタンで紙の絵をパシャッとスキャンすることもできるよ！";
             cameraGuideText.style.color = "#747d8c";
@@ -409,7 +444,11 @@
             const savedSketch = localStorage.getItem('dots_backup_sketch');
             if (savedSketch) {
                 const img = new Image(); img.src = savedSketch;
-                img.onload = () => { sCtx.drawImage(img, 0, 0, sCanvas.width, sCanvas.height); saveHistory(1); };
+                img.onload = () => { 
+                    sCtx.clearRect(0,0,sCanvas.width,sCanvas.height);
+                    sCtx.drawImage(img, 0, 0, sCanvas.width, sCanvas.height); 
+                    saveHistory(1); 
+                };
             }
             const savedDot = localStorage.getItem('dots_backup_dot');
             if (savedDot) {
@@ -425,38 +464,142 @@
             saveHistory(2);
             saveHistory(1);
             loadFromStorageBackup();
+            resetZoomPan(); // ズーム初期化
         });
 
+        // 🛠️ 修正: 各種ステップ表示、UIボタン出し入れ、および背景プレビューの連動
         function switchStep(step) {
             currentStep = step;
             document.querySelectorAll('.tab').forEach((t, i) => { t.classList.toggle('active', i === step - 1); });
             document.querySelectorAll('.control-panel').forEach((p, i) => { p.classList.toggle('active', i === step - 1); });
             
+            // ステップ1,2でのみナビゲーションバー（拡大縮小・手のひら・履歴）を表示
             document.getElementById('history-row').style.display = (step <= 2) ? 'flex' : 'none';
-            document.getElementById('btn-sketch-camera').style.visibility = (step === 1) ? 'visible' : 'hidden';
+            
+            // ズーム・手のひら関係のボタンは「ドットモード（ステップ2）」の時だけ表示
+            document.getElementById('btn-zoom-in').style.display = (step === 2) ? 'flex' : 'none';
+            document.getElementById('btn-zoom-out').style.display = (step === 2) ? 'flex' : 'none';
+            document.getElementById('btn-pan').style.display = (step === 2) ? 'flex' : 'none';
+            
+            // カメラボタンは「らくがき（ステップ1）」の時だけ表示
+            document.getElementById('btn-sketch-camera').style.display = (step === 1) ? 'flex' : 'none';
 
             sCanvas.style.display = (step === 1) ? 'block' : 'none';
             dCanvas.style.display = (step === 2 || step === 4) ? 'block' : 'none';
             threeContainer.style.display = (step === 3) ? 'block' : 'none';
-            
             gCanvas.style.display = (step === 2) ? 'block' : 'none';
-            if(step === 2) drawGrid();
-            if (step === 3) updateThreeMesh();
 
-            if (step !== 1 && (isCameraActive || isCameraPreviewMode)) {
-                stopCameraMode();
+            // ステップ4の時だけ背景デザインプレビューレイヤーを適用
+            if (step === 4) {
+                updateDesignPreview();
+            } else {
+                designPreviewLayer.style.display = 'none';
             }
+
+            resetZoomPan(); // ステップ切り替え時に拡大率を安全リセット
+            if(step === 2) drawGrid();
+            if(step === 3) updateThreeMesh();
+            if(step !== 1 && (isCameraActive || isCameraPreviewMode)) stopCameraMode();
         }
 
         function goTo3DStep() {
-            if (!isThreeInitialized) {
-                initThree();
-            } else {
-                updateCameraAspect();
-            }
+            if (!isThreeInitialized) { initThree(); } else { updateCameraAspect(); }
             switchStep(3);
         }
 
+        // 🛠️ 追加: 拡大縮小・移動(Pan)の適用ロジック
+        function applyZoomPan() {
+            canvasWrapper.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomScale})`;
+        }
+        function resetZoomPan() {
+            zoomScale = 1.0; panX = 0; panY = 0;
+            applyZoomPan();
+        }
+        document.getElementById('btn-zoom-in').onclick = () => { if(zoomScale < 4.0) { zoomScale += 0.25; applyZoomPan(); } };
+        document.getElementById('btn-zoom-out').onclick = () => { if(zoomScale > 1.0) { zoomScale -= 0.25; if(zoomScale===1){panX=0;panY=0;} applyZoomPan(); } };
+        
+        // 手のひらトグル
+        document.getElementById('btn-pan').onclick = () => {
+            if(dotMode === 'pan') {
+                dotMode = 'pen';
+                document.getElementById('btn-pan').classList.remove('active');
+                document.getElementById('btn-pen').classList.add('active');
+            } else {
+                dotMode = 'pan';
+                document.querySelectorAll('#panel-step2 .btn').forEach(b => b.classList.remove('active'));
+                document.getElementById('btn-pan').classList.add('active');
+            }
+        };
+
+        // 🛠️ 復活・修正: 確実な履歴管理(Undo/Redo)システム
+        function saveHistory(step) {
+            const cvs = step === 1 ? sCanvas : dCanvas;
+            const dataUrl = cvs.toDataURL();
+            
+            // 現在のインデックス以降のやり直し(redo)履歴をクリアして新規保存
+            historyStack[step] = historyStack[step].slice(0, undoIndex[step] + 1);
+            historyStack[step].push(dataUrl);
+            if(historyStack[step].length > 30) historyStack[step].shift();
+            undoIndex[step] = historyStack[step].length - 1;
+        }
+
+        document.getElementById('btn-undo').onclick = () => {
+            if (currentStep === 1 && isCameraPreviewMode) {
+                // カメラプレビューから戻る特殊処理
+                bgVideo.play(); isCameraPreviewMode = false; isCameraActive = true;
+                canvasArea.classList.add('camera-active');
+                const camBtn = document.getElementById('btn-sketch-camera');
+                camBtn.style.background = '#e11d48'; camBtn.innerHTML = '<span class="material-icons" style="font-size:24px;">camera</span>';
+                cameraGuideText.innerText = "四角いガイドの中に紙の絵を合わせて、カメラボタンを押してね！";
+                cameraGuideText.style.color = "var(--cyber-neon)";
+                sCtx.clearRect(0, 0, sCanvas.width, sCanvas.height);
+                return;
+            }
+
+            const step = currentStep;
+            if (undoIndex[step] > 0) {
+                undoIndex[step]--;
+                loadHistoryImage(step);
+            }
+        };
+
+        document.getElementById('btn-redo').onclick = () => {
+            const step = currentStep;
+            if (undoIndex[step] < historyStack[step].length - 1) {
+                undoIndex[step]++;
+                loadHistoryImage(step);
+            }
+        };
+
+        function loadHistoryImage(step) {
+            const img = new Image();
+            img.src = historyStack[step][undoIndex[step]];
+            img.onload = () => {
+                if (step === 1) {
+                    sCtx.clearRect(0, 0, sCanvas.width, sCanvas.height);
+                    sCtx.globalCompositeOperation = 'source-over';
+                    sCtx.drawImage(img, 0, 0, sCanvas.width, sCanvas.height);
+                } else {
+                    dCtx.clearRect(0, 0, 32, 32);
+                    dCtx.drawImage(img, 0, 0, 32, 32);
+                }
+                autoSaveToStorage();
+            };
+        }
+
+        // 🛠️ 復活・追加: 背景選択プレビュー処理
+        function updateDesignPreview() {
+            const selectedBg = bgSelect.value;
+            if (selectedBg) {
+                designPreviewLayer.style.backgroundImage = `url('${selectedBg}')`;
+                designPreviewLayer.style.display = 'block';
+            } else {
+                designPreviewLayer.style.display = 'none';
+            }
+        }
+        bgSelect.onchange = updateDesignPreview;
+
+        // 3D環境初期化
         function initThree() {
             const rect = canvasArea.getBoundingClientRect();
             scene = new THREE.Scene();
@@ -486,10 +629,7 @@
 
             function animate3D() {
                 requestAnimationFrame(animate3D);
-                if (currentStep === 3) {
-                    controls.update();
-                    renderer.render(scene, camera);
-                }
+                if (currentStep === 3) { controls.update(); renderer.render(scene, camera); }
             }
             animate3D();
         }
@@ -507,22 +647,16 @@
         function updateThreeMesh() {
             if (!isThreeInitialized) return;
             while(voxelGroup.children.length > 0){
-                const obj = voxelGroup.children[0];
-                obj.geometry.dispose(); obj.material.dispose();
-                voxelGroup.remove(obj);
+                const obj = voxelGroup.children[0]; obj.geometry.dispose(); obj.material.dispose(); voxelGroup.remove(obj);
             }
-
             const imgData = dCtx.getImageData(0, 0, 32, 32).data;
             const boxGeo = new THREE.BoxGeometry(1, VOXEL_HEIGHT, 1);
 
             for (let y = 0; y < 32; y++) {
                 for (let x = 0; x < 32; x++) {
-                    const idx = (y * 32 + x) * 4;
-                    if (imgData[idx + 3] < 128) continue;
-
+                    const idx = (y * 32 + x) * 4; if (imgData[idx + 3] < 128) continue;
                     const mat = new THREE.MeshStandardMaterial({
-                        color: new THREE.Color(`rgb(${imgData[idx]},${imgData[idx+1]},${imgData[idx+2]})`),
-                        roughness: 0.4
+                        color: new THREE.Color(`rgb(${imgData[idx]},${imgData[idx+1]},${imgData[idx+2]})`), roughness: 0.4
                     });
                     const mesh = new THREE.Mesh(boxGeo, mat);
                     mesh.position.set(x - 16, VOXEL_HEIGHT / 2, y - 16);
@@ -532,40 +666,23 @@
             voxelGroup.position.set(0, -VOXEL_HEIGHT / 2, 0);
         }
 
+        // ドット化コンバートロジック
         function magicConvert() {
-            const tempCanvas = document.createElement('canvas'); 
-            tempCanvas.width = tempCanvas.height = 32;
+            const tempCanvas = document.createElement('canvas'); tempCanvas.width = tempCanvas.height = 32;
             const tCtx = tempCanvas.getContext('2d');
-            tCtx.imageSmoothingEnabled = false; 
-            tCtx.drawImage(sCanvas, 0, 0, 32, 32);
+            tCtx.imageSmoothingEnabled = false; tCtx.drawImage(sCanvas, 0, 0, 32, 32);
             
-            const imgData = tCtx.getImageData(0, 0, 32, 32);
-            const data = imgData.data;
-            
+            const imgData = tCtx.getImageData(0, 0, 32, 32); const data = imgData.data;
             for (let i = 0; i < data.length; i += 4) {
-                let r = data[i];
-                let g = data[i + 1];
-                let b = data[i + 2];
-                let alpha = data[i + 3];
-
+                let r = data[i], g = data[i + 1], b = data[i + 2], alpha = data[i + 3];
                 if (alpha > 40) { 
-                    data[i + 3] = 255; 
-                    const avg = (r + g + b) / 3;
+                    data[i + 3] = 255; const avg = (r + g + b) / 3;
                     const isGrayScale = Math.max(r, g, b) - Math.min(r, g, b) < 25; 
-                    
-                    if (avg > 180 && isGrayScale) {
-                        data[i + 3] = 0; 
-                    }
-                } else {
-                    data[i + 3] = 0; 
-                }
+                    if (avg > 180 && isGrayScale) { data[i + 3] = 0; }
+                } else { data[i + 3] = 0; }
             }
-            dCtx.clearRect(0, 0, 32, 32);
-            dCtx.putImageData(imgData, 0, 0);
-            
-            saveHistory(2); 
-            autoSaveToStorage();
-            switchStep(2);
+            dCtx.clearRect(0, 0, 32, 32); dCtx.putImageData(imgData, 0, 0);
+            saveHistory(2); autoSaveToStorage(); switchStep(2);
         }
 
         function executeCanvasBucket(ctx, startX, startY, fillHex, width, height) {
@@ -587,19 +704,31 @@
         }
 
         function executeCanvasPicker(ctx, x, y, width, height, targetPicker) {
-            const imgData = ctx.getImageData(x, y, 1, 1).data;
-            if (imgData[3] === 0) return;
+            const imgData = ctx.getImageData(x, y, 1, 1).data; if (imgData[3] === 0) return;
             const hex = "#" + ("000000" + ((imgData[0] << 16) | (imgData[1] << 8) | imgData[2]).toString(16)).slice(-6);
             targetPicker.value = hex;
         }
 
+        // 🛠️ 修正: 拡大・移動を考慮した、タッチ・クリック座標の正確な逆算処理
         function getCanvasTouchPos(e) {
             const rect = canvasArea.getBoundingClientRect();
             const p = e.touches ? e.touches[0] : e;
-            return { x: p.clientX - rect.left, y: p.clientY - rect.top };
+            
+            // 1. まず外枠に対する純粋なタッチローカル座標
+            let localX = p.clientX - rect.left;
+            let localY = p.clientY - rect.top;
+
+            // 2. ドットモード(ステップ2)でズーム・移動が発生している場合は座標を逆変換
+            if (currentStep === 2) {
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                // 中心原点基準にシフト
+                localX = (localX - centerX - panX) / zoomScale + centerX;
+                localY = (localY - centerY - panY) / zoomScale + centerY;
+            }
+            return { x: localX, y: localY };
         }
         
-        // 🛠️ 修正: ウィンドウ全体ではなく、キャンバスエリア単体にタッチ操作を限定してバインド
         canvasArea.addEventListener('mousedown', startDrawing);
         canvasArea.addEventListener('touchstart', startDrawing, {passive: false});
         canvasArea.addEventListener('mousemove', draw);
@@ -610,28 +739,44 @@
         function startDrawing(e) {
             if (currentStep > 2 || isCameraActive || isCameraPreviewMode) return; 
             if (e.touches) e.preventDefault(); 
+            
+            // 🛠️ 手のひら(Pan)移動モード時の初期座標取得
+            if (currentStep === 2 && dotMode === 'pan') {
+                isPanning = true;
+                const p = e.touches ? e.touches[0] : e;
+                startPanX = p.clientX - panX;
+                startPanY = p.clientY - panY;
+                return;
+            }
+
             isDrawing = true; 
             const pos = getCanvasTouchPos(e);
             
             if (currentStep === 1) { 
                 const rx = Math.floor(pos.x), ry = Math.floor(pos.y);
-                if (sketchMode === 'bucket') {
-                    executeCanvasBucket(sCtx, rx, ry, sketchColor.value, sCanvas.width, sCanvas.height);
-                    stopDrawing();
-                } else if (sketchMode === 'picker') {
-                    executeCanvasPicker(sCtx, rx, ry, sCanvas.width, sCanvas.height, sketchColor);
-                    stopDrawing();
-                } else {
-                    sCtx.beginPath(); sCtx.moveTo(pos.x, pos.y); 
-                }
+                if (sketchMode === 'bucket') { executeCanvasBucket(sCtx, rx, ry, sketchColor.value, sCanvas.width, sCanvas.height); stopDrawing(); } 
+                else if (sketchMode === 'picker') { executeCanvasPicker(sCtx, rx, ry, sCanvas.width, sCanvas.height, sketchColor); stopDrawing(); } 
+                else { sCtx.beginPath(); sCtx.moveTo(pos.x, pos.y); }
             } else if (currentStep === 2) {
                 handleDotAction(pos.x, pos.y);
             }
         }
 
         function draw(e) {
-            if (!isDrawing || currentStep > 2 || isCameraActive || isCameraPreviewMode) return;
-            if (e.touches) e.preventDefault(); // 🛠️ キャンバス上での指描画中のスクロールのみを的確にブロック
+            if (currentStep > 2 || isCameraActive || isCameraPreviewMode) return;
+            
+            // 🛠️ 手のひら(Pan)モードでのドラッグ移動処理
+            if (currentStep === 2 && dotMode === 'pan' && isPanning) {
+                if (e.touches) e.preventDefault();
+                const p = e.touches ? e.touches[0] : e;
+                panX = p.clientX - startPanX;
+                panY = p.clientY - startPanY;
+                applyZoomPan();
+                return;
+            }
+
+            if (!isDrawing) return;
+            if (e.touches) e.preventDefault(); 
             const pos = getCanvasTouchPos(e);
             
             if (currentStep === 1) {
@@ -646,10 +791,8 @@
         }
 
         function stopDrawing() { 
-            if (isDrawing && currentStep <= 2) {
-                saveHistory(currentStep); 
-                autoSaveToStorage();
-            } 
+            isPanning = false;
+            if (isDrawing && currentStep <= 2) { saveHistory(currentStep); autoSaveToStorage(); } 
             isDrawing = false; 
         }
 
@@ -664,42 +807,7 @@
             else if (dotMode === 'picker') { executeCanvasPicker(dCtx, x, y, 32, 32, colorPicker); isDrawing = false; }
         }
 
-        function saveHistory(step) {
-            const cvs = step === 1 ? sCanvas : dCanvas;
-            historyStack[step].push(cvs.toDataURL());
-            if(historyStack[step].length > 30) historyStack[step].shift();
-        }
-
-        document.getElementById('btn-undo').onclick = () => {
-            if (isCameraPreviewMode) {
-                bgVideo.play();
-                isCameraPreviewMode = false;
-                isCameraActive = true;
-                canvasArea.classList.add('camera-active');
-                
-                const camBtn = document.getElementById('btn-sketch-camera');
-                camBtn.style.background = '#e11d48';
-                camBtn.innerHTML = '<span class="material-icons" style="font-size:28px;">camera</span>';
-                cameraGuideText.innerText = "四角いガイドの中に紙の絵を合わせて、カメラボタンを押してね！";
-                cameraGuideText.style.color = "var(--cyber-neon)";
-                sCtx.clearRect(0, 0, sCanvas.width, sCanvas.height);
-                return;
-            }
-
-            const stack = historyStack[currentStep];
-            if (stack && stack.length > 1) {
-                stack.pop(); const prev = stack[stack.length - 1]; const img = new Image(); img.src = prev;
-                img.onload = () => {
-                    if (currentStep === 1) {
-                        sCtx.clearRect(0, 0, sCanvas.width, sCanvas.height); sCtx.drawImage(img, 0, 0, sCanvas.width, sCanvas.height);
-                    } else {
-                        dCtx.clearRect(0, 0, 32, 32); dCtx.drawImage(img, 0, 0, 32, 32);
-                    }
-                    autoSaveToStorage();
-                };
-            }
-        };
-
+        // 各種モード切り替えバインド
         const sTools = {pen:'btn-sketch-pen', eraser:'btn-sketch-eraser', bucket:'btn-sketch-bucket', picker:'btn-sketch-picker'};
         Object.keys(sTools).forEach(k => {
             document.getElementById(sTools[k]).onclick = () => {
@@ -712,11 +820,16 @@
         const dTools = {pen:'btn-pen', eraser:'btn-eraser', bucket:'btn-bucket', picker:'btn-picker'};
         Object.keys(dTools).forEach(k => {
             document.getElementById(dTools[k]).onclick = () => {
-                dotMode = k; Object.values(dTools).forEach(id => document.getElementById(id).classList.remove('active'));
+                dotMode = k; 
+                // 手のひら含むステップ2の全アクティブ状態を解除してから適用
+                document.querySelectorAll('#panel-step2 .btn, #btn-pan').forEach(b => b.classList.remove('active'));
                 document.getElementById(dTools[k]).classList.add('active');
             };
         });
         document.getElementById('btn-toggle-grid').onclick = () => { gridActive = !gridActive; drawGrid(); };
+        
+        // 🛠️ 復活・追加: ドット絵モードの全削除機能
+        document.getElementById('btn-dot-clear').onclick = () => { if(confirm("ドット絵をぜんぶ消しますか？")) { dCtx.clearRect(0,0,32,32); saveHistory(2); autoSaveToStorage(); } };
 
         document.getElementById('btn-save-palette').onclick = () => {
             const col = colorPicker.value; const item = document.createElement('div'); item.className = 'palette-item';
@@ -728,19 +841,20 @@
 
         artNameInput.oninput = autoSaveToStorage;
 
-        // ==================== 🏹 送信・外部引き継ぎ処理 ====================
+        // ==================== 🏹 アップロード処理（透過PNG、.obj、.rbxmをセットで送信） ====================
         document.getElementById('uploadButton').onclick = async () => {
             const name = artNameInput.value.trim();
             if (!name) { alert("作品名を入力してください。"); artNameInput.focus(); return; }
 
             const durationSeconds = Math.floor((Date.now() - startTime) / 1000);
             
+            // アップロード用高解像度キャンバス（背景デザインを混ぜず、透過のまま抽出）
             const uploadCanvas = document.createElement('canvas');
             uploadCanvas.width = uploadCanvas.height = 512;
             const uctx = uploadCanvas.getContext('2d');
             uctx.imageSmoothingEnabled = false; 
-
             uctx.drawImage(dCanvas, 0, 0, 512, 512);
+            
             const base64Data = uploadCanvas.toDataURL('image/png').split(',')[1];
 
             if(!confirm(`「${name}」をアップロードして、アンケートに進みますか？`)) return;
@@ -751,11 +865,11 @@
                 const response = await fetch(GAS_ENDPOINT, {
                     method: "POST",
                     body: JSON.stringify({
-                        image: base64Data,
+                        image: base64Data, // 透過PNG
                         name: name, 
                         location: "WEB_MAGIC_3D_MULTIOUT", 
                         duration: durationSeconds,
-                        pixelMatrix: getPixelMatrix() // 🛠️ バックエンド連携用にピクセルマトリクス抽出処理を追加
+                        pixelMatrix: getPixelMatrix() // GAS側の3D(.obj)/Roblox(.rbxm)生成ロジック用
                     })
                 });
                 const result = await response.json();
@@ -787,7 +901,7 @@
             }
         };
 
-        // 補助関数: GAS（.obj / .rbxm生成用）に渡す32x32のHEXカラー二次元配列を正確に構築
+        // GASへの送信用カラー配列抽出処理
         function getPixelMatrix() {
             const imgData = dCtx.getImageData(0, 0, 32, 32).data;
             const matrix = [];
@@ -796,7 +910,7 @@
                 for (let x = 0; x < 32; x++) {
                     const i = (y * 32 + x) * 4;
                     if (imgData[i + 3] < 128) {
-                        row.push(null); // 透明はnull
+                        row.push(null);
                     } else {
                         const hex = "#" + 
                             ("0" + imgData[i].toString(16)).slice(-2) + 
