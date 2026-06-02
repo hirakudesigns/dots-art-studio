@@ -63,7 +63,6 @@
             text-shadow: 0 2px 4px rgba(0,0,0,0.8); z-index: 6; pointer-events: none;
         }
 
-        /* 背景デザイン表示用のプレビューレイヤー（できあがりステップでのみ前面表示） */
         #designPreviewLayer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 2; display: none; background-size: cover; background-position: center; pointer-events: none;
@@ -74,13 +73,23 @@
         .section-label { font-size: 0.65rem; color: #a1a1a1; font-weight: bold; text-transform: uppercase; margin-bottom: -5px; }
         .row { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; align-items: center; }
         
+        /* 🛠️ ドット絵調整ツールを1行に収めるための横並び最適化用スタイル */
+        .tool-row-compact { display: flex; justify-content: space-between; align-items: center; gap: 4px; width: 100%; box-sizing: border-box; }
+
         .btn { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; border-radius: 10px; background: #f1f2f6; color: #57606f; padding: 0; box-sizing: border-box; }
         .btn.active { background: var(--primary-color); color: white; }
         .btn img { width: 24px; height: 24px; object-fit: contain; }
         
-        /* iOS/Android共通カラーピッカーボタン用スタイル */
+        /* 🛠️ 1行集約のための縮小版ボタンサイズ定義 */
+        .btn-compact { flex: 1; min-width: 34px; height: 38px; border-radius: 8px; }
+        .btn-compact .material-icons { font-size: 20px; }
+        .btn-compact img { width: 20px; height: 20px; }
+
         .color-picker-wrapper { width: 44px; height: 44px; border-radius: 10px; overflow: hidden; position: relative; border: 2px solid #ddd; box-sizing: border-box; cursor: pointer; }
         .color-picker-wrapper input[type="color"] { position: absolute; top: -10px; left: -10px; width: 64px; height: 64px; border: none; padding: 0; margin: 0; cursor: pointer; background: none; }
+        
+        /* 🛠️ 1行集約用の縮小版カラーピッカーラッパー */
+        .color-picker-wrapper-compact { width: 38px; height: 38px; border-radius: 8px; flex-shrink: 0; }
 
         .btn-magic { background: linear-gradient(135deg, #6c5ce7, #a29bfe); color: white; height: 55px; font-weight: 900; border-radius: 15px; border: none; cursor: pointer; width: 100%; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(108, 92, 231, 0.4); display: flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-upload { background: var(--primary-color); color: white; height: 55px; font-weight: 900; border-radius: 15px; border: none; cursor: pointer; width: 100%; font-size: 1.1rem; }
@@ -128,11 +137,12 @@
         <div class="row" id="history-row" style="gap:10px; margin: 5px 0;">
             <button class="btn" id="btn-zoom-in" style="border-radius:50%; background:#fff; box-shadow:0 3px 6px rgba(0,0,0,0.1);"><span class="material-icons">zoom_in</span></button>
             <button class="btn" id="btn-undo" style="border-radius:50%; background:#fff; box-shadow:0 3px 6px rgba(0,0,0,0.1);"><span class="material-icons">undo</span></button>
+            
+            <button class="btn" id="btn-sketch-camera" style="border-radius:50%; background:#e3f2fd; color:#1e88e5; box-shadow:0 3px 6px rgba(0,0,0,0.1); width:46px; height:46px;"><span class="material-icons" style="font-size:24px;">photo_camera</span></button>
+            
             <button class="btn" id="btn-pan" style="border-radius:50%; background:#fff; box-shadow:0 3px 6px rgba(0,0,0,0.1);"><span class="material-icons">pan_tool</span></button>
             <button class="btn" id="btn-redo" style="border-radius:50%; background:#fff; box-shadow:0 3px 6px rgba(0,0,0,0.1);"><span class="material-icons">redo</span></button>
             <button class="btn" id="btn-zoom-out" style="border-radius:50%; background:#fff; box-shadow:0 3px 6px rgba(0,0,0,0.1);"><span class="material-icons">zoom_out</span></button>
-            
-            <button class="btn" id="btn-sketch-camera" style="border-radius:50%; background:#e3f2fd; color:#1e88e5; box-shadow:0 3px 6px rgba(0,0,0,0.1); width:46px; height:46px;"><span class="material-icons" style="font-size:24px;">photo_camera</span></button>
         </div>
 
         <div class="control-panel active" id="panel-step1">
@@ -147,29 +157,29 @@
                 <button class="btn" id="btn-sketch-picker"><span class="material-icons">colorize</span></button>
                 <button class="btn" id="btn-sketch-clear" style="color:var(--accent-color);"><span class="material-icons">delete_outline</span></button>
             </div>
-            <p id="camera-guide-text" style="font-size:0.75rem; color:#747d8c; text-align:center; margin: 5px 0;">紙に描いたらくがきをスキャンすることもできるよ！</p>
+            <p id="camera-guide-text" style="font-size:0.75rem; color:#747d8c; text-align:center; margin: 5px 0;">紙に描いたらくがきのスキャンもできるよ！</p>
             <button class="btn-magic" onclick="magicConvert()"><span class="material-icons">auto_awesome</span> ドット絵に変身！</button>
         </div>
 
         <div class="control-panel" id="panel-step2">
             <div class="section-label">ドット絵 調整ツール</div>
-            <div class="row">
-                <div class="color-picker-wrapper" id="colorPickerWrapper">
+            <div class="tool-row-compact">
+                <div class="color-picker-wrapper color-picker-wrapper-compact" id="colorPickerWrapper">
                     <input type="color" id="colorPicker" value="#000000">
                 </div>
-                <button class="btn active" id="btn-pen"><span class="material-icons">edit</span></button>
-                <button class="btn" id="btn-eraser"><img src="eraser.png" alt="消しゴム"></button> 
-                <button class="btn" id="btn-bucket"><span class="material-icons">format_color_fill</span></button>
-                <button class="btn" id="btn-picker"><span class="material-icons">colorize</span></button>
-                <button class="btn" id="btn-toggle-grid"><span class="material-icons">grid_on</span></button>
-                <button class="btn" id="btn-dot-clear" style="color:var(--accent-color); margin-left: auto;"><span class="material-icons">delete_outline</span></button>
+                <button class="btn btn-compact active" id="btn-pen"><span class="material-icons">edit</span></button>
+                <button class="btn btn-compact" id="btn-eraser"><img src="eraser.png" alt="消しゴム"></button> 
+                <button class="btn btn-compact" id="btn-bucket"><span class="material-icons">format_color_fill</span></button>
+                <button class="btn btn-compact" id="btn-picker"><span class="material-icons">colorize</span></button>
+                <button class="btn btn-compact" id="btn-toggle-grid"><span class="material-icons">grid_on</span></button>
+                <button class="btn btn-compact" id="btn-dot-clear" style="color:var(--accent-color); background: #fff5f5;"><span class="material-icons">delete_outline</span></button>
             </div>
             <div class="section-label">登録した色（好きな色を登録できるよ）</div>
             <div class="row" style="justify-content: space-between;">
                 <div id="paletteArea" class="row" style="min-height:30px; justify-content:flex-start; gap:6px;"></div>
                 <button class="btn" id="btn-save-palette" style="width:auto; padding:0 8px; font-size:0.7rem; height:34px;">色を登録</button>
             </div>
-            <button class="btn-magic" style="background: var(--primary-color);" onclick="goTo3DStep()">3Dに変身！ <span class="material-icons">view_in_ar</span></button>
+            <button class="btn-magic" style="background: var(--primary-color);" onclick="goTo3DStep()"><span class="material-icons">view_in_ar</span>3Dに変身！ </button>
         </div>
 
         <div class="control-panel" id="panel-step3">
@@ -222,9 +232,8 @@
         let currentStep = 1;
         let isDrawing = false;
         let sketchMode = 'pen';
-        let dotMode = 'pen'; // 'pen', 'eraser', 'bucket', 'picker', 'pan'
+        let dotMode = 'pen'; 
         
-        // 🛠️ 修正: undo/redo用の履歴スタック構造の最適化
         let historyStack = { 1: [], 2: [] };
         let undoIndex = { 1: -1, 2: -1 };
 
@@ -238,7 +247,6 @@
         let lastCanvasWidth = 0;
         let lastCanvasHeight = 0;
 
-        // 🛠️ 追加: ズーム & 手のひらツール(Pan)用変数
         let zoomScale = 1.0;
         let panX = 0;
         let panY = 0;
@@ -253,7 +261,6 @@
         const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbxLN0lTux5SRb8cI3lYp1sXBCEPHW4x4B-px7AguEjgvMHqA7wRipvF05iI5UiQJ_WknA/exec"; 
         const FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfNwyTLJ_-3FJx5oBbgzULdlWZ8TrVfyH6eHv5V4pXlAhP34Q/viewform";
 
-        // iOS/Androidでの確実なカラーピッカータップ動作のためのラッパー設定
         document.getElementById('sketchColorWrapper').onclick = () => sketchColor.click();
         document.getElementById('colorPickerWrapper').onclick = () => colorPicker.click();
 
@@ -314,7 +321,6 @@
             }
         }
 
-        // 📷 カメラ・スキャン制御
         let trackForFlash = null;
 
         async function toggleCamera() {
@@ -381,7 +387,7 @@
                     
                     camBtn.style.background = '#10b981'; 
                     camBtn.innerHTML = '<span class="material-icons" style="font-size:24px;">check</span>';
-                    cameraGuideText.innerText = "綺麗に撮れたかな？OKならもう一度ボタンを押してね！(撮り直す時は戻るボタン)";
+                    cameraGuideText.innerText = "キレイに撮れたかな？OKならもう一度ボタンを押してね！(撮り直す時は戻るボタン)";
                     cameraGuideText.style.color = "#10b981";
                 } catch(e) { 
                     console.error("Capture failed:", e); 
@@ -464,39 +470,47 @@
             saveHistory(2);
             saveHistory(1);
             loadFromStorageBackup();
-            resetZoomPan(); // ズーム初期化
+            resetZoomPan(); 
+            switchStep(1); // 初期表示状態でらくがき配置を適用
         });
 
-        // 🛠️ 修正: 各種ステップ表示、UIボタン出し入れ、および背景プレビューの連動
+        // 🛠️ 修正: モードに応じて中央の共通ナビゲーションバーを「非表示」ではなく「出し分け」に変更
         function switchStep(step) {
             currentStep = step;
             document.querySelectorAll('.tab').forEach((t, i) => { t.classList.toggle('active', i === step - 1); });
             document.querySelectorAll('.control-panel').forEach((p, i) => { p.classList.toggle('active', i === step - 1); });
             
-            // ステップ1,2でのみナビゲーションバー（拡大縮小・手のひら・履歴）を表示
-            document.getElementById('history-row').style.display = (step <= 2) ? 'flex' : 'none';
-            
-            // ズーム・手のひら関係のボタンは「ドットモード（ステップ2）」の時だけ表示
-            document.getElementById('btn-zoom-in').style.display = (step === 2) ? 'flex' : 'none';
-            document.getElementById('btn-zoom-out').style.display = (step === 2) ? 'flex' : 'none';
-            document.getElementById('btn-pan').style.display = (step === 2) ? 'flex' : 'none';
-            
-            // カメラボタンは「らくがき（ステップ1）」の時だけ表示
-            document.getElementById('btn-sketch-camera').style.display = (step === 1) ? 'flex' : 'none';
+            if (step === 1) {
+                // らくがきモード：「undo」「カメラ」「redo」だけの配置
+                document.getElementById('history-row').style.display = 'flex';
+                document.getElementById('btn-zoom-in').style.display = 'none';
+                document.getElementById('btn-zoom-out').style.display = 'none';
+                document.getElementById('btn-pan').style.display = 'none';
+                document.getElementById('btn-sketch-camera').style.display = 'flex';
+            } else if (step === 2) {
+                // ドットモード：「+」「undo」「手のひら」「redo」「-」のフル配置
+                document.getElementById('history-row').style.display = 'flex';
+                document.getElementById('btn-zoom-in').style.display = 'flex';
+                document.getElementById('btn-zoom-out').style.display = 'flex';
+                document.getElementById('btn-pan').style.display = 'flex';
+                document.getElementById('btn-sketch-camera').style.display = 'none';
+            } else {
+                // 確認・完成：ナビゲーションバーは非表示
+                document.getElementById('history-row').style.display = 'none';
+            }
 
             sCanvas.style.display = (step === 1) ? 'block' : 'none';
             dCanvas.style.display = (step === 2 || step === 4) ? 'block' : 'none';
             threeContainer.style.display = (step === 3) ? 'block' : 'none';
             gCanvas.style.display = (step === 2) ? 'block' : 'none';
 
-            // ステップ4の時だけ背景デザインプレビューレイヤーを適用
             if (step === 4) {
                 updateDesignPreview();
             } else {
                 designPreviewLayer.style.display = 'none';
             }
 
-            resetZoomPan(); // ステップ切り替え時に拡大率を安全リセット
+            resetZoomPan(); 
             if(step === 2) drawGrid();
             if(step === 3) updateThreeMesh();
             if(step !== 1 && (isCameraActive || isCameraPreviewMode)) stopCameraMode();
@@ -507,7 +521,6 @@
             switchStep(3);
         }
 
-        // 🛠️ 追加: 拡大縮小・移動(Pan)の適用ロジック
         function applyZoomPan() {
             canvasWrapper.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomScale})`;
         }
@@ -518,7 +531,6 @@
         document.getElementById('btn-zoom-in').onclick = () => { if(zoomScale < 4.0) { zoomScale += 0.25; applyZoomPan(); } };
         document.getElementById('btn-zoom-out').onclick = () => { if(zoomScale > 1.0) { zoomScale -= 0.25; if(zoomScale===1){panX=0;panY=0;} applyZoomPan(); } };
         
-        // 手のひらトグル
         document.getElementById('btn-pan').onclick = () => {
             if(dotMode === 'pan') {
                 dotMode = 'pen';
@@ -531,12 +543,10 @@
             }
         };
 
-        // 🛠️ 復活・修正: 確実な履歴管理(Undo/Redo)システム
         function saveHistory(step) {
             const cvs = step === 1 ? sCanvas : dCanvas;
             const dataUrl = cvs.toDataURL();
             
-            // 現在のインデックス以降のやり直し(redo)履歴をクリアして新規保存
             historyStack[step] = historyStack[step].slice(0, undoIndex[step] + 1);
             historyStack[step].push(dataUrl);
             if(historyStack[step].length > 30) historyStack[step].shift();
@@ -545,7 +555,6 @@
 
         document.getElementById('btn-undo').onclick = () => {
             if (currentStep === 1 && isCameraPreviewMode) {
-                // カメラプレビューから戻る特殊処理
                 bgVideo.play(); isCameraPreviewMode = false; isCameraActive = true;
                 canvasArea.classList.add('camera-active');
                 const camBtn = document.getElementById('btn-sketch-camera');
@@ -587,7 +596,6 @@
             };
         }
 
-        // 🛠️ 復活・追加: 背景選択プレビュー処理
         function updateDesignPreview() {
             const selectedBg = bgSelect.value;
             if (selectedBg) {
@@ -599,7 +607,6 @@
         }
         bgSelect.onchange = updateDesignPreview;
 
-        // 3D環境初期化
         function initThree() {
             const rect = canvasArea.getBoundingClientRect();
             scene = new THREE.Scene();
@@ -666,7 +673,6 @@
             voxelGroup.position.set(0, -VOXEL_HEIGHT / 2, 0);
         }
 
-        // ドット化コンバートロジック
         function magicConvert() {
             const tempCanvas = document.createElement('canvas'); tempCanvas.width = tempCanvas.height = 32;
             const tCtx = tempCanvas.getContext('2d');
@@ -709,20 +715,16 @@
             targetPicker.value = hex;
         }
 
-        // 🛠️ 修正: 拡大・移動を考慮した、タッチ・クリック座標の正確な逆算処理
         function getCanvasTouchPos(e) {
             const rect = canvasArea.getBoundingClientRect();
             const p = e.touches ? e.touches[0] : e;
             
-            // 1. まず外枠に対する純粋なタッチローカル座標
             let localX = p.clientX - rect.left;
             let localY = p.clientY - rect.top;
 
-            // 2. ドットモード(ステップ2)でズーム・移動が発生している場合は座標を逆変換
             if (currentStep === 2) {
                 const centerX = rect.width / 2;
                 const centerY = rect.height / 2;
-                // 中心原点基準にシフト
                 localX = (localX - centerX - panX) / zoomScale + centerX;
                 localY = (localY - centerY - panY) / zoomScale + centerY;
             }
@@ -740,7 +742,6 @@
             if (currentStep > 2 || isCameraActive || isCameraPreviewMode) return; 
             if (e.touches) e.preventDefault(); 
             
-            // 🛠️ 手のひら(Pan)移動モード時の初期座標取得
             if (currentStep === 2 && dotMode === 'pan') {
                 isPanning = true;
                 const p = e.touches ? e.touches[0] : e;
@@ -765,7 +766,6 @@
         function draw(e) {
             if (currentStep > 2 || isCameraActive || isCameraPreviewMode) return;
             
-            // 🛠️ 手のひら(Pan)モードでのドラッグ移動処理
             if (currentStep === 2 && dotMode === 'pan' && isPanning) {
                 if (e.touches) e.preventDefault();
                 const p = e.touches ? e.touches[0] : e;
@@ -807,7 +807,6 @@
             else if (dotMode === 'picker') { executeCanvasPicker(dCtx, x, y, 32, 32, colorPicker); isDrawing = false; }
         }
 
-        // 各種モード切り替えバインド
         const sTools = {pen:'btn-sketch-pen', eraser:'btn-sketch-eraser', bucket:'btn-sketch-bucket', picker:'btn-sketch-picker'};
         Object.keys(sTools).forEach(k => {
             document.getElementById(sTools[k]).onclick = () => {
@@ -821,14 +820,12 @@
         Object.keys(dTools).forEach(k => {
             document.getElementById(dTools[k]).onclick = () => {
                 dotMode = k; 
-                // 手のひら含むステップ2の全アクティブ状態を解除してから適用
                 document.querySelectorAll('#panel-step2 .btn, #btn-pan').forEach(b => b.classList.remove('active'));
                 document.getElementById(dTools[k]).classList.add('active');
             };
         });
         document.getElementById('btn-toggle-grid').onclick = () => { gridActive = !gridActive; drawGrid(); };
         
-        // 🛠️ 復活・追加: ドット絵モードの全削除機能
         document.getElementById('btn-dot-clear').onclick = () => { if(confirm("ドット絵をぜんぶ消しますか？")) { dCtx.clearRect(0,0,32,32); saveHistory(2); autoSaveToStorage(); } };
 
         document.getElementById('btn-save-palette').onclick = () => {
@@ -841,14 +838,12 @@
 
         artNameInput.oninput = autoSaveToStorage;
 
-        // ==================== 🏹 アップロード処理（透過PNG、.obj、.rbxmをセットで送信） ====================
         document.getElementById('uploadButton').onclick = async () => {
             const name = artNameInput.value.trim();
             if (!name) { alert("作品名を入力してください。"); artNameInput.focus(); return; }
 
             const durationSeconds = Math.floor((Date.now() - startTime) / 1000);
             
-            // アップロード用高解像度キャンバス（背景デザインを混ぜず、透過のまま抽出）
             const uploadCanvas = document.createElement('canvas');
             uploadCanvas.width = uploadCanvas.height = 512;
             const uctx = uploadCanvas.getContext('2d');
@@ -865,11 +860,11 @@
                 const response = await fetch(GAS_ENDPOINT, {
                     method: "POST",
                     body: JSON.stringify({
-                        image: base64Data, // 透過PNG
+                        image: base64Data, 
                         name: name, 
                         location: "WEB_MAGIC_3D_MULTIOUT", 
                         duration: durationSeconds,
-                        pixelMatrix: getPixelMatrix() // GAS側の3D(.obj)/Roblox(.rbxm)生成ロジック用
+                        pixelMatrix: getPixelMatrix() 
                     })
                 });
                 const result = await response.json();
@@ -901,7 +896,6 @@
             }
         };
 
-        // GASへの送信用カラー配列抽出処理
         function getPixelMatrix() {
             const imgData = dCtx.getImageData(0, 0, 32, 32).data;
             const matrix = [];
