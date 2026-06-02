@@ -14,6 +14,7 @@
             --card-bg: #ffffff; 
             --accent-color: #ff7675; 
             --save-green: #55efc4;
+            --cyber-neon: #ff00ff; /* ガイド用のネオンカラー */
         }
         body { font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; background-color: var(--bg-color); margin: 0; padding: 10px; overflow-x: hidden; }
         .header-area { width: 100%; max-width: 500px; display: flex; justify-content: center; align-items: center; padding: 5px 0; gap: 10px; }
@@ -46,8 +47,23 @@
         #gridCanvas { z-index: 10; position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; }
         
         #threeContainer { z-index: 4; position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; }
+        
+        /* カメラ背景レイヤーの調整 */
         #bgLayer { z-index: 1; position:absolute; top:0; left:0; width:100%; height:100%; display: none; overflow: hidden; pointer-events: none; }
         #bgVideo { width: 100%; height: 100%; object-fit: cover; }
+
+        /* 🟥 新設: カメラ起動中のみ出現するL字型撮影ガイド（中央70%のエリアを制限） */
+        .canvas-area.camera-active::before {
+            content: ''; position: absolute; top: 15%; left: 15%; width: 70%; height: 70%;
+            border: 3px dashed rgba(255, 0, 255, 0.6); box-shadow: 0 0 0 2000px rgba(0, 0, 0, 0.4);
+            z-index: 5; pointer-events: none; box-sizing: border-box; border-radius: 4px;
+        }
+        /* 四隅のL字をより強調するデコレーション */
+        .canvas-area.camera-active::after {
+            content: '枠の中に絵をあわせてね'; position: absolute; bottom: 18%; left: 0; width: 100%;
+            text-align: center; color: #fff; font-size: 0.75rem; font-weight: bold;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8); z-index: 6; pointer-events: none;
+        }
 
         .control-panel { width: 100%; background: var(--card-bg); padding: 15px; border-radius: 20px; box-sizing: border-box; display: none; flex-direction: column; gap: 12px; }
         .control-panel.active { display: flex; }
@@ -115,7 +131,7 @@
                 
                 <button class="btn" id="btn-sketch-clear" style="color:var(--accent-color);"><span class="material-icons">delete_outline</span></button>
             </div>
-            <p style="font-size:0.75rem; color:#747d8c; text-align:center; margin: 5px 0;">上のカメラボタンで紙の絵をパシャッとスキャンすることもできるよ！</p>
+            <p id="camera-guide-text" style="font-size:0.75rem; color:#747d8c; text-align:center; margin: 5px 0;">上のカメラボタンで紙の絵をパシャッとスキャンすることもできるよ！</p>
             <button class="btn-magic" onclick="magicConvert()"><span class="material-icons">auto_awesome</span> ドット絵に変身させる！</button>
         </div>
 
@@ -176,6 +192,7 @@
         const colorPicker = document.getElementById('colorPicker');
         const sketchColor = document.getElementById('sketchColor');
         const threeContainer = document.getElementById('threeContainer');
+        const cameraGuideText = document.getElementById('camera-guide-text');
 
         let currentStep = 1;
         let isDrawing = false;
@@ -186,6 +203,7 @@
         let gridActive = true;
         
         let isCameraActive = false;
+        let isCameraPreviewMode = false; // 🟥 新設: 撮影後の確認中モード管理フラグ
         let videoStream = null;
         
         let lastCanvasWidth = 0;
@@ -256,15 +274,18 @@
             }
         }
 
-        // ==================== 📷 背面カメラ制御ロジック ====================
+        // ==================== 📷 背面カメラ・制限スキャン制御ロジック ====================
         async function toggleCamera() {
-            if (currentStep !== 1) return; // STEP1以外では動作させない
+            if (currentStep !== 1) return;
 
             const camBtn = document.getElementById('btn-sketch-camera');
-            if (!isCameraActive) {
+            
+            // 状態1: カメラが起動していない場合 ➔ 起動処理
+            if (!isCameraActive && !isCameraPreviewMode) {
                 try {
+                    // 高解像度で取得することで切り抜き後の画質低下を防ぐ
                     const constraints = {
-                        video: { facingMode: "environment", width: { ideal: 640 }, height: { ideal: 640 } },
+                        video: { facingMode: "environment", width: { ideal: 1024 }, height: { ideal: 1024 } },
                         audio: false
                     };
                     videoStream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -273,22 +294,65 @@
                     bgLayer.style.backgroundImage = "none";
                     bgLayer.style.display = "block";
                     
+                    // 🟥 ガイド枠用CSSクラスを追加
+                    canvasArea.classList.add('camera-active');
+                    
                     isCameraActive = true;
-                    camBtn.style.background = '#ff7675';
+                    camBtn.style.background = '#e11d48'; // 撮影モード中は赤ボタン
                     camBtn.style.color = '#fff';
+                    camBtn.innerHTML = '<span class="material-icons" style="font-size:28px;">camera</span>';
+                    cameraGuideText.innerText = "四角いガイドの中に紙の絵を合わせて、カメラボタンを押してね！";
+                    cameraGuideText.style.color = "var(--cyber-neon)";
                 } catch (err) {
                     console.error("Camera failed:", err);
                     alert("カメラの起動に失敗しました。カメラのアクセス権限を確認してください。");
                 }
-            } else {
-                // シャッター処理
+            } 
+            // 状態2: ストリーミング中 ➔ シャッターを切ってプレビュー確認へ
+            else if (isCameraActive && !isCameraPreviewMode) {
                 try {
+                    sCtx.clearRect(0, 0, sCanvas.width, sCanvas.height);
                     sCtx.globalCompositeOperation = 'source-over';
-                    sCtx.drawImage(bgVideo, 0, 0, sCanvas.width, sCanvas.height);
-                    saveHistory(1);
-                    autoSaveToStorage();
-                } catch(e) { console.error("Capture failed:", e); }
+                    
+                    // 🟥 ターゲットエリアのトリミング計算 (中央の70%エリア)
+                    // ビデオ本来の解像度から中央を算出
+                    const vW = bgVideo.videoWidth;
+                    const vH = bgVideo.videoHeight;
+                    const minSize = Math.min(vW, vH);
+                    
+                    // L字ガイドに対応するビデオ側の座標・サイズ
+                    const cropSize = minSize * 0.70; 
+                    const cropX = (vW - cropSize) / 2;
+                    const cropY = (vH - cropSize) / 2;
 
+                    // ガイド内側だけを抽出してキャンバスいっぱいに等倍描画
+                    sCtx.drawImage(
+                        bgVideo, 
+                        cropX, cropY, cropSize, cropSize, // 元ビデオの抽出エリア
+                        0, 0, sCanvas.width, sCanvas.height // キャンバス全面へ
+                    );
+
+                    // ビデオを一時停止してフリーズ（静止画確認）状態にする
+                    bgVideo.pause();
+                    canvasArea.classList.remove('camera-active'); // ガイドを隠す
+                    
+                    isCameraActive = false;
+                    isCameraPreviewMode = true;
+                    
+                    // ボタンを「チェック（確定）」マークに変更
+                    camBtn.style.background = '#10b981'; // 確定はグリーン
+                    camBtn.innerHTML = '<span class="material-icons" style="font-size:28px;">check</span>';
+                    cameraGuideText.innerText = "綺麗に撮れたかな？OKならもう一度ボタンを押してね！(直したい時はお絵かきツールで消すか、もう一度撮り直してね)";
+                    cameraGuideText.style.color = "#10b981";
+                } catch(e) { 
+                    console.error("Capture failed:", e); 
+                    stopCameraMode();
+                }
+            }
+            // 状態3: 静止画プレビュー確認中 ➔ 確定してカメラ終了
+            else if (isCameraPreviewMode) {
+                saveHistory(1);
+                autoSaveToStorage();
                 stopCameraMode();
             }
         }
@@ -301,11 +365,18 @@
             bgVideo.srcObject = null;
             bgVideo.style.display = "none";
             bgLayer.style.display = "none";
+            canvasArea.classList.remove('camera-active');
             
             isCameraActive = false;
+            isCameraPreviewMode = false;
+            
             const camBtn = document.getElementById('btn-sketch-camera');
             camBtn.style.background = '#e3f2fd';
             camBtn.style.color = '#1e88e5';
+            camBtn.innerHTML = '<span class="material-icons" style="font-size:28px;">photo_camera</span>';
+            
+            cameraGuideText.innerText = "上のカメラボタンで紙の絵をパシャッとスキャンすることもできるよ！";
+            cameraGuideText.style.color = "#747d8c";
         }
 
         document.getElementById('btn-sketch-camera').onclick = toggleCamera;
@@ -348,9 +419,7 @@
             document.querySelectorAll('.tab').forEach((t, i) => { t.classList.toggle('active', i === step - 1); });
             document.querySelectorAll('.control-panel').forEach((p, i) => { p.classList.toggle('active', i === step - 1); });
             
-            // 履歴行（カメラ含む）の表示制御：STEP1, STEP2のときだけ表示
             document.getElementById('history-row').style.display = (step <= 2) ? 'flex' : 'none';
-            // カメラボタンの個別制御：STEP1のときのみ有効に見せる
             document.getElementById('btn-sketch-camera').style.visibility = (step === 1) ? 'visible' : 'hidden';
 
             sCanvas.style.display = (step === 1) ? 'block' : 'none';
@@ -361,7 +430,7 @@
             if(step === 2) drawGrid();
             if (step === 3) updateThreeMesh();
 
-            if (step !== 1 && isCameraActive) {
+            if (step !== 1 && (isCameraActive || isCameraPreviewMode)) {
                 stopCameraMode();
             }
         }
@@ -518,7 +587,7 @@
         window.addEventListener('touchend', stopDrawing);
 
         function startDrawing(e) {
-            if (currentStep > 2) return;
+            if (currentStep > 2 || isCameraActive || isCameraPreviewMode) return; // 🟥 カメラ起動中は描画不可に
             if (e.touches) e.preventDefault(); 
             isDrawing = true; 
             const pos = getCanvasTouchPos(e);
@@ -540,7 +609,7 @@
         }
 
         function draw(e) {
-            if (!isDrawing || currentStep > 2) return;
+            if (!isDrawing || currentStep > 2 || isCameraActive || isCameraPreviewMode) return;
             if (e.touches) e.preventDefault();
             const pos = getCanvasTouchPos(e);
             
@@ -581,6 +650,22 @@
         }
 
         document.getElementById('btn-undo').onclick = () => {
+            // 🟥 カメラプレビュー中の場合は、取り消し＝撮り直し（リテイク）として機能させる
+            if (isCameraPreviewMode) {
+                bgVideo.play();
+                isCameraPreviewMode = false;
+                isCameraActive = true;
+                canvasArea.classList.add('camera-active');
+                
+                const camBtn = document.getElementById('btn-sketch-camera');
+                camBtn.style.background = '#e11d48';
+                camBtn.innerHTML = '<span class="material-icons" style="font-size:28px;">camera</span>';
+                cameraGuideText.innerText = "四角いガイドの中に紙の絵を合わせて、カメラボタンを押してね！";
+                cameraGuideText.style.color = "var(--cyber-neon)";
+                sCtx.clearRect(0, 0, sCanvas.width, sCanvas.height);
+                return;
+            }
+
             const stack = historyStack[currentStep];
             if (stack && stack.length > 1) {
                 stack.pop(); const prev = stack[stack.length - 1]; const img = new Image(); img.src = prev;
@@ -657,12 +742,10 @@
                 const result = await response.json();
 
                 if(result.status === "success") {
-                    // アップロード成功時はローカルストレージをクリア
                     localStorage.removeItem('dots_backup_sketch');
                     localStorage.removeItem('dots_backup_dot');
                     localStorage.removeItem('dots_backup_artname');
 
-                    // 最後に遊んだゲームデータとしてローカルストレージにドット絵とシリアルを一時退避
                     localStorage.setItem('dots_latest_serial', result.serial);
                     localStorage.setItem('dots_latest_name', name);
                     localStorage.setItem('dots_latest_matrix', dCanvas.toDataURL());
@@ -670,10 +753,9 @@
                     loadingOverlay.style.display = 'none';
                     alert(`アップロードが完了しました！\nOKを押すとアンケート画面に移動します。アンケート送信後に限定特典ゲームが始まります！`);
                     
-                    // Googleフォームへパラメータを付与して遷移
                     const params = new URLSearchParams();
-                    params.append("entry.46158305", name);      // 作品名
-                    params.append("entry.1524592109", result.serial);  // 管理シリアル
+                    params.append("entry.46158305", name);      
+                    params.append("entry.1524592109", result.serial);  
                     window.location.href = `${FORM_URL}?${params.toString()}`;
                     
                 } else {
