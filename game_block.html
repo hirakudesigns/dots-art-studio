@@ -77,8 +77,8 @@
             display: flex; flex-direction: column; align-items: center; gap: 5px;
             color: #a1a1a1; font-size: 0.75rem; margin-bottom: 25px;
         }
-        .mock-paddle-bar { width: 80px; height: 12px; background: #00d2d3; border-radius: 4px; position: relative; }
-        .mock-hand-icon { position: absolute; top: 8px; left: 30px; color: #fff; animation: handMove 2s infinite ease-in-out; }
+        .mock-paddle-bar { width: 80px; height: 14px; background: #00d2d3; border-radius: 4px; position: relative; }
+        .mock-hand-icon { position: absolute; top: 10px; left: 30px; color: #fff; animation: handMove 2s infinite ease-in-out; }
         @keyframes handMove { 0%, 100% { left: 10px; } 50% { left: 50px; } }
 
         .btn-start-game {
@@ -159,8 +159,8 @@
         let balls = []; 
         let items = []; 
         
-        // 🟥 スライドバー（パドル）の縦幅を少し太く修正 (12 -> 18)
-        let paddle = { x: 0, y: 0, width: 90, height: 18 };
+        // 🟥 スライドバー（パドル）の縦幅をさらに太くダイナミックに修正 (18 -> 24)
+        let paddle = { x: 0, y: 0, width: 90, height: 24 };
         
         let globalBallSpeed = 5.5;
         let penetrateTimer = 0; 
@@ -236,8 +236,8 @@
                     const idx = (y * 32 + x) * 4;
                     const r = imgData[idx]; const g = imgData[idx+1]; const b = imgData[idx+2]; const a = imgData[idx+3];
 
+                    // 🟥 修正：透明度が低い部分(背景)だけを弾くようにし、RGBが白(255)であっても描画する
                     if (a < 128) continue;
-                    if (r >= 210 && g >= 210 && b >= 210) continue; 
 
                     gameBlocks.push({
                         x: x * currentBlockSize, y: y * currentBlockSize + startOffsetY,
@@ -315,7 +315,7 @@
                 ctx.fillText(item.type === 'multi' ? '2' : '★', item.x, item.y + 3.5);
             });
 
-            // パドル描画（太さ18pxにアップ）
+            // パドル描画（太さ24pxにパワーアップ）
             ctx.fillStyle = penetrateTimer > 0 ? '#f5cd79' : '#00d2d3';
             if(penetrateTimer > 0) { ctx.shadowColor = '#f5cd79'; ctx.shadowBlur = 15; }
             ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
@@ -413,13 +413,13 @@
                 if (ball.y > canvas.height) balls.splice(i, 1);
             }
 
-            // 🟥 イラストが下まで来てしまったら「負け」
+            // イラストが下まで来てしまったら「負け」
             if (gameBlocks.length > 0) {
                 let maxBlockY = 0;
                 gameBlocks.forEach(b => { if(b.y + b.h > maxBlockY) maxBlockY = b.y + b.h; });
                 
                 if (maxBlockY >= paddle.y) {
-                    endGameSession(false); // 負け判定で終了
+                    endGameSession(false); 
                     return;
                 }
             }
@@ -476,7 +476,7 @@
 
             if (!isFirstShotFired && balls.length > 0) {
                 balls[0].x = paddle.x + paddle.width / 2;
-                balls[0].y = paddle.y - 12;
+                balls[0].y = paddle.y - 12; // ボールの初期位置調整
             }
         }
 
@@ -492,7 +492,6 @@
             if(e.touches.length > 0) handleInputMove(e.touches[0].clientX);
         }, { passive: false });
 
-        // 🟥 「おわる」処理：ドット絵アプリのURLへ直接リダイレクト遷移
         function closeGameWindow() {
             window.location.href = "https://hirakudesigns.github.io/dots-art-studio/";
         }
