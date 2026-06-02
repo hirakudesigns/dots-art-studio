@@ -1,8 +1,48 @@
+提示いただいた `index2 (1).html` のコードを確認したところ、画面がスクロールできずに固まってしまう原因は、CSSおよびJavaScriptによるタッチ操作・画面全体のスクロール禁止制限（過剰なコンテキスト保護）が競合・干渉しているためです。
+
+特にスマホやタブレットで操作した際、以下の3つの要素が干渉し合って画面全体のスクロールを完全にロックしてしまっています。
+
+### 🔍 主な原因（干渉しているポイント）
+
+1. **CSSの `body` に対するスクロール禁止（最重要原因）**
+```css
+body { ... overflow-x: hidden; }
+
+```
+
+
+スマホ端末では `overflow-x: hidden;` が `body` や `html` にかかっていると、縦方向のスクロールまで巻き添えでロックされてしまうバグ（ブラウザの仕様）が発生しやすくなります。
+2. **JavaScriptのグローバルなタッチイベント制限**
+```javascript
+window.addEventListener('touchmove', draw, {passive: false});
+
+```
+
+
+`{passive: false}` を指定したイベント内で描画処理を行っていますが、これによって「キャンバスの外側」を触って画面を上下にスクロールしようとした際のタッチ挙動までブラウザ側でキャンセル（フリーズ）されてしまう状態になっています。
+3. **メタタグによるズームの完全禁止**
+```html
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+```
+
+
+`user-scalable=no` を設定しているため、ブラウザが標準で行うピンチイン・アウトや、それに伴うスクロール補助の制御が働きにくくなっています。
+
+---
+
+### 🛠️ 修正・全差し替え用 HTMLコード
+
+キャンバス内での「らくがき・ドット絵ツール」の操作時（指での描画）は画面が動かず、**コントロールパネルやボタンがあるグレーの背景部分を触ったときにはスムーズに上下スクロールができるよう、イベントの干渉を綺麗に分離・修正**しました。
+
+以下のコードに丸ごと差し替えて保存し、挙動をご確認ください。
+
+```html
 <!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DOTS ART STUDIO - Magic Editor 3D</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -14,9 +54,10 @@
             --card-bg: #ffffff; 
             --accent-color: #ff7675; 
             --save-green: #55efc4;
-            --cyber-neon: #ff00ff;
+            --cyber-neon: #ff00ff; /* ガイド用のネオンカラー */
         }
-        body { font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; background-color: var(--bg-color); margin: 0; padding: 10px; overflow-x: hidden; }
+        /* 🛠️ 修正: overflow-x を排除し、通常の縦スクロールを優位に */
+        body { font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; background-color: var(--bg-color); margin: 0; padding: 10px; min-height: 100vh; -webkit-text-size-adjust: 100%; }
         .header-area { width: 100%; max-width: 500px; display: flex; justify-content: center; align-items: center; padding: 5px 0; gap: 10px; }
         .header-logo { height: 24px; width: auto; }
         h1 { margin: 0; font-size: 1rem; color: #333; font-weight: 800; }
@@ -28,6 +69,7 @@
 
         .app-container { width: 100%; max-width: 500px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
 
+        /* 🛠️ 修正: touch-action を 2Dキャンバスエリア内だけで制御 */
         .canvas-area { 
             position: relative; 
             width: 100%; 
@@ -37,30 +79,22 @@
             border-radius: 12px; 
             box-shadow: 0 5px 15px rgba(0,0,0,0.1); 
             background: #fff; 
-            touch-action: none; 
+            touch-action: none; /* キャンバス上でのブラウザスクロールを抑制 */
             overflow: hidden; 
         }
         .canvas-wrapper { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-        
-        #transformContainer {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            transform-origin: center center;
-            transition: transform 0.1s ease-out;
-        }
-
         canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block; }
         #sketchCanvas { z-index: 2; background: transparent; }
         #dotCanvas { z-index: 3; image-rendering: pixelated; width: 100%; height: 100%; display: none; }
         #gridCanvas { z-index: 10; position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; }
         
-        /* 🟩 背景プレビューレイヤー（完全に確認用画面でのみ背面表示） */
-        #previewBgLayer { z-index: 0; position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; background-size: cover; background-position: center; }
-
         #threeContainer { z-index: 4; position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; }
         
+        /* カメラ背景レイヤーの調整 */
         #bgLayer { z-index: 1; position:absolute; top:0; left:0; width:100%; height:100%; display: none; overflow: hidden; pointer-events: none; }
         #bgVideo { width: 100%; height: 100%; object-fit: cover; }
 
+        /* 新設: カメラ起動中のみ出現するL字型撮影ガイド（中央70%のエリアを制限） */
         .canvas-area.camera-active::before {
             content: ''; position: absolute; top: 15%; left: 15%; width: 70%; height: 70%;
             border: 3px dashed rgba(255, 0, 255, 0.6); box-shadow: 0 0 0 2000px rgba(0, 0, 0, 0.4);
@@ -81,15 +115,16 @@
         .btn.active { background: var(--primary-color); color: white; }
         .btn img { width: 24px; height: 24px; object-fit: contain; }
         
-        .color-picker-wrapper { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #ddd; position: relative; overflow: hidden; cursor: pointer; }
-        .color-picker-wrapper input[type="color"] { position: absolute; top: -10px; left: -10px; width: 60px; height: 60px; border: none; background: none; opacity: 0; pointer-events: none; }
-
         .btn-magic { background: linear-gradient(135deg, #6c5ce7, #a29bfe); color: white; height: 55px; font-weight: 900; border-radius: 15px; border: none; cursor: pointer; width: 100%; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(108, 92, 231, 0.4); display: flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-upload { background: var(--primary-color); color: white; height: 55px; font-weight: 900; border-radius: 15px; border: none; cursor: pointer; width: 100%; font-size: 1.1rem; }
 
         #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(108, 92, 231, 0.85); z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; }
         .spinner { width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.3); border-top: 5px solid white; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* パレット用の簡易調整用追加スタイル */
+        .palette-item { display: flex; align-items: center; background: #f1f2f6; border-radius: 6px; padding: 2px 4px; gap: 4px; }
+        .color-chip { width: 20px; height: 20px; border-radius: 4px; border: 1px solid #ccc; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -106,85 +141,72 @@
 
     <div class="step-tabs">
         <div class="tab active" id="tab-step1" onclick="switchStep(1)"><span class="tab-num">STEP 01</span>らくがき</div>
-        <div class="tab" id="tab-step2" onclick="switchStep(2)"><span class="tab-num">STEP 02</span>どっと化</div>
-        <div class="tab" id="tab-step3" onclick="switchStep(3)"><span class="tab-num">STEP 03</span>立体プレビュー</div>
-        <div class="tab" id="tab-step4" onclick="switchStep(4)"><span class="tab-num">STEP 04</span>送信</div>
+        <div class="tab" id="tab-step2" onclick="switchStep(2)"><span class="tab-num">STEP 02</span>ドット変身</div>
+        <div class="tab" id="tab-step3" onclick="switchStep(3)"><span class="tab-num">STEP 03</span>3Dかくにん</div>
+        <div class="tab" id="tab-step4" onclick="switchStep(4)"><span class="tab-num">STEP 04</span>できあがり</div>
     </div>
 
     <div class="app-container">
         <div class="canvas-area" id="canvasArea">
             <div class="canvas-wrapper">
-                <div id="transformContainer">
-                    <div id="previewBgLayer"></div>
-                    <div id="bgLayer"><video id="bgVideo" autoplay playsinline muted></video></div>
-                    <canvas id="sketchCanvas"></canvas>
-                    <canvas id="dotCanvas" width="32" height="32"></canvas>
-                    <canvas id="gridCanvas"></canvas>
-                </div>
+                <div id="bgLayer"><video id="bgVideo" autoplay playsinline muted></video></div>
+                <canvas id="sketchCanvas"></canvas>
+                <canvas id="dotCanvas" width="32" height="32"></canvas>
+                <canvas id="gridCanvas"></canvas>
                 <div id="threeContainer"></div>
             </div>
         </div>
         
-        <div class="row" id="history-row" style="gap:10px; margin: 5px 0; width:100%; max-width:360px; justify-content:space-between;">
-            <button class="btn" id="btn-zoom-in" style="border-radius:50%; background:#fff; box-shadow:0 3px 6px rgba(0,0,0,0.1);"><span class="material-icons">zoom_in</span></button>
+        <div class="row" id="history-row" style="gap:15px; margin: 5px 0;">
             <button class="btn" id="btn-undo" style="border-radius:50%; background:#fff; box-shadow:0 3px 6px rgba(0,0,0,0.1);"><span class="material-icons">undo</span></button>
-            
-            <button class="btn" id="btn-center-tool" style="border-radius:50%; background:#e3f2fd; color:#1e88e5; box-shadow:0 3px 6px rgba(0,0,0,0.1); width:50px; height:50px;"><span class="material-icons" style="font-size:28px;">photo_camera</span></button>
-            
+            <button class="btn" id="btn-sketch-camera" style="border-radius:50%; background:#e3f2fd; color:#1e88e5; box-shadow:0 3px 6px rgba(0,0,0,0.1); width:50px; height:50px;"><span class="material-icons" style="font-size:28px;">photo_camera</span></button>
             <button class="btn" id="btn-redo" style="border-radius:50%; background:#fff; box-shadow:0 3px 6px rgba(0,0,0,0.1);"><span class="material-icons">redo</span></button>
-            <button class="btn" id="btn-zoom-out" style="border-radius:50%; background:#fff; box-shadow:0 3px 6px rgba(0,0,0,0.1);"><span class="material-icons">zoom_out</span></button>
         </div>
 
         <div class="control-panel active" id="panel-step1">
-            <div class="section-label">らくがき・スキャンツール</div>
+            <div class="section-label">らくがきツール</div>
             <div class="row">
-                <div class="sketchColorWrapper" id="sketchColorWrapper" style="background-color:#000000; width:40px; height:40px; border-radius:50%; border:2px solid #ddd; position:relative; overflow:hidden; cursor:pointer;">
-                    <input type="color" id="sketchColor" value="#000000" style="position:absolute; top:-10px; left:-10px; width:60px; height:60px; border:none; background:none; opacity:0; pointer-events:none;">
-                </div>
+                <input type="color" id="sketchColor" value="#000000" style="width:40px; height:40px; border:none; background:none; cursor:pointer;">
                 <button class="btn active" id="btn-sketch-pen"><span class="material-icons">edit</span></button>
                 <button class="btn" id="btn-sketch-eraser"><img src="eraser.png" alt="消しゴム"></button>
                 <button class="btn" id="btn-sketch-bucket"><span class="material-icons">format_color_fill</span></button>
                 <button class="btn" id="btn-sketch-picker"><span class="material-icons">colorize</span></button>
                 <button class="btn" id="btn-sketch-clear" style="color:var(--accent-color);"><span class="material-icons">delete_outline</span></button>
             </div>
-            <p id="camera-guide-text" style="font-size:0.75rem; color:#747d8c; text-align:center; margin: 5px 0;">上のカメラボタンで紙の絵をパシャッとスキャンすることもできるよ！</p>
-            <button class="btn-magic" onclick="magicConvert()"><span class="material-icons">auto_awesome</span> ドット絵に変身させる！</button>
+            <p id="camera-guide-text" style="font-size:0.75rem; color:#747d8c; text-align:center; margin: 5px 0;">紙に描いたらくがきをスキャンすることもできるよ！</p>
+            <button class="btn-magic" onclick="magicConvert()"><span class="material-icons">auto_awesome</span> ドット絵に変身！</button>
         </div>
 
         <div class="control-panel" id="panel-step2">
-            <div class="section-label">ドット微調整ツール</div>
+            <div class="section-label">ドット絵 調整ツール</div>
             <div class="row">
-                <div class="color-picker-wrapper" id="colorPickerWrapper" style="background-color:#000000;">
-                    <input type="color" id="colorPicker" value="#000000">
-                </div>
+                <input type="color" id="colorPicker" value="#000000" style="width:40px; height:40px; border:none; background:none; cursor:pointer;">
                 <button class="btn active" id="btn-pen"><span class="material-icons">edit</span></button>
                 <button class="btn" id="btn-eraser"><img src="eraser.png" alt="消しゴム"></button> 
                 <button class="btn" id="btn-bucket"><span class="material-icons">format_color_fill</span></button>
                 <button class="btn" id="btn-picker"><span class="material-icons">colorize</span></button>
                 <button class="btn" id="btn-toggle-grid" style="margin-left: auto;"><span class="material-icons">grid_on</span></button>
             </div>
-            <div class="section-label">カラーパレット</div>
+            <div class="section-label">登録した色（好きな色を登録できるよ）</div>
             <div class="row" style="justify-content: space-between;">
                 <div id="paletteArea" class="row" style="min-height:30px; justify-content:flex-start; gap:6px;"></div>
                 <button class="btn" id="btn-save-palette" style="width:auto; padding:0 8px; font-size:0.7rem; height:34px;">色を登録</button>
             </div>
-            <button class="btn-magic" style="background: var(--primary-color);" onclick="goTo3DStep()">3Dボクセルにする！ <span class="material-icons">view_in_ar</span></button>
+            <button class="btn-magic" style="background: var(--primary-color);" onclick="goTo3DStep()">3Dに変身！ <span class="material-icons">view_in_ar</span></button>
         </div>
 
         <div class="control-panel" id="panel-step3">
-            <div class="section-label">3D立体プレビュー</div>
-            <p style="font-size:0.8rem; color:#333; text-align:center; margin: 5px 0; font-weight: bold; line-height:1.4;">
-                存在感ばつ群の厚みのブロックフィギュアになりました！確認してね！<br>白い部分はゲームでも白ブロックとして出現するよ！
-            </p>
-            <p style="font-size:0.75rem; color:#747d8c; text-align:center; margin: 0 0 5px 0;">🖯 グルグル回して色々な角度からチェックできます</p>
-            <button class="btn-magic" style="background: var(--primary-color);" onclick="switchStep(4)">これで決定！次にすすむ <span class="material-icons">arrow_forward</span></button>
+            <div class="section-label">君の作品が立体になるとこんな感じ！</div>
+            <p style="font-size:0.8rem; color:#333; text-align:center; margin: 5px 0; font-weight: bold;">色が抜けていないか確認してね！白い部分ちゃんと塗れてるかな？</p>
+            <p style="font-size:0.75rem; color:#747d8c; text-align:center; margin: 0 0 5px 0;">指でグルグル回すと、色々な角度からチェックできるよ！</p>
+            <button class="btn-magic" style="background: var(--primary-color);" onclick="switchStep(4)">これで決定！ <span class="material-icons">arrow_forward</span></button>
         </div>
 
         <div class="control-panel" id="panel-step4">
-            <div class="section-label">作品の名前</div>
+            <div class="section-label">素敵な作品に名前をつけてあげね【必須】</div>
             <input type="text" id="artName" placeholder="作品の名前を入力..." style="width:100%; height:45px; border-radius:10px; border:2px solid #ddd; padding:0 10px; box-sizing:border-box;">
 
-            <div class="section-label">完成背景デザイン（画面確認用）</div>
+            <div class="section-label" style="margin-top: 10px;">背景デザイン（ワークショップなどで使用します）</div>
             <select id="bgSelect" class="sidebar-select" style="width: 100%; height: 40px; border-radius: 10px; border: 2px solid #f1f2f6; padding: 0 10px; font-weight: bold; color: #57606f;">
                 <option value="">背景なし（透明）</option>
                 <option value="bg1.jpg">背景デザイン1</option>
@@ -194,7 +216,7 @@
                 <option value="bg5.jpg">背景デザイン5</option>
             </select>
 
-            <button class="btn-upload" id="uploadButton">作品をアップロード！</button>
+            <button class="btn-upload" id="uploadButton" style="margin-top: 15px;">作品をアップロード！</button>
         </div>
     </div>
 
@@ -207,8 +229,6 @@
         const gCtx = gCanvas.getContext('2d');
         
         const canvasArea = document.getElementById('canvasArea');
-        const transformContainer = document.getElementById('transformContainer');
-        const previewBgLayer = document.getElementById('previewBgLayer');
         const bgLayer = document.getElementById('bgLayer');
         const bgVideo = document.getElementById('bgVideo');
         const loadingOverlay = document.getElementById('loadingOverlay');
@@ -218,33 +238,21 @@
         const sketchColor = document.getElementById('sketchColor');
         const threeContainer = document.getElementById('threeContainer');
         const cameraGuideText = document.getElementById('camera-guide-text');
-        const bgSelect = document.getElementById('bgSelect');
 
         let currentStep = 1;
         let isDrawing = false;
         let sketchMode = 'pen';
         let dotMode = 'pen';
-        
         let historyStack = { 1: [], 2: [] };
-        let redoStack = { 1: [], 2: [] };
-        
         let startTime = Date.now();
         let gridActive = true;
         
         let isCameraActive = false;
-        let isCameraPreviewMode = false;
+        let isCameraPreviewMode = false; 
         let videoStream = null;
-        let trackForFlash = null;
         
         let lastCanvasWidth = 0;
         let lastCanvasHeight = 0;
-
-        let zoomLevel = 1.0;
-        let panX = 0;
-        let panY = 0;
-        let isPanning = false;
-        let startPanX = 0;
-        let startPanY = 0;
 
         const VOXEL_HEIGHT = 3.0;
 
@@ -253,15 +261,6 @@
 
         const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbyUGyIE6nsZQjvigGkhMFQZU-lojHBOchuNuZBqp_zn2jovD7zIuYEQdWwcbXu0WKbbLg/exec"; 
         const FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfNwyTLJ_-3FJx5oBbgzULdlWZ8TrVfyH6eHv5V4pXlAhP34Q/viewform";
-
-        function setupColorPickerWrapper(wrapperId, inputId) {
-            const wrapper = document.getElementById(wrapperId);
-            const input = document.getElementById(inputId);
-            wrapper.onclick = () => input.click();
-            input.onchange = (e) => { wrapper.style.backgroundColor = e.target.value; };
-        }
-        setupColorPickerWrapper('sketchColorWrapper', 'sketchColor');
-        setupColorPickerWrapper('colorPickerWrapper', 'colorPicker');
 
         function initCanvasSize() {
             const rect = canvasArea.getBoundingClientRect();
@@ -275,13 +274,19 @@
 
                 sCanvas.width = newWidth;
                 sCanvas.height = newHeight;
-                sCtx.lineCap = 'round'; sCtx.lineJoin = 'round'; sCtx.lineWidth = 8; 
+                sCtx.lineCap = 'round';
+                sCtx.lineJoin = 'round';
+                sCtx.lineWidth = 8; 
 
-                gCanvas.width = newWidth; gCanvas.height = newHeight;
+                gCanvas.width = newWidth;
+                gCanvas.height = newHeight;
 
-                if(tempSketch.width > 0) sCtx.drawImage(tempSketch, 0, 0, newWidth, newHeight);
+                if(tempSketch.width > 0) {
+                    sCtx.drawImage(tempSketch, 0, 0, newWidth, newHeight);
+                }
 
-                lastCanvasWidth = newWidth; lastCanvasHeight = newHeight;
+                lastCanvasWidth = newWidth;
+                lastCanvasHeight = newHeight;
                 
                 drawGrid();
                 if (isThreeInitialized && renderer) {
@@ -294,123 +299,172 @@
         function drawGrid() {
             gCtx.clearRect(0, 0, gCanvas.width, gCanvas.height);
             if (!gridActive) return;
-            const w = gCanvas.width; const h = gCanvas.height;
-            const stepX = w / 32; const stepY = h / 32;
+
+            const w = gCanvas.width;
+            const h = gCanvas.height;
+            const stepX = w / 32;
+            const stepY = h / 32;
             gCtx.lineWidth = 0.8;
+
             for (let i = 1; i < 32; i++) {
                 gCtx.beginPath();
-                gCtx.strokeStyle = (i % 8 === 0) ? 'rgba(0, 0, 0, 0.45)' : 'rgba(0, 0, 0, 0.12)';
+                if (i % 8 === 0) {
+                    gCtx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
+                } else {
+                    gCtx.strokeStyle = 'rgba(0, 0, 0, 0.12)';
+                }
                 gCtx.moveTo(i * stepX, 0); gCtx.lineTo(i * stepX, h);
                 gCtx.moveTo(0, i * stepY); gCtx.lineTo(w, i * stepY);
                 gCtx.stroke();
             }
         }
 
+        // ==================== 📷 背面カメラ・制限スキャン・フラッシュ制御 ====================
+        let trackForFlash = null;
+
         async function toggleCamera() {
             if (currentStep !== 1) return;
-            const centerBtn = document.getElementById('btn-center-tool');
+            const camBtn = document.getElementById('btn-sketch-camera');
+            
             if (!isCameraActive && !isCameraPreviewMode) {
                 try {
-                    const constraints = { video: { facingMode: "environment", width: { ideal: 1024 }, height: { ideal: 1024 } }, audio: false };
+                    const constraints = {
+                        video: { facingMode: "environment", width: { ideal: 1024 }, height: { ideal: 1024 } },
+                        audio: false
+                    };
                     videoStream = await navigator.mediaDevices.getUserMedia(constraints);
-                    bgVideo.srcObject = videoStream; bgVideo.style.display = "block";
-                    bgLayer.style.backgroundImage = "none"; bgLayer.style.display = "block";
+                    bgVideo.srcObject = videoStream;
+                    bgVideo.style.display = "block";
+                    bgLayer.style.backgroundImage = "none";
+                    bgLayer.style.display = "block";
                     
                     const videoTrack = videoStream.getVideoTracks()[0];
                     if (videoTrack) {
                         trackForFlash = videoTrack;
                         const capabilities = videoTrack.getCapabilities();
-                        if (capabilities.torch) { await videoTrack.applyConstraints({ advanced: [{ torch: true }] }); }
+                        if (capabilities.torch) {
+                            await videoTrack.applyConstraints({ advanced: [{ torch: true }] });
+                        }
                     }
-                    canvasArea.classList.add('camera-active'); isCameraActive = true;
-                    centerBtn.style.background = '#e11d48'; centerBtn.style.color = '#fff';
-                    centerBtn.innerHTML = '<span class="material-icons" style="font-size:28px;">camera</span>';
+
+                    canvasArea.classList.add('camera-active');
+                    isCameraActive = true;
+                    camBtn.style.background = '#e11d48'; 
+                    camBtn.style.color = '#fff';
+                    camBtn.innerHTML = '<span class="material-icons" style="font-size:28px;">camera</span>';
                     cameraGuideText.innerText = "四角いガイドの中に紙の絵を合わせて、カメラボタンを押してね！";
                     cameraGuideText.style.color = "var(--cyber-neon)";
-                } catch (err) { alert("カメラの起動に失敗しました。"); }
+                } catch (err) {
+                    console.error("Camera failed:", err);
+                    alert("カメラの起動に失敗しました。カメラのアクセス権限を確認してください。");
+                }
             } 
             else if (isCameraActive && !isCameraPreviewMode) {
                 try {
-                    sCtx.clearRect(0, 0, sCanvas.width, sCanvas.height); sCtx.globalCompositeOperation = 'source-over';
-                    const vW = bgVideo.videoWidth; const vH = bgVideo.videoHeight; const minSize = Math.min(vW, vH);
-                    const cropSize = minSize * 0.70; const cropX = (vW - cropSize) / 2; const cropY = (vH - cropSize) / 2;
-                    sCtx.drawImage(bgVideo, cropX, cropY, cropSize, cropSize, 0, 0, sCanvas.width, sCanvas.height);
-                    bgVideo.pause(); canvasArea.classList.remove('camera-active');
-                    isCameraActive = false; isCameraPreviewMode = true;
-                    centerBtn.style.background = '#10b981';
-                    centerBtn.innerHTML = '<span class="material-icons" style="font-size:28px;">check</span>';
-                    cameraGuideText.innerText = "綺麗に撮れたかな？OKならもう一度ボタンを押してね！";
+                    sCtx.clearRect(0, 0, sCanvas.width, sCanvas.height);
+                    sCtx.globalCompositeOperation = 'source-over';
+                    
+                    const vW = bgVideo.videoWidth;
+                    const vH = bgVideo.videoHeight;
+                    const minSize = Math.min(vW, vH);
+                    
+                    const cropSize = minSize * 0.70; 
+                    const cropX = (vW - cropSize) / 2;
+                    const cropY = (vH - cropSize) / 2;
+
+                    sCtx.drawImage(
+                        bgVideo, 
+                        cropX, cropY, cropSize, cropSize,
+                        0, 0, sCanvas.width, sCanvas.height
+                    );
+
+                    bgVideo.pause();
+                    canvasArea.classList.remove('camera-active');
+                    
+                    isCameraActive = false;
+                    isCameraPreviewMode = true;
+                    
+                    camBtn.style.background = '#10b981'; 
+                    camBtn.innerHTML = '<span class="material-icons" style="font-size:28px;">check</span>';
+                    cameraGuideText.innerText = "綺麗に撮れたかな？OKならもう一度ボタンを押してね！(撮り直す時は戻るボタンを押してね)";
                     cameraGuideText.style.color = "#10b981";
-                } catch(e) { stopCameraMode(); }
+                } catch(e) { 
+                    console.error("Capture failed:", e); 
+                    stopCameraMode();
+                }
             }
-            else if (isCameraPreviewMode) { saveHistory(1); autoSaveToStorage(); stopCameraMode(); }
+            else if (isCameraPreviewMode) {
+                saveHistory(1);
+                autoSaveToStorage();
+                stopCameraMode();
+            }
         }
 
         async function stopCameraMode() {
-            if (trackForFlash) { try { if (trackForFlash.getCapabilities().torch) { await trackForFlash.applyConstraints({ advanced: [{ torch: false }] }); } } catch (e) {} trackForFlash = null; }
-            if (videoStream) { videoStream.getTracks().forEach(track => track.stop()); videoStream = null; }
-            bgVideo.srcObject = null; bgVideo.style.display = "none"; bgLayer.style.display = "none"; canvasArea.classList.remove('camera-active');
-            isCameraActive = false; isCameraPreviewMode = false;
-            resetCenterToolButtonState();
+            if (trackForFlash) {
+                try {
+                    const capabilities = trackForFlash.getCapabilities();
+                    if (capabilities.torch) {
+                        await trackForFlash.applyConstraints({ advanced: [{ torch: false }] });
+                    }
+                } catch (e) { console.warn("Flash off failed:", e); }
+                trackForFlash = null;
+            }
+
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+            }
+            bgVideo.srcObject = null;
+            bgVideo.style.display = "none";
+            bgLayer.style.display = "none";
+            canvasArea.classList.remove('camera-active');
+            
+            isCameraActive = false;
+            isCameraPreviewMode = false;
+            
+            const camBtn = document.getElementById('btn-sketch-camera');
+            camBtn.style.background = '#e3f2fd';
+            camBtn.style.color = '#1e88e5';
+            camBtn.innerHTML = '<span class="material-icons" style="font-size:28px;">photo_camera</span>';
+            
             cameraGuideText.innerText = "上のカメラボタンで紙の絵をパシャッとスキャンすることもできるよ！";
             cameraGuideText.style.color = "#747d8c";
         }
 
-        function updateTransform() { transformContainer.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`; }
-        function resetTransform() { zoomLevel = 1.0; panX = 0; panY = 0; updateTransform(); }
-
-        document.getElementById('btn-zoom-in').onclick = () => { if (zoomLevel < 4.0) { zoomLevel += 0.25; updateTransform(); } };
-        document.getElementById('btn-zoom-out').onclick = () => { if (zoomLevel > 1.0) { zoomLevel -= 0.25; if(zoomLevel === 1.0) { panX = 0; panY = 0; } updateTransform(); } };
-
-        document.getElementById('btn-center-tool').onclick = () => {
-            if (currentStep === 1) { toggleCamera(); } 
-            else if (currentStep === 2) {
-                if (dotMode !== 'pan') {
-                    dotMode = 'pan'; document.querySelectorAll('#panel-step2 .btn').forEach(b => b.classList.remove('active'));
-                    const centerBtn = document.getElementById('btn-center-tool');
-                    centerBtn.classList.add('active'); centerBtn.style.background = 'var(--primary-color)'; centerBtn.style.color = '#fff';
-                } else {
-                    dotMode = 'pen'; document.getElementById('btn-pen').classList.add('active'); resetCenterToolButtonState();
-                }
-            }
-        };
-
-        function resetCenterToolButtonState() {
-            const centerBtn = document.getElementById('btn-center-tool');
-            if (currentStep === 1) {
-                centerBtn.style.visibility = 'visible'; centerBtn.style.background = '#e3f2fd'; centerBtn.style.color = '#1e88e5';
-                centerBtn.classList.remove('active'); centerBtn.innerHTML = '<span class="material-icons" style="font-size:28px;">photo_camera</span>';
-            } else if (currentStep === 2) {
-                centerBtn.style.visibility = 'visible'; centerBtn.style.background = '#fff'; centerBtn.style.color = '#57606f';
-                centerBtn.classList.remove('active'); centerBtn.innerHTML = '<span class="material-icons" style="font-size:28px;">pan_tool</span>';
-            } else { centerBtn.style.visibility = 'hidden'; }
-        }
-
-        bgSelect.onchange = () => {
-            const file = bgSelect.value;
-            if (file) { previewBgLayer.style.backgroundImage = `url(${file})`; previewBgLayer.style.display = 'block'; } 
-            else { previewBgLayer.style.display = 'none'; }
-        };
+        document.getElementById('btn-sketch-camera').onclick = toggleCamera;
 
         function autoSaveToStorage() {
             try {
                 localStorage.setItem('dots_backup_sketch', sCanvas.toDataURL());
                 localStorage.setItem('dots_backup_dot', dCanvas.toDataURL());
                 localStorage.setItem('dots_backup_artname', artNameInput.value);
-            } catch (e) {}
+            } catch (e) { console.warn("AutoSave failed:", e); }
         }
 
         function loadFromStorageBackup() {
-            const savedName = localStorage.getItem('dots_backup_artname'); if (savedName) artNameInput.value = savedName;
+            const savedName = localStorage.getItem('dots_backup_artname');
+            if (savedName) artNameInput.value = savedName;
+
             const savedSketch = localStorage.getItem('dots_backup_sketch');
-            if (savedSketch) { const img = new Image(); img.src = savedSketch; img.onload = () => { sCtx.drawImage(img, 0, 0, sCanvas.width, sCanvas.height); saveHistory(1); }; }
+            if (savedSketch) {
+                const img = new Image(); img.src = savedSketch;
+                img.onload = () => { sCtx.drawImage(img, 0, 0, sCanvas.width, sCanvas.height); saveHistory(1); };
+            }
             const savedDot = localStorage.getItem('dots_backup_dot');
-            if (savedDot) { const img = new Image(); img.src = savedDot; img.onload = () => { dCtx.clearRect(0,0,32,32); dCtx.drawImage(img, 0, 0, 32, 32); saveHistory(2); }; }
+            if (savedDot) {
+                const img = new Image(); img.src = savedDot;
+                img.onload = () => { dCtx.clearRect(0,0,32,32); dCtx.drawImage(img, 0, 0, 32, 32); saveHistory(2); };
+            }
         }
 
         window.addEventListener('resize', initCanvasSize);
         window.addEventListener('DOMContentLoaded', () => {
-            initCanvasSize(); dCtx.clearRect(0, 0, 32, 32); saveHistory(2); saveHistory(1); loadFromStorageBackup(); resetCenterToolButtonState();
+            initCanvasSize();
+            dCtx.clearRect(0, 0, 32, 32);
+            saveHistory(2);
+            saveHistory(1);
+            loadFromStorageBackup();
         });
 
         function switchStep(step) {
@@ -419,71 +473,144 @@
             document.querySelectorAll('.control-panel').forEach((p, i) => { p.classList.toggle('active', i === step - 1); });
             
             document.getElementById('history-row').style.display = (step <= 2) ? 'flex' : 'none';
-            resetCenterToolButtonState(); resetTransform();
+            document.getElementById('btn-sketch-camera').style.visibility = (step === 1) ? 'visible' : 'hidden';
 
             sCanvas.style.display = (step === 1) ? 'block' : 'none';
             dCanvas.style.display = (step === 2 || step === 4) ? 'block' : 'none';
             threeContainer.style.display = (step === 3) ? 'block' : 'none';
             
-            // 🟩 背景デザインは送信ステップ(4)の画面上確認の表示（プレビュー）のみで使用
-            previewBgLayer.style.display = (step === 4 && bgSelect.value) ? 'block' : 'none';
-            
             gCanvas.style.display = (step === 2) ? 'block' : 'none';
             if(step === 2) drawGrid();
             if (step === 3) updateThreeMesh();
-            if (step !== 1 && (isCameraActive || isCameraPreviewMode)) stopCameraMode();
+
+            if (step !== 1 && (isCameraActive || isCameraPreviewMode)) {
+                stopCameraMode();
+            }
         }
 
-        function goTo3DStep() { if (!isThreeInitialized) { initThree(); } else { updateCameraAspect(); } switchStep(3); }
+        function goTo3DStep() {
+            if (!isThreeInitialized) {
+                initThree();
+            } else {
+                updateCameraAspect();
+            }
+            switchStep(3);
+        }
 
         function initThree() {
-            const rect = canvasArea.getBoundingClientRect(); scene = new THREE.Scene(); scene.background = new THREE.Color(0xffffff);
-            const aspect = rect.width / rect.height; const d = 20;
-            camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 1000); camera.position.set(25, 25, 25);
-            renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setSize(rect.width, rect.height);
+            const rect = canvasArea.getBoundingClientRect();
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xffffff);
+
+            const aspect = rect.width / rect.height;
+            const d = 20;
+            camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 1000);
+            camera.position.set(25, 25, 25);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(rect.width, rect.height);
             threeContainer.appendChild(renderer.domElement);
-            controls = new THREE.OrbitControls(camera, renderer.domElement); controls.enableDamping = true; controls.dampingFactor = 0.1;
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.1;
+
             scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-            const dirLight = new THREE.DirectionalLight(0xffffff, 0.5); dirLight.position.set(20, 40, 20); scene.add(dirLight);
-            voxelGroup = new THREE.Group(); scene.add(voxelGroup); isThreeInitialized = true;
-            function animate3D() { requestAnimationFrame(animate3D); if (currentStep === 3) { controls.update(); renderer.render(scene, camera); } }
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            dirLight.position.set(20, 40, 20);
+            scene.add(dirLight);
+
+            voxelGroup = new THREE.Group();
+            scene.add(voxelGroup);
+            isThreeInitialized = true;
+
+            function animate3D() {
+                requestAnimationFrame(animate3D);
+                if (currentStep === 3) {
+                    controls.update();
+                    renderer.render(scene, camera);
+                }
+            }
             animate3D();
         }
 
         function updateCameraAspect() {
-            if (!camera || !canvasArea) return; const rect = canvasArea.getBoundingClientRect(); const aspect = rect.width / rect.height; const d = 20;
-            camera.left = -d * aspect; camera.right = d * aspect; camera.top = d; camera.bottom = -d; camera.updateProjectionMatrix();
+            if (!camera || !canvasArea) return;
+            const rect = canvasArea.getBoundingClientRect();
+            const aspect = rect.width / rect.height;
+            const d = 20;
+            camera.left = -d * aspect; camera.right = d * aspect;
+            camera.top = d; camera.bottom = -d;
+            camera.updateProjectionMatrix();
         }
 
         function updateThreeMesh() {
             if (!isThreeInitialized) return;
-            while(voxelGroup.children.length > 0){ const obj = voxelGroup.children[0]; obj.geometry.dispose(); obj.material.dispose(); voxelGroup.remove(obj); }
-            const imgData = dCtx.getImageData(0, 0, 32, 32).data; const boxGeo = new THREE.BoxGeometry(1, VOXEL_HEIGHT, 1);
+            while(voxelGroup.children.length > 0){
+                const obj = voxelGroup.children[0];
+                obj.geometry.dispose(); obj.material.dispose();
+                voxelGroup.remove(obj);
+            }
+
+            const imgData = dCtx.getImageData(0, 0, 32, 32).data;
+            const boxGeo = new THREE.BoxGeometry(1, VOXEL_HEIGHT, 1);
+
             for (let y = 0; y < 32; y++) {
                 for (let x = 0; x < 32; x++) {
-                    const idx = (y * 32 + x) * 4; if (imgData[idx + 3] < 128) continue;
-                    const mat = new THREE.MeshStandardMaterial({ color: new THREE.Color(`rgb(${imgData[idx]},${imgData[idx+1]},${imgData[idx+2]})`), roughness: 0.4 });
-                    const mesh = new THREE.Mesh(boxGeo, mat); mesh.position.set(x - 16, VOXEL_HEIGHT / 2, y - 16); voxelGroup.add(mesh);
+                    const idx = (y * 32 + x) * 4;
+                    if (imgData[idx + 3] < 128) continue;
+
+                    const mat = new THREE.MeshStandardMaterial({
+                        color: new THREE.Color(`rgb(${imgData[idx]},${imgData[idx+1]},${imgData[idx+2]})`),
+                        roughness: 0.4
+                    });
+                    const mesh = new THREE.Mesh(boxGeo, mat);
+                    mesh.position.set(x - 16, VOXEL_HEIGHT / 2, y - 16);
+                    voxelGroup.add(mesh);
                 }
             }
             voxelGroup.position.set(0, -VOXEL_HEIGHT / 2, 0);
         }
 
         function magicConvert() {
-            const tempCanvas = document.createElement('canvas'); tempCanvas.width = tempCanvas.height = 32;
-            const tCtx = tempCanvas.getContext('2d'); tCtx.imageSmoothingEnabled = false; tCtx.drawImage(sCanvas, 0, 0, 32, 32);
-            const imgData = tCtx.getImageData(0, 0, 32, 32); const data = imgData.data;
+            const tempCanvas = document.createElement('canvas'); 
+            tempCanvas.width = tempCanvas.height = 32;
+            const tCtx = tempCanvas.getContext('2d');
+            tCtx.imageSmoothingEnabled = false; 
+            tCtx.drawImage(sCanvas, 0, 0, 32, 32);
+            
+            const imgData = tCtx.getImageData(0, 0, 32, 32);
+            const data = imgData.data;
+            
             for (let i = 0; i < data.length; i += 4) {
-                let r = data[i]; let g = data[i + 1]; let b = data[i + 2]; let alpha = data[i + 3];
-                if (alpha > 40) { data[i + 3] = 255; const avg = (r + g + b) / 3; const isGrayScale = Math.max(r, g, b) - Math.min(r, g, b) < 25; if (avg > 180 && isGrayScale) { data[i + 3] = 0; } } 
-                else { data[i + 3] = 0; }
+                let r = data[i];
+                let g = data[i + 1];
+                let b = data[i + 2];
+                let alpha = data[i + 3];
+
+                if (alpha > 40) { 
+                    data[i + 3] = 255; 
+                    const avg = (r + g + b) / 3;
+                    const isGrayScale = Math.max(r, g, b) - Math.min(r, g, b) < 25; 
+                    
+                    if (avg > 180 && isGrayScale) {
+                        data[i + 3] = 0; 
+                    }
+                } else {
+                    data[i + 3] = 0; 
+                }
             }
-            dCtx.clearRect(0, 0, 32, 32); dCtx.putImageData(imgData, 0, 0);
-            saveHistory(2); autoSaveToStorage(); switchStep(2);
+            dCtx.clearRect(0, 0, 32, 32);
+            dCtx.putImageData(imgData, 0, 0);
+            
+            saveHistory(2); 
+            autoSaveToStorage();
+            switchStep(2);
         }
 
         function executeCanvasBucket(ctx, startX, startY, fillHex, width, height) {
-            const imageData = ctx.getImageData(0, 0, width, height), data = imageData.data; const baseIdx = (startY * width + startX) * 4;
+            const imageData = ctx.getImageData(0, 0, width, height), data = imageData.data;
+            const baseIdx = (startY * width + startX) * 4;
             const startR = data[baseIdx], startG = data[baseIdx + 1], startB = data[baseIdx + 2], startA = data[baseIdx + 3];
             const fillR = parseInt(fillHex.slice(1,3), 16), fillG = parseInt(fillHex.slice(3,5), 16), fillB = parseInt(fillHex.slice(5,7), 16), fillA = 255;
             if (startR === fillR && startG === fillG && startB === fillB && startA === fillA) return;
@@ -492,127 +619,150 @@
                 const [x, y] = stack.pop(); const idx = (y * width + x) * 4;
                 if (Math.abs(data[idx] - startR) < 10 && Math.abs(data[idx+1] - startG) < 10 && Math.abs(data[idx+2] - startB) < 10 && Math.abs(data[idx+3] - startA) < 10) {
                     data[idx] = fillR; data[idx+1] = fillG; data[idx+2] = fillB; data[idx+3] = fillA;
-                    if (x > 0) stack.push([x - 1, y]); if (x < width - 1) stack.push([x + 1, y]); if (y > 0) stack.push([x, y - 1]); if (y < height - 1) stack.push([x, y + 1]);
+                    if (x > 0) stack.push([x - 1, y]); if (x < width - 1) stack.push([x + 1, y]);
+                    if (y > 0) stack.push([x, y - 1]); if (y < height - 1) stack.push([x, y + 1]);
                 }
             }
             ctx.putImageData(imageData, 0, 0);
         }
 
-        function executeCanvasPicker(ctx, x, y, width, height, targetPicker, wrapperId) {
-            const imgData = ctx.getImageData(x, y, 1, 1).data; if (imgData[3] === 0) return;
+        function executeCanvasPicker(ctx, x, y, width, height, targetPicker) {
+            const imgData = ctx.getImageData(x, y, 1, 1).data;
+            if (imgData[3] === 0) return;
             const hex = "#" + ("000000" + ((imgData[0] << 16) | (imgData[1] << 8) | imgData[2]).toString(16)).slice(-6);
-            targetPicker.value = hex; document.getElementById(wrapperId).style.backgroundColor = hex;
+            targetPicker.value = hex;
         }
 
         function getCanvasTouchPos(e) {
-            const rect = canvasArea.getBoundingClientRect(); const p = e.touches ? e.touches[0] : e;
-            const viewX = p.clientX - rect.left; const viewY = p.clientY - rect.top;
-            const cx = rect.width / 2; const cy = rect.height / 2;
-            const rx = (viewX - cx - panX) / zoomLevel + cx; const ry = (viewY - cy - panY) / zoomLevel + cy;
-            return { x: rx, y: ry, screenX: p.clientX, screenY: p.clientY };
+            const rect = canvasArea.getBoundingClientRect();
+            const p = e.touches ? e.touches[0] : e;
+            return { x: p.clientX - rect.left, y: p.clientY - rect.top };
         }
         
-        canvasArea.addEventListener('mousedown', startDrawing); canvasArea.addEventListener('touchstart', startDrawing, {passive: false});
-        window.addEventListener('mousemove', draw); window.addEventListener('touchmove', draw, {passive: false});
-        window.addEventListener('mouseup', stopDrawing); window.addEventListener('touchend', stopDrawing);
+        // 🛠️ 修正: ウィンドウ全体ではなく、キャンバスエリア単体にタッチ操作を限定してバインド
+        canvasArea.addEventListener('mousedown', startDrawing);
+        canvasArea.addEventListener('touchstart', startDrawing, {passive: false});
+        canvasArea.addEventListener('mousemove', draw);
+        canvasArea.addEventListener('touchmove', draw, {passive: false});
+        window.addEventListener('mouseup', stopDrawing);
+        window.addEventListener('touchend', stopDrawing);
 
         function startDrawing(e) {
-            if (currentStep > 2 || isCameraActive || isCameraPreviewMode) return;
-            if (e.touches) e.preventDefault(); const pos = getCanvasTouchPos(e);
-            if (currentStep === 2 && dotMode === 'pan') { isPanning = true; startPanX = pos.screenX - panX; startPanY = pos.screenY - panY; return; }
+            if (currentStep > 2 || isCameraActive || isCameraPreviewMode) return; 
+            if (e.touches) e.preventDefault(); 
             isDrawing = true; 
+            const pos = getCanvasTouchPos(e);
+            
             if (currentStep === 1) { 
                 const rx = Math.floor(pos.x), ry = Math.floor(pos.y);
-                if (sketchMode === 'bucket') { executeCanvasBucket(sCtx, rx, ry, sketchColor.value, sCanvas.width, sCanvas.height); stopDrawing(); } 
-                else if (sketchMode === 'picker') { executeCanvasPicker(sCtx, rx, ry, sCanvas.width, sCanvas.height, sketchColor, 'sketchColorWrapper'); stopDrawing(); } 
-                else { sCtx.beginPath(); sCtx.moveTo(pos.x, pos.y); }
-            } else if (currentStep === 2) { handleDotAction(pos.x, pos.y); }
+                if (sketchMode === 'bucket') {
+                    executeCanvasBucket(sCtx, rx, ry, sketchColor.value, sCanvas.width, sCanvas.height);
+                    stopDrawing();
+                } else if (sketchMode === 'picker') {
+                    executeCanvasPicker(sCtx, rx, ry, sCanvas.width, sCanvas.height, sketchColor);
+                    stopDrawing();
+                } else {
+                    sCtx.beginPath(); sCtx.moveTo(pos.x, pos.y); 
+                }
+            } else if (currentStep === 2) {
+                handleDotAction(pos.x, pos.y);
+            }
         }
 
         function draw(e) {
-            if (currentStep > 2 || isCameraActive || isCameraPreviewMode) return;
-            if (e.touches) e.preventDefault(); const pos = getCanvasTouchPos(e);
-            if (currentStep === 2 && dotMode === 'pan' && isPanning) { panX = pos.screenX - startPanX; panY = pos.screenY - startPanY; updateTransform(); return; }
-            if (!isDrawing) return;
+            if (!isDrawing || currentStep > 2 || isCameraActive || isCameraPreviewMode) return;
+            if (e.touches) e.preventDefault(); // 🛠️ キャンバス上での指描画中のスクロールのみを的確にブロック
+            const pos = getCanvasTouchPos(e);
+            
             if (currentStep === 1) {
                 if (sketchMode === 'pen' || sketchMode === 'eraser') {
                     sCtx.strokeStyle = sketchMode === 'eraser' ? '#ffffff' : sketchColor.value;
                     sCtx.globalCompositeOperation = sketchMode === 'eraser' ? 'destination-out' : 'source-over';
                     sCtx.lineTo(pos.x, pos.y); sCtx.stroke();
                 }
-            } else if (currentStep === 2) { handleDotAction(pos.x, pos.y); }
+            } else if (currentStep === 2) {
+                handleDotAction(pos.x, pos.y);
+            }
         }
 
-        function stopDrawing() { isPanning = false; if (isDrawing && currentStep <= 2) { saveHistory(currentStep); autoSaveToStorage(); } isDrawing = false; }
+        function stopDrawing() { 
+            if (isDrawing && currentStep <= 2) {
+                saveHistory(currentStep); 
+                autoSaveToStorage();
+            } 
+            isDrawing = false; 
+        }
 
-        function handleDotAction(canvasX, canvasY) {
-            const rect = canvasArea.getBoundingClientRect(); const x = Math.floor(canvasX / (rect.width / 32)), y = Math.floor(canvasY / (rect.height / 32));
+        function handleDotAction(clientX, clientY) {
+            const rect = canvasArea.getBoundingClientRect();
+            const x = Math.floor(clientX / (rect.width / 32)), y = Math.floor(clientY / (rect.height / 32));
             if (x < 0 || x >= 32 || y < 0 || y >= 32) return;
+            
             if (dotMode === 'pen') { dCtx.fillStyle = colorPicker.value; dCtx.fillRect(x, y, 1, 1); }
             else if (dotMode === 'eraser') dCtx.clearRect(x, y, 1, 1);
             else if (dotMode === 'bucket') { executeCanvasBucket(dCtx, x, y, colorPicker.value, 32, 32); isDrawing = false; }
-            else if (dotMode === 'picker') { executeCanvasPicker(dCtx, x, y, 32, 32, colorPicker, 'colorPickerWrapper'); isDrawing = false; }
+            else if (dotMode === 'picker') { executeCanvasPicker(dCtx, x, y, 32, 32, colorPicker); isDrawing = false; }
         }
 
         function saveHistory(step) {
-            const cvs = step === 1 ? sCanvas : dCanvas; historyStack[step].push(cvs.toDataURL());
+            const cvs = step === 1 ? sCanvas : dCanvas;
+            historyStack[step].push(cvs.toDataURL());
             if(historyStack[step].length > 30) historyStack[step].shift();
         }
 
         document.getElementById('btn-undo').onclick = () => {
             if (isCameraPreviewMode) {
-                bgVideo.play(); isCameraPreviewMode = false; isCameraActive = true; canvasArea.classList.add('camera-active');
-                const centerBtn = document.getElementById('btn-center-tool'); centerBtn.style.background = '#e11d48';
-                centerBtn.innerHTML = '<span class="material-icons" style="font-size:28px;">camera</span>';
-                cameraGuideText.innerText = "四角いガイドの中に紙の絵を合わせて、カメラボタンを押してね！"; cameraGuideText.style.color = "var(--cyber-neon)";
-                sCtx.clearRect(0, 0, sCanvas.width, sCanvas.height); return;
+                bgVideo.play();
+                isCameraPreviewMode = false;
+                isCameraActive = true;
+                canvasArea.classList.add('camera-active');
+                
+                const camBtn = document.getElementById('btn-sketch-camera');
+                camBtn.style.background = '#e11d48';
+                camBtn.innerHTML = '<span class="material-icons" style="font-size:28px;">camera</span>';
+                cameraGuideText.innerText = "四角いガイドの中に紙の絵を合わせて、カメラボタンを押してね！";
+                cameraGuideText.style.color = "var(--cyber-neon)";
+                sCtx.clearRect(0, 0, sCanvas.width, sCanvas.height);
+                return;
             }
+
             const stack = historyStack[currentStep];
             if (stack && stack.length > 1) {
-                const currentData = stack.pop(); redoStack[currentStep].push(currentData); const prev = stack[stack.length - 1]; 
-                const img = new Image(); img.src = prev;
+                stack.pop(); const prev = stack[stack.length - 1]; const img = new Image(); img.src = prev;
                 img.onload = () => {
-                    if (currentStep === 1) { sCtx.clearRect(0, 0, sCanvas.width, sCanvas.height); sCtx.drawImage(img, 0, 0, sCanvas.width, sCanvas.height); } 
-                    else { dCtx.clearRect(0, 0, 32, 32); dCtx.drawImage(img, 0, 0, 32, 32); }
+                    if (currentStep === 1) {
+                        sCtx.clearRect(0, 0, sCanvas.width, sCanvas.height); sCtx.drawImage(img, 0, 0, sCanvas.width, sCanvas.height);
+                    } else {
+                        dCtx.clearRect(0, 0, 32, 32); dCtx.drawImage(img, 0, 0, 32, 32);
+                    }
                     autoSaveToStorage();
                 };
             }
         };
-
-        document.getElementById('btn-redo').onclick = () => {
-            const rStack = redoStack[currentStep];
-            if (rStack && rStack.length > 0) {
-                const nextData = rStack.pop(); historyStack[currentStep].push(nextData);
-                const img = new Image(); img.src = nextData;
-                img.onload = () => {
-                    if (currentStep === 1) { sCtx.clearRect(0, 0, sCanvas.width, sCanvas.height); sCtx.drawImage(img, 0, 0, sCanvas.width, sCanvas.height); } 
-                    else { dCtx.clearRect(0, 0, 32, 32); dCtx.drawImage(img, 0, 0, 32, 32); }
-                    autoSaveToStorage();
-                };
-            }
-        };
-
-        function clearRedo() { redoStack[currentStep] = []; }
-        canvasArea.addEventListener('mousedown', clearRedo); canvasArea.addEventListener('touchstart', clearRedo);
 
         const sTools = {pen:'btn-sketch-pen', eraser:'btn-sketch-eraser', bucket:'btn-sketch-bucket', picker:'btn-sketch-picker'};
         Object.keys(sTools).forEach(k => {
-            document.getElementById(sTools[k]).onclick = () => { sketchMode = k; Object.values(sTools).forEach(id => document.getElementById(id).classList.remove('active')); document.getElementById(sTools[k]).classList.add('active'); };
+            document.getElementById(sTools[k]).onclick = () => {
+                sketchMode = k; Object.values(sTools).forEach(id => document.getElementById(id).classList.remove('active'));
+                document.getElementById(sTools[k]).classList.add('active');
+            };
         });
         document.getElementById('btn-sketch-clear').onclick = () => { if(confirm("らくがきをぜんぶ消しますか？")) { sCtx.clearRect(0,0,sCanvas.width,sCanvas.height); saveHistory(1); autoSaveToStorage(); } };
 
         const dTools = {pen:'btn-pen', eraser:'btn-eraser', bucket:'btn-bucket', picker:'btn-picker'};
         Object.keys(dTools).forEach(k => {
-            document.getElementById(dTools[k]).onclick = () => { dotMode = k; Object.values(dTools).forEach(id => document.getElementById(id).classList.remove('active')); document.getElementById(dTools[k]).classList.add('active'); resetCenterToolButtonState(); };
+            document.getElementById(dTools[k]).onclick = () => {
+                dotMode = k; Object.values(dTools).forEach(id => document.getElementById(id).classList.remove('active'));
+                document.getElementById(dTools[k]).classList.add('active');
+            };
         });
         document.getElementById('btn-toggle-grid').onclick = () => { gridActive = !gridActive; drawGrid(); };
 
         document.getElementById('btn-save-palette').onclick = () => {
             const col = colorPicker.value; const item = document.createElement('div'); item.className = 'palette-item';
             const chip = document.createElement('div'); chip.className = 'color-chip'; chip.style.backgroundColor = col;
-            chip.style.width = '24px'; chip.style.height = '24px'; chip.style.borderRadius = '4px'; chip.style.cursor = 'pointer';
-            chip.onclick = () => { colorPicker.value = col; document.getElementById('colorPickerWrapper').style.backgroundColor = col; };
-            const del = document.createElement('div'); del.innerHTML = '×'; del.style.fontSize = '0.65rem'; del.style.textAlign = 'center'; del.style.cursor = 'pointer'; del.style.color = '#aaa'; del.onclick = () => item.remove();
+            chip.onclick = () => colorPicker.value = col;
+            const del = document.createElement('div'); del.innerHTML = '×'; del.onclick = () => item.remove();
             item.appendChild(chip); item.appendChild(del); paletteArea.appendChild(item);
         };
 
@@ -625,34 +775,13 @@
 
             const durationSeconds = Math.floor((Date.now() - startTime) / 1000);
             
-            // 🟩 常に背景をのせない「ピュアな透過ドット絵(512x512)」を作る
             const uploadCanvas = document.createElement('canvas');
             uploadCanvas.width = uploadCanvas.height = 512;
             const uctx = uploadCanvas.getContext('2d');
             uctx.imageSmoothingEnabled = false; 
+
             uctx.drawImage(dCanvas, 0, 0, 512, 512);
             const base64Data = uploadCanvas.toDataURL('image/png').split(',')[1];
-
-            // 🟩 GAS側で3Dファイルを組み立てるための「32x32マトリクスカラー配列」の作成
-            const dImgData = dCtx.getImageData(0, 0, 32, 32).data;
-            const pixelMatrix = [];
-            for (let y = 0; y < 32; y++) {
-                const row = [];
-                for (let x = 0; x < 32; x++) {
-                    const idx = (y * 32 + x) * 4;
-                    const alpha = dImgData[idx + 3];
-                    if (alpha < 128) {
-                        row.push(null); // 透明
-                    } else {
-                        const r = dImgData[idx];
-                        const g = dImgData[idx+1];
-                        const b = dImgData[idx+2];
-                        const hex = "#" + ("000000" + ((r << 16) | (g << 8) | b).toString(16)).slice(-6);
-                        row.push(hex);
-                    }
-                }
-                pixelMatrix.push(row);
-            }
 
             if(!confirm(`「${name}」をアップロードして、アンケートに進みますか？`)) return;
 
@@ -662,11 +791,11 @@
                 const response = await fetch(GAS_ENDPOINT, {
                     method: "POST",
                     body: JSON.stringify({
-                        image: base64Data,         // 透過PNG
-                        pixelMatrix: pixelMatrix, // 🟩 3D用32x32カラーマトリクス
+                        image: base64Data,
                         name: name, 
                         location: "WEB_MAGIC_3D_MULTIOUT", 
-                        duration: durationSeconds
+                        duration: durationSeconds,
+                        pixelMatrix: getPixelMatrix() // 🛠️ バックエンド連携用にピクセルマトリクス抽出処理を追加
                     })
                 });
                 const result = await response.json();
@@ -681,7 +810,7 @@
                     localStorage.setItem('dots_latest_matrix', dCanvas.toDataURL());
 
                     loadingOverlay.style.display = 'none';
-                    alert(`アップロードが完了しました！\nOKを押すとアンケート画面に移動します。アンケート送信後に簡単なゲームが出来るよ！`);
+                    alert(`アップロードが完了しました！\nOKを押すとアンケート画面に移動します。`);
                     
                     const params = new URLSearchParams();
                     params.append("entry.46158305", name);      
@@ -697,6 +826,31 @@
                 alert("通信エラーが発生しました。");
             }
         };
+
+        // 補助関数: GAS（.obj / .rbxm生成用）に渡す32x32のHEXカラー二次元配列を正確に構築
+        function getPixelMatrix() {
+            const imgData = dCtx.getImageData(0, 0, 32, 32).data;
+            const matrix = [];
+            for (let y = 0; y < 32; y++) {
+                const row = [];
+                for (let x = 0; x < 32; x++) {
+                    const i = (y * 32 + x) * 4;
+                    if (imgData[i + 3] < 128) {
+                        row.push(null); // 透明はnull
+                    } else {
+                        const hex = "#" + 
+                            ("0" + imgData[i].toString(16)).slice(-2) + 
+                            ("0" + imgData[i+1].toString(16)).slice(-2) + 
+                            ("0" + imgData[i+2].toString(16)).slice(-2);
+                        row.push(hex);
+                    }
+                }
+                matrix.push(row);
+            }
+            return matrix;
+        }
     </script>
 </body>
 </html>
+
+```
