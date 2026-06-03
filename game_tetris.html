@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DOTS BLAST 3D - Special Edition</title>
+    <title>DOTS BLAST 3D - Balanced Edition</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
@@ -17,8 +17,7 @@
         }
         body {
             font-family: 'Segoe UI', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
+            background-color: var(--bg-color); color: var(--text-color);
             margin: 0; padding: 10px;
             display: flex; flex-direction: column; align-items: center;
             min-height: 100vh; user-select: none; -webkit-user-select: none; touch-action: none;
@@ -40,38 +39,43 @@
         }
         #threeCanvasContainer { width: 100%; height: 100%; }
 
-        /* 🕹️ レトロゲーム機風 コントローラーレイアウト */
+        /* 🕹️ レトロゲーム機風 コントローラー（下キー追加版） */
         .retro-controller {
-            width: 100%; max-width: 320px; margin-top: 12px;
+            width: 100%; max-width: 320px; margin-top: 10px;
             background: var(--panel-bg); border-radius: 20px;
-            padding: 15px 10px; box-sizing: border-box;
+            padding: 12px 8px; box-sizing: border-box;
             display: flex; justify-content: space-between; align-items: center;
             box-shadow: inset 0 4px 0 rgba(255,255,255,0.1), 0 6px 12px rgba(0,0,0,0.4);
             border: 2px solid #111;
         }
 
-        /* 左手側：十字キー（左右） */
-        .d-pad { display: flex; gap: 8px; align-items: center; }
+        /* 左手側：十字キー（逆T字型配置） */
+        .d-pad-container {
+            display: grid;
+            grid-template-columns: repeat(3, 46px);
+            grid-template-rows: repeat(2, 40px);
+            gap: 4px;
+        }
         .d-btn {
-            width: 54px; height: 50px; background: #2f3542;
-            border: none; border-radius: 10px; color: white;
-            box-shadow: 0 4px 0 #1e222b; cursor: pointer;
+            background: #2f3542; border: none; border-radius: 8px; color: white;
+            box-shadow: 0 3px 0 #1e222b; cursor: pointer;
             display: flex; align-items: center; justify-content: center;
         }
-        .d-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #1e222b; background: var(--primary-color); }
+        .d-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #1e222b; background: var(--primary-color); }
+        .btn-left { grid-column: 1; grid-row: 2; }
+        .btn-down { grid-column: 2; grid-row: 2; background: #57606f; } /* 下キーは少し色を変えて識別しやすく */
+        .btn-right { grid-column: 3; grid-row: 2; }
 
-        /*右手側：A/Bアクションボタン */
-        .action-pad { display: flex; gap: 12px; position: relative; top: -5px; }
+        /* 右手側：アクションボタン */
+        .action-pad { display: flex; gap: 10px; align-items: center; }
         .a-btn {
             width: 56px; height: 56px; border: none; border-radius: 50%;
             color: white; font-weight: bold; font-size: 0.75rem;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            cursor: pointer; box-shadow: 0 5px 0 #571717;
+            cursor: pointer;
         }
-        /* Bボタン風（落とす・空中起爆） */
         .btn-blue { background: #ff4757; box-shadow: 0 5px 0 #b3323c; }
         .btn-blue:active { transform: translateY(4px); box-shadow: 0 1px 0 #b3323c; }
-        /* Aボタン風（回転） */
         .btn-green { background: #2ed573; box-shadow: 0 5px 0 #219653; }
         .btn-green:active { transform: translateY(4px); box-shadow: 0 1px 0 #219653; }
         .a-btn .material-icons { font-size: 18px; margin-bottom: 2px; }
@@ -91,7 +95,7 @@
         <h1>DOTS BLAST 3D</h1>
         <div class="stats-row">
             <div class="stat-box">SCORE: <span id="scoreVal">0</span></div>
-            <div class="stat-box" id="gaugeBox">NEXT BOMB: <span id="gaugeVal">0</span>/50</div>
+            <div class="stat-box" id="gaugeBox">NEXT BOMB: <span id="gaugeVal">0</span>/100</div>
         </div>
     </div>
 
@@ -104,17 +108,23 @@
         </div>
     </div>
 
+    <!-- 🕹️ アップデートされたレトロコントローラーUI -->
     <div class="retro-controller">
-        <div class="d-pad">
-            <button class="d-btn" onclick="movePiece(-1,0)"><span class="material-icons">arrow_back</span></button>
-            <button class="d-btn" onclick="movePiece(1,0)"><span class="material-icons">arrow_forward</span></button>
+        <!-- 左手：逆T字型の十字キー（移動＆下加速） -->
+        <div class="d-pad-container">
+            <button class="d-btn btn-left" onclick="movePiece(-1,0)"><span class="material-icons">arrow_back</span></button>
+            <button class="d-btn btn-down" onclick="movePiece(0,1)"><span class="material-icons">arrow_downward</span></button>
+            <button class="d-btn btn-right" onclick="movePiece(1,0)"><span class="material-icons">arrow_forward</span></button>
         </div>
         
+        <!-- 右手：アクションボタン -->
         <div class="action-pad">
+            <!-- Bボタン：一気に落とす / 空中起爆 -->
             <button class="a-btn btn-blue" onclick="handleActionB()">
                 <span class="material-icons" id="actionBIcon">vertical_align_bottom</span>
                 <span id="actionBText">落とす</span>
             </button>
+            <!-- Aボタン：回転 -->
             <button class="a-btn btn-green" onclick="movePiece(0,0,true)">
                 <span class="material-icons">rotate_right</span>
                 <span>回転</span>
@@ -125,30 +135,26 @@
     <script>
         const COLS = 32;
         const ROWS = 40;
+        const GAUGE_MAX = 100; // スーパー爆弾の必要消去数を100に調整
 
         let scene, camera, renderer;
         let grid = []; 
         let meshes = []; 
         let score = 0;
-        let deletedCount = 0; // 累計消去数カウンター
+        let deletedCount = 0; 
         let isGameOver = false;
 
-        // 通常パーツ（紫）
         const SHAPES = [
-            [[1,1,1,1]], // I
-            [[1,1,1],[0,1,0]], // T
-            [[1,1,1],[1,0,0]], // L
-            [[1,1],[1,1]], // O
-            [[1,1,0],[0,1,1]]  // Z
+            [[1,1,1,1]], [[1,1,1],[0,1,0]], [[1,1,1],[1,0,0]], [[1,1],[1,1]], [[1,1,0],[0,1,1]]
         ];
         
-        const COLOR_NORMAL_PIECE = "#6c5ce7"; // 通常パーツ（紫）
-        const COLOR_SUPER_BOMB   = "#222222"; // 50個消去のスーパー爆弾（黒）
-        const COLOR_AIR_BOMB     = "#ff4757"; // 10%で降る空中起爆パーツ（赤）
+        const COLOR_NORMAL_PIECE = "#6c5ce7"; 
+        const COLOR_SUPER_BOMB   = "#222222"; 
+        const COLOR_AIR_BOMB     = "#ff4757"; 
 
         let currentPiece = { shape: [], x: 0, y: 0, type: 'normal', color: COLOR_NORMAL_PIECE };
         let dropInterval;
-        let particles = []; // 爆破エフェクト用オブジェクトの配列
+        let particles = []; 
 
         window.addEventListener('DOMContentLoaded', () => {
             initGame();
@@ -164,6 +170,7 @@
             isGameOver = false;
             document.getElementById('scoreVal').innerText = score;
             document.getElementById('gaugeVal').innerText = "0";
+            document.getElementById('gaugeBox').innerHTML = `NEXT BOMB: <span id="gaugeVal">0</span>/${GAUGE_MAX}`;
             document.getElementById('gameOverOverlay').style.display = 'none';
 
             grid = [];
@@ -171,7 +178,7 @@
                 grid[y] = new Array(COLS).fill(null);
             }
 
-            // テスト用：下部に自動でカラフルなドット絵を生成
+            // 初期ダミーアートの生成
             for (let y = 18; y < ROWS; y++) {
                 for (let x = 0; x < COLS; x++) {
                     let dist = Math.abs(x - 16);
@@ -210,7 +217,6 @@
         function drawFullGrid3D() {
             meshes.forEach(m => { if(m) scene.remove(m); });
             meshes = [];
-
             const geo = new THREE.BoxGeometry(0.92, 0.92, 0.92); 
 
             for (let y = 0; y < ROWS; y++) {
@@ -229,30 +235,26 @@
         }
 
         function spawnPiece() {
-            // UIテキストの初期化
             document.getElementById('actionBIcon').innerText = "vertical_align_bottom";
             document.getElementById('actionBText').innerText = "落とす";
 
-            // 1. 50個消去ボーナスがたまっている場合：黒い1マスパーツ
-            if (deletedCount >= 50) {
-                deletedCount -= 50;
+            // 100個消去でスーパー爆弾確定
+            if (deletedCount >= GAUGE_MAX) {
+                deletedCount -= GAUGE_MAX;
                 document.getElementById('gaugeVal').innerText = deletedCount;
                 
-                currentPiece.shape = [[1]]; // 1マス
+                currentPiece.shape = [[1]]; 
                 currentPiece.type = 'super';
                 currentPiece.color = COLOR_SUPER_BOMB;
             } 
-            // 2. 確率10%：赤い空中起爆パーツ（4マスO型固定）
+            // 10%の確率で赤い空中起爆パーツ
             else if (Math.random() < 0.10) {
-                currentPiece.shape = [[1,1],[1,1]]; // O型
+                currentPiece.shape = [[1,1],[1,1]]; 
                 currentPiece.type = 'air';
                 currentPiece.color = COLOR_AIR_BOMB;
-                
-                // ボタン表示を「起爆」に変更
                 document.getElementById('actionBIcon').innerText = "brightness_low";
                 document.getElementById('actionBText').innerText = "空中起爆";
             } 
-            // 3. 通常パーツ（紫）
             else {
                 const randIdx = Math.floor(Math.random() * SHAPES.length);
                 currentPiece.shape = SHAPES[randIdx];
@@ -287,7 +289,6 @@
         function updateActivePieceVisual() {
             activeMeshes.forEach(m => scene.remove(m));
             activeMeshes = [];
-
             const geo = new THREE.BoxGeometry(0.92, 0.92, 0.92);
             const mat = new THREE.MeshStandardMaterial({ color: new THREE.Color(currentPiece.color), roughness: 0.2 });
 
@@ -309,7 +310,7 @@
             let nextY = currentPiece.y + dy;
             let nextShape = currentPiece.shape;
 
-            if (rotate && currentPiece.type !== 'super') { // 1マスパーツは回転不要
+            if (rotate && currentPiece.type !== 'super') { 
                 nextShape = currentPiece.shape[0].map((val, index) => 
                     currentPiece.shape.map(row => row[index]).reverse()
                 );
@@ -325,13 +326,10 @@
             }
         }
 
-        // Bアクションボタンが押された時の処理の振り分け
         function handleActionB() {
             if (currentPiece.type === 'air') {
-                // 赤いパーツは「その場で空中起爆」
                 triggerExplosion(currentPiece.x + 1, currentPiece.y + 1, 4, true);
             } else {
-                // 通常時・黒パーツ時は「一気に落とす」
                 while (!checkCollision(currentPiece.x, currentPiece.y + 1, currentPiece.shape)) {
                     currentPiece.y++;
                 }
@@ -340,35 +338,29 @@
         }
 
         function lockPiece() {
-            // 1. 盤面への固定
             for (let r = 0; r < currentPiece.shape.length; r++) {
                 for (let c = 0; c < currentPiece.shape[r].length; c++) {
                     if (currentPiece.shape[r][c]) {
                         let targetY = currentPiece.y + r;
                         let targetX = currentPiece.x + c;
-                        if (targetY >= 0) {
-                            grid[targetY][targetX] = currentPiece.color;
-                        }
+                        if (targetY >= 0) grid[targetY][targetX] = currentPiece.color;
                     }
                 }
             }
 
-            // 2. タイプに応じた爆破半径・ターゲットの設定
-            let radius = 2; // 通常は周囲5x5（半径2）
+            let radius = 2;
             let includeNormalPieces = false;
 
             if (currentPiece.type === 'super') {
-                radius = 4; // 黒いスーパー爆弾は広範囲（9x9）
-                includeNormalPieces = true; // 紫のパーツ同士もすべて消去可能！
+                radius = 4; // 黒爆弾は広範囲
+                includeNormalPieces = true; 
             }
 
-            // 中心点を割り出して爆破実行
             let centerY = currentPiece.y + Math.floor(currentPiece.shape.length / 2);
             let centerX = currentPiece.x + Math.floor(currentPiece.shape[0].length / 2);
             triggerExplosion(centerX, centerY, radius, includeNormalPieces);
         }
 
-        // 💥 爆破処理コアシステム
         function triggerExplosion(centerX, centerY, radius, includeNormalPieces) {
             let explodedCount = 0;
 
@@ -376,25 +368,23 @@
                 for (let ex = centerX - radius; ex <= centerX + radius; ex++) {
                     if (ey >= 0 && ey < ROWS && ex >= 0 && ex < COLS) {
                         if (grid[ey][ex]) {
-                            // 通常パーツ(紫)を消せるかどうかの判定
-                            if (grid[ey][ex] === COLOR_NORMAL_PIECE && !includeNormalPieces) {
-                                continue; 
-                            }
+                            if (grid[ey][ex] === COLOR_NORMAL_PIECE && !includeNormalPieces) continue; 
 
-                            // 💥 四方に飛び散る3Dパーティクルを生成！
                             createExplosionParticles(ex + 0.5, -ey - 0.5, grid[ey][ex]);
-
-                            grid[ey][ex] = null; // 盤面から消去
+                            grid[ey][ex] = null; 
                             explodedCount++;
                         }
                     }
                 }
             }
 
-            // スコアとゲージの計算
             if (explodedCount > 0) {
                 score += explodedCount * 10;
-                deletedCount = Math.min(50, deletedCount + explodedCount); // 最大50までチャージ
+                
+                // 🌟【改善ポイント】スーパー爆弾自体の爆破のときは、次の爆弾へのゲージを増やさない！
+                if (currentPiece.type !== 'super') {
+                    deletedCount = Math.min(GAUGE_MAX, deletedCount + explodedCount);
+                }
                 
                 document.getElementById('scoreVal').innerText = score;
                 document.getElementById('gaugeVal').innerText = deletedCount;
@@ -404,48 +394,32 @@
             spawnPiece();
         }
 
-        // ✨ 3D弾ける爆破エフェクトの生成
         function createExplosionParticles(x, y, colorStr) {
             const particleGeo = new THREE.BoxGeometry(0.3, 0.3, 0.3);
             const particleMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(colorStr) });
-
-            // 1個のブロックにつき5個の飛び散る破片を生成
             for (let i = 0; i < 5; i++) {
                 const p = new THREE.Mesh(particleGeo, particleMat);
                 p.position.set(x, y, 0);
-                
-                // 初速度をランダムに設定（四方八方＆手前奥にも少し）
                 p.userData = {
                     vx: (Math.random() - 0.5) * 0.4,
-                    vy: (Math.random() - 0.5) * 0.4 + 0.2, // 少し上に噴き上がる
+                    vy: (Math.random() - 0.5) * 0.4 + 0.2, 
                     vz: (Math.random() - 0.5) * 0.2,
-                    life: 1.0 // 寿命
+                    life: 1.0 
                 };
-                
                 scene.add(p);
                 particles.push(p);
             }
         }
 
-        // パーティクルの毎フレーム位置・寿命更新
         function updateParticles() {
             for (let i = particles.length - 1; i >= 0; i--) {
                 const p = particles[i];
-                p.position.x += p.userData.vx;
-                p.position.y += p.userData.vy;
-                p.position.z += p.userData.vz;
-                
-                // 重力の影響で少しずつ下に落ちる
+                p.position.x += p.userData.vx; p.position.y += p.userData.vy; p.position.z += p.userData.vz;
                 p.userData.vy -= 0.015;
-                
-                // フェードアウト（縮小）
                 p.userData.life -= 0.04;
                 p.scale.set(p.userData.life, p.userData.life, p.userData.life);
-
                 if (p.userData.life <= 0) {
-                    scene.remove(p);
-                    p.geometry.dispose();
-                    p.material.dispose();
+                    scene.remove(p); p.geometry.dispose(); p.material.dispose();
                     particles.splice(i, 1);
                 }
             }
@@ -453,9 +427,7 @@
 
         function startTimer() {
             if (dropInterval) clearInterval(dropInterval);
-            dropInterval = setInterval(() => {
-                movePiece(0, 1);
-            }, 800);
+            dropInterval = setInterval(() => { movePiece(0, 1); }, 800);
         }
 
         function endGame() {
@@ -466,25 +438,21 @@
         }
 
         function resetGame() {
-            initGame();
-            drawFullGrid3D();
-            spawnPiece();
-            startTimer();
+            initGame(); drawFullGrid3D(); spawnPiece(); startTimer();
         }
 
         function animate() {
             requestAnimationFrame(animate);
-            updateParticles(); // エフェクトの更新
+            updateParticles();
             renderer.render(scene, camera);
         }
 
-        // PCキーボード用（テストプレイがしやすいようにバインド）
         window.addEventListener('keydown', (e) => {
             if (isGameOver) return;
             switch(e.key) {
                 case 'ArrowLeft':  movePiece(-1, 0); break;
                 case 'ArrowRight': movePiece(1, 0); break;
-                case 'ArrowDown':  movePiece(0, 1); break;
+                case 'ArrowDown':  movePiece(0, 1); break; // PCでも下キーで1マス早める
                 case 'ArrowUp':    movePiece(0, 0, true); break; 
                 case ' ':          handleActionB(); break; 
             }
