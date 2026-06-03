@@ -3,126 +3,96 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DOTS BLAST 3D - 特典パズルゲーム</title>
+    <title>DOTS BLAST 3D - Special Edition</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         :root {
             --primary-color: #6c5ce7;
-            --bg-color: #1a1a1a;
-            --card-bg: #2d2d2d;
+            --bg-color: #1a1a2e;
+            --card-bg: #161625;
             --accent-color: #ff7675;
             --text-color: #ffffff;
+            --panel-bg: #222546;
         }
         body {
             font-family: 'Segoe UI', sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
-            margin: 0;
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-            user-select: none;
-            -webkit-user-select: none;
-            touch-action: none;
+            margin: 0; padding: 10px;
+            display: flex; flex-direction: column; align-items: center;
+            min-height: 100vh; user-select: none; -webkit-user-select: none; touch-action: none;
         }
-        .header {
-            text-align: center;
-            margin-bottom: 5px;
+        .header { text-align: center; margin-bottom: 2px; }
+        h1 { font-size: 1.1rem; margin: 0; color: #00f5d4; font-weight: 900; letter-spacing: 1px; }
+        
+        .stats-row { display: flex; gap: 10px; margin: 4px 0; }
+        .stat-box {
+            font-size: 0.8rem; font-weight: bold; background: var(--card-bg);
+            padding: 4px 12px; border-radius: 15px; border: 2px solid #333;
         }
-        h1 { font-size: 1.2rem; margin: 0; color: #55efc4; font-weight: 900; letter-spacing: 1px; }
-        .score-container {
-            font-size: 1rem;
-            font-weight: bold;
-            background: var(--card-bg);
-            padding: 5px 15px;
-            border-radius: 20px;
-            margin: 5px 0;
-            border: 2px solid #444;
-        }
+        
         #gameContainer {
-            position: relative;
-            width: 100%;
-            max-width: 340px;
-            aspect-ratio: 32 / 40; /* 横32マス、縦40マスの比率 */
-            background: #000;
-            border: 4px solid var(--card-bg);
-            border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-            overflow: hidden;
+            position: relative; width: 100%; max-width: 320px;
+            aspect-ratio: 32 / 40; background: #05050a;
+            border: 4px solid #333; border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.6); overflow: hidden;
         }
-        #threeCanvasContainer {
-            width: 100%;
-            height: 100%;
+        #threeCanvasContainer { width: 100%; height: 100%; }
+
+        /* 🕹️ レトロゲーム機風 コントローラーレイアウト */
+        .retro-controller {
+            width: 100%; max-width: 320px; margin-top: 12px;
+            background: var(--panel-bg); border-radius: 20px;
+            padding: 15px 10px; box-sizing: border-box;
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: inset 0 4px 0 rgba(255,255,255,0.1), 0 6px 12px rgba(0,0,0,0.4);
+            border: 2px solid #111;
         }
-        /* スマホ用操作コントローラー */
-        .controls {
-            width: 100%;
-            max-width: 340px;
-            margin-top: 10px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
+
+        /* 左手側：十字キー（左右） */
+        .d-pad { display: flex; gap: 8px; align-items: center; }
+        .d-btn {
+            width: 54px; height: 50px; background: #2f3542;
+            border: none; border-radius: 10px; color: white;
+            box-shadow: 0 4px 0 #1e222b; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
         }
-        .control-row {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
+        .d-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #1e222b; background: var(--primary-color); }
+
+        /*右手側：A/Bアクションボタン */
+        .action-pad { display: flex; gap: 12px; position: relative; top: -5px; }
+        .a-btn {
+            width: 56px; height: 56px; border: none; border-radius: 50%;
+            color: white; font-weight: bold; font-size: 0.75rem;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            cursor: pointer; box-shadow: 0 5px 0 #571717;
         }
-        .btn {
-            flex: 1;
-            height: 50px;
-            background: var(--card-bg);
-            border: 2px solid #444;
-            color: #fff;
-            border-radius: 12px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            transition: background 0.1s;
-        }
-        .btn:active {
-            background: var(--primary-color);
-        }
-        .btn-rotate {
-            background: #4b6584;
-        }
+        /* Bボタン風（落とす・空中起爆） */
+        .btn-blue { background: #ff4757; box-shadow: 0 5px 0 #b3323c; }
+        .btn-blue:active { transform: translateY(4px); box-shadow: 0 1px 0 #b3323c; }
+        /* Aボタン風（回転） */
+        .btn-green { background: #2ed573; box-shadow: 0 5px 0 #219653; }
+        .btn-green:active { transform: translateY(4px); box-shadow: 0 1px 0 #219653; }
+        .a-btn .material-icons { font-size: 18px; margin-bottom: 2px; }
+
         #gameOverOverlay {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85);
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 100;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); display: none;
+            flex-direction: column; align-items: center; justify-content: center; z-index: 100;
         }
-        .game-over-title {
-            color: var(--accent-color);
-            font-size: 2rem;
-            font-weight: 900;
-            margin-bottom: 10px;
-        }
-        .btn-restart {
-            padding: 10px 20px;
-            background: var(--primary-color);
-            border: none;
-            color: white;
-            border-radius: 8px;
-            font-weight: bold;
-            font-size: 1rem;
-        }
+        .game-over-title { color: var(--accent-color); font-size: 1.8rem; font-weight: 900; margin-bottom: 10px; }
+        .btn-restart { padding: 10px 20px; background: var(--primary-color); border: none; color: white; border-radius: 8px; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div class="header">
         <h1>DOTS BLAST 3D</h1>
-        <div class="score-container">SCORE: <span id="scoreVal">0</span></div>
+        <div class="stats-row">
+            <div class="stat-box">SCORE: <span id="scoreVal">0</span></div>
+            <div class="stat-box" id="gaugeBox">NEXT BOMB: <span id="gaugeVal">0</span>/50</div>
+        </div>
     </div>
 
     <div id="gameContainer">
@@ -130,37 +100,40 @@
         <div id="gameOverOverlay">
             <div class="game-over-title">GAME OVER</div>
             <p id="finalScore" style="margin-bottom: 20px;"></p>
-            <button class="btn-restart" onclick="resetGame()">もう一度遊ぶ</button>
+            <button class="btn-restart" onclick="resetGame()">RETRY</button>
         </div>
     </div>
 
-    <div class="controls">
-        <div class="control-row">
-            <button class="btn btn-rotate" onclick="movePiece(0,0,true)"><span class="material-icons">rotate_right</span>回転</button>
+    <div class="retro-controller">
+        <div class="d-pad">
+            <button class="d-btn" onclick="movePiece(-1,0)"><span class="material-icons">arrow_back</span></button>
+            <button class="d-btn" onclick="movePiece(1,0)"><span class="material-icons">arrow_forward</span></button>
         </div>
-        <div class="control-row">
-            <button class="btn" onclick="movePiece(-1,0)"><span class="material-icons">arrow_back</span>左</button>
-            <button class="btn" onclick="movePiece(0,1)"><span class="material-icons">arrow_downward</span>下</button>
-            <button class="btn" onclick="movePiece(1,0)"><span class="material-icons">arrow_forward</span>右</button>
-        </div>
-        <div class="control-row">
-            <button class="btn" onclick="dropInstant()" style="background: #20bf6b;"><span class="material-icons">vertical_align_bottom</span>一気に落とす</button>
+        
+        <div class="action-pad">
+            <button class="a-btn btn-blue" onclick="handleActionB()">
+                <span class="material-icons" id="actionBIcon">vertical_align_bottom</span>
+                <span id="actionBText">落とす</span>
+            </button>
+            <button class="a-btn btn-green" onclick="movePiece(0,0,true)">
+                <span class="material-icons">rotate_right</span>
+                <span>回転</span>
+            </button>
         </div>
     </div>
 
     <script>
-        // ゲーム盤面サイズ：横32マス、縦40マス（下部32マス分に作品が最初から配置される）
         const COLS = 32;
         const ROWS = 40;
-        const BLOCK_SIZE = 1;
 
         let scene, camera, renderer;
-        let grid = []; // 盤面の状態（色のHEX文字列、空はnull）
-        let meshes = []; // 盤面の3Dメッシュを管理する二次元配列
+        let grid = []; 
+        let meshes = []; 
         let score = 0;
+        let deletedCount = 0; // 累計消去数カウンター
         let isGameOver = false;
 
-        // 落下するテトリスパーツ（ミノ）の定義
+        // 通常パーツ（紫）
         const SHAPES = [
             [[1,1,1,1]], // I
             [[1,1,1],[0,1,0]], // T
@@ -168,15 +141,14 @@
             [[1,1],[1,1]], // O
             [[1,1,0],[0,1,1]]  // Z
         ];
-        const PIECE_COLOR = "#6c5ce7"; // 落下パーツの色
+        
+        const COLOR_NORMAL_PIECE = "#6c5ce7"; // 通常パーツ（紫）
+        const COLOR_SUPER_BOMB   = "#222222"; // 50個消去のスーパー爆弾（黒）
+        const COLOR_AIR_BOMB     = "#ff4757"; // 10%で降る空中起爆パーツ（赤）
 
-        let currentPiece = {
-            shape: [],
-            x: 0,
-            y: 0
-        };
-
+        let currentPiece = { shape: [], x: 0, y: 0, type: 'normal', color: COLOR_NORMAL_PIECE };
         let dropInterval;
+        let particles = []; // 爆破エフェクト用オブジェクトの配列
 
         window.addEventListener('DOMContentLoaded', () => {
             initGame();
@@ -186,30 +158,24 @@
             startTimer();
         });
 
-        // 1. 盤面配列の初期化とドット絵の読み込み
         function initGame() {
             score = 0;
+            deletedCount = 0;
             isGameOver = false;
             document.getElementById('scoreVal').innerText = score;
+            document.getElementById('gaugeVal').innerText = "0";
             document.getElementById('gameOverOverlay').style.display = 'none';
 
-            // 空の盤面（40行×32列）を作成
             grid = [];
             for (let y = 0; y < ROWS; y++) {
                 grid[y] = new Array(COLS).fill(null);
             }
 
-            // ローカルストレージから直近のドット絵（32x32）の復元を試みる
-            // ※本来は matrix データを直接引き渡すか、隠しキャンバスに一度描画して解析します。
-            // ここでは簡易的に、下部（y: 8〜39行目）に作品を配置します。
-            
-            // テスト用：データがない場合は、真ん中に山のようなダミーアートを配置（イレギュラーな形）
-            for (let y = 15; y < ROWS; y++) {
+            // テスト用：下部に自動でカラフルなドット絵を生成
+            for (let y = 18; y < ROWS; y++) {
                 for (let x = 0; x < COLS; x++) {
-                    // 中心に近いほど高くなるような擬似的なドット絵アート
-                    let distFromCenter = Math.abs(x - 16);
-                    if (ROWS - y > distFromCenter - 4) {
-                        // ランダムでカラフルなドット（DOTSをイメージ）
+                    let dist = Math.abs(x - 16);
+                    if (ROWS - y > dist - 3) {
                         const colors = ["#ff7675", "#74b9ff", "#a29bfe", "#ffeaa7", "#55efc4"];
                         grid[y][x] = colors[Math.floor(Math.sin(x*y)*5 + 5) % colors.length];
                     }
@@ -217,51 +183,43 @@
             }
         }
 
-        // 2. Three.js による3D空間のセットアップ
         function initThree() {
             const container = document.getElementById('threeCanvasContainer');
             const rect = container.getBoundingClientRect();
 
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x111111);
+            scene.background = new THREE.Color(0x0a0a14);
 
-            // カメラ配置：盤面全体（横32×縦40）が綺麗に収まるように調整
             camera = new THREE.PerspectiveCamera(60, rect.width / rect.height, 0.1, 1000);
-            camera.position.set(COLS / 2, -ROWS / 2, 32); // 正面から見据える位置
+            camera.position.set(COLS / 2, -ROWS / 2, 33); 
             camera.lookAt(COLS / 2, -ROWS / 2, 0);
 
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(rect.width, rect.height);
+            container.innerHTML = ""; 
             container.appendChild(renderer.domElement);
 
-            // 照明
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
-            scene.add(ambientLight);
-            const dirLight = new THREE.DirectionalLight(0xffffff, 0.4);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.75));
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.3);
             dirLight.position.set(10, 20, 20);
             scene.add(dirLight);
 
-            // 初期の盤面ブロック（作品）の3D化
             drawFullGrid3D();
         }
 
-        // 盤面全体をスキャンして3Dブロックを再配置する
         function drawFullGrid3D() {
-            // 既存のメッシュをすべて削除
             meshes.forEach(m => { if(m) scene.remove(m); });
             meshes = [];
 
-            const geo = new THREE.BoxGeometry(0.95, 0.95, 0.95); // 隙間を少しあけてドット感を強調
+            const geo = new THREE.BoxGeometry(0.92, 0.92, 0.92); 
 
             for (let y = 0; y < ROWS; y++) {
                 for (let x = 0; x < COLS; x++) {
                     if (grid[y][x]) {
                         const mat = new THREE.MeshStandardMaterial({
-                            color: new THREE.Color(grid[y][x]),
-                            roughness: 0.3
+                            color: new THREE.Color(grid[y][x]), roughness: 0.3
                         });
                         const mesh = new THREE.Mesh(geo, mat);
-                        // Three.jsの座標系（Xは右方向正、Yは上方向正なのでマイナスにする）
                         mesh.position.set(x + 0.5, -y - 0.5, 0);
                         scene.add(mesh);
                         meshes.push(mesh);
@@ -270,48 +228,68 @@
             }
         }
 
-        // 3. パズルゲームのコアロジック
         function spawnPiece() {
-            const randIdx = Math.floor(Math.random() * SHAPES.length);
-            currentPiece.shape = SHAPES[randIdx];
+            // UIテキストの初期化
+            document.getElementById('actionBIcon').innerText = "vertical_align_bottom";
+            document.getElementById('actionBText').innerText = "落とす";
+
+            // 1. 50個消去ボーナスがたまっている場合：黒い1マスパーツ
+            if (deletedCount >= 50) {
+                deletedCount -= 50;
+                document.getElementById('gaugeVal').innerText = deletedCount;
+                
+                currentPiece.shape = [[1]]; // 1マス
+                currentPiece.type = 'super';
+                currentPiece.color = COLOR_SUPER_BOMB;
+            } 
+            // 2. 確率10%：赤い空中起爆パーツ（4マスO型固定）
+            else if (Math.random() < 0.10) {
+                currentPiece.shape = [[1,1],[1,1]]; // O型
+                currentPiece.type = 'air';
+                currentPiece.color = COLOR_AIR_BOMB;
+                
+                // ボタン表示を「起爆」に変更
+                document.getElementById('actionBIcon').innerText = "brightness_low";
+                document.getElementById('actionBText').innerText = "空中起爆";
+            } 
+            // 3. 通常パーツ（紫）
+            else {
+                const randIdx = Math.floor(Math.random() * SHAPES.length);
+                currentPiece.shape = SHAPES[randIdx];
+                currentPiece.type = 'normal';
+                currentPiece.color = COLOR_NORMAL_PIECE;
+            }
+
             currentPiece.x = Math.floor(COLS / 2) - Math.floor(currentPiece.shape[0].length / 2);
-            currentPiece.y = 0; // 最上部からスタート
+            currentPiece.y = 0;
 
             if (checkCollision(currentPiece.x, currentPiece.y, currentPiece.shape)) {
-                // 出現直後に衝突＝ゲームオーバー
                 endGame();
             }
             updateActivePieceVisual();
         }
 
-        // 衝突判定（壁・床、および固定済みブロックとの判定）
         function checkCollision(nextX, nextY, shape) {
             for (let r = 0; r < shape.length; r++) {
                 for (let c = 0; c < shape[r].length; c++) {
                     if (shape[r][c]) {
                         let targetX = nextX + c;
                         let targetY = nextY + r;
-
-                        if (targetX < 0 || targetX >= COLS || targetY >= ROWS) {
-                            return true;
-                        }
-                        if (targetY >= 0 && grid[targetY][targetX]) {
-                            return true; // 既存のブロック（作品含む）に衝突
-                        }
+                        if (targetX < 0 || targetX >= COLS || targetY >= ROWS) return true;
+                        if (targetY >= 0 && grid[targetY][targetX]) return true; 
                     }
                 }
             }
             return false;
         }
 
-        // 現在落下中のパーツの一時表示用3Dオブジェクト
         let activeMeshes = [];
         function updateActivePieceVisual() {
             activeMeshes.forEach(m => scene.remove(m));
             activeMeshes = [];
 
-            const geo = new THREE.BoxGeometry(0.95, 0.95, 0.95);
-            const mat = new THREE.MeshStandardMaterial({ color: new THREE.Color(PIECE_COLOR), roughness: 0.2 });
+            const geo = new THREE.BoxGeometry(0.92, 0.92, 0.92);
+            const mat = new THREE.MeshStandardMaterial({ color: new THREE.Color(currentPiece.color), roughness: 0.2 });
 
             for (let r = 0; r < currentPiece.shape.length; r++) {
                 for (let c = 0; c < currentPiece.shape[r].length; c++) {
@@ -325,16 +303,13 @@
             }
         }
 
-        // パーツの移動・回転制御
         function movePiece(dx, dy, rotate = false) {
             if (isGameOver) return;
-            
             let nextX = currentPiece.x + dx;
             let nextY = currentPiece.y + dy;
             let nextShape = currentPiece.shape;
 
-            if (rotate) {
-                // 行列の回転（時計回り）
+            if (rotate && currentPiece.type !== 'super') { // 1マスパーツは回転不要
                 nextShape = currentPiece.shape[0].map((val, index) => 
                     currentPiece.shape.map(row => row[index]).reverse()
                 );
@@ -346,78 +321,141 @@
                 currentPiece.shape = nextShape;
                 updateActivePieceVisual();
             } else if (dy > 0) {
-                // 下に移動しようとして衝突した場合は「着地固定」
                 lockPiece();
             }
         }
 
-        function dropInstant() {
-            while (!checkCollision(currentPiece.x, currentPiece.y + 1, currentPiece.shape)) {
-                currentPiece.y++;
+        // Bアクションボタンが押された時の処理の振り分け
+        function handleActionB() {
+            if (currentPiece.type === 'air') {
+                // 赤いパーツは「その場で空中起爆」
+                triggerExplosion(currentPiece.x + 1, currentPiece.y + 1, 4, true);
+            } else {
+                // 通常時・黒パーツ時は「一気に落とす」
+                while (!checkCollision(currentPiece.x, currentPiece.y + 1, currentPiece.shape)) {
+                    currentPiece.y++;
+                }
+                lockPiece();
             }
-            lockPiece();
         }
 
-        // 🌟 【重要】着地時の爆破消去ロジック（おすすめルール）
         function lockPiece() {
-            // 1. パーツを盤面配列に固定
+            // 1. 盤面への固定
             for (let r = 0; r < currentPiece.shape.length; r++) {
                 for (let c = 0; c < currentPiece.shape[r].length; c++) {
                     if (currentPiece.shape[r][c]) {
                         let targetY = currentPiece.y + r;
                         let targetX = currentPiece.x + c;
                         if (targetY >= 0) {
-                            grid[targetY][targetX] = PIECE_COLOR;
+                            grid[targetY][targetX] = currentPiece.color;
                         }
                     }
                 }
             }
 
-            // 2. 💣 爆破・巻き込み判定
-            // パーツの各構成ドットの「周囲5×5マス」にある作品ブロックを巻き込んで爆破回収！
+            // 2. タイプに応じた爆破半径・ターゲットの設定
+            let radius = 2; // 通常は周囲5x5（半径2）
+            let includeNormalPieces = false;
+
+            if (currentPiece.type === 'super') {
+                radius = 4; // 黒いスーパー爆弾は広範囲（9x9）
+                includeNormalPieces = true; // 紫のパーツ同士もすべて消去可能！
+            }
+
+            // 中心点を割り出して爆破実行
+            let centerY = currentPiece.y + Math.floor(currentPiece.shape.length / 2);
+            let centerX = currentPiece.x + Math.floor(currentPiece.shape[0].length / 2);
+            triggerExplosion(centerX, centerY, radius, includeNormalPieces);
+        }
+
+        // 💥 爆破処理コアシステム
+        function triggerExplosion(centerX, centerY, radius, includeNormalPieces) {
             let explodedCount = 0;
-            for (let r = 0; r < currentPiece.shape.length; r++) {
-                for (let c = 0; c < currentPiece.shape[r].length; c++) {
-                    if (currentPiece.shape[r][c]) {
-                        let centerY = currentPiece.y + r;
-                        let centerX = currentPiece.x + c;
 
-                        // 周囲2マス（5×5のエリア）をスキャン
-                        for (let ey = centerY - 2; ey <= centerY + 2; ey++) {
-                            for (let ex = centerX - 2; ex <= centerX + 2; ex++) {
-                                if (ey >= 0 && ey < ROWS && ex >= 0 && ex < COLS) {
-                                    // 空ではなく、かつ自分で落としたパーツ(PIECE_COLOR)以外の色（＝ユーザーの作品）があれば消去
-                                    if (grid[ey][ex] && grid[ey][ex] !== PIECE_COLOR) {
-                                        grid[ey][ex] = null; // 消去！
-                                        explodedCount++;
-                                    }
-                                }
+            for (let ey = centerY - radius; ey <= centerY + radius; ey++) {
+                for (let ex = centerX - radius; ex <= centerX + radius; ex++) {
+                    if (ey >= 0 && ey < ROWS && ex >= 0 && ex < COLS) {
+                        if (grid[ey][ex]) {
+                            // 通常パーツ(紫)を消せるかどうかの判定
+                            if (grid[ey][ex] === COLOR_NORMAL_PIECE && !includeNormalPieces) {
+                                continue; 
                             }
+
+                            // 💥 四方に飛び散る3Dパーティクルを生成！
+                            createExplosionParticles(ex + 0.5, -ey - 0.5, grid[ey][ex]);
+
+                            grid[ey][ex] = null; // 盤面から消去
+                            explodedCount++;
                         }
                     }
                 }
             }
 
-            // スコア加算（作品を消すほど高得点）
+            // スコアとゲージの計算
             if (explodedCount > 0) {
                 score += explodedCount * 10;
+                deletedCount = Math.min(50, deletedCount + explodedCount); // 最大50までチャージ
+                
                 document.getElementById('scoreVal').innerText = score;
-                // 特典ゲームらしいエフェクト効果の代わりにフラッシュ的な全描画更新
+                document.getElementById('gaugeVal').innerText = deletedCount;
             }
 
-            // 盤面全体の3D表示をリフレッシュ
             drawFullGrid3D();
-
-            // 次のパーツへ
             spawnPiece();
         }
 
-        // ゲームループのタイマー開始
+        // ✨ 3D弾ける爆破エフェクトの生成
+        function createExplosionParticles(x, y, colorStr) {
+            const particleGeo = new THREE.BoxGeometry(0.3, 0.3, 0.3);
+            const particleMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(colorStr) });
+
+            // 1個のブロックにつき5個の飛び散る破片を生成
+            for (let i = 0; i < 5; i++) {
+                const p = new THREE.Mesh(particleGeo, particleMat);
+                p.position.set(x, y, 0);
+                
+                // 初速度をランダムに設定（四方八方＆手前奥にも少し）
+                p.userData = {
+                    vx: (Math.random() - 0.5) * 0.4,
+                    vy: (Math.random() - 0.5) * 0.4 + 0.2, // 少し上に噴き上がる
+                    vz: (Math.random() - 0.5) * 0.2,
+                    life: 1.0 // 寿命
+                };
+                
+                scene.add(p);
+                particles.push(p);
+            }
+        }
+
+        // パーティクルの毎フレーム位置・寿命更新
+        function updateParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.position.x += p.userData.vx;
+                p.position.y += p.userData.vy;
+                p.position.z += p.userData.vz;
+                
+                // 重力の影響で少しずつ下に落ちる
+                p.userData.vy -= 0.015;
+                
+                // フェードアウト（縮小）
+                p.userData.life -= 0.04;
+                p.scale.set(p.userData.life, p.userData.life, p.userData.life);
+
+                if (p.userData.life <= 0) {
+                    scene.remove(p);
+                    p.geometry.dispose();
+                    p.material.dispose();
+                    particles.splice(i, 1);
+                }
+            }
+        }
+
         function startTimer() {
             if (dropInterval) clearInterval(dropInterval);
             dropInterval = setInterval(() => {
                 movePiece(0, 1);
-            }, 800); // 0.8秒ごとに自動落下
+            }, 800);
         }
 
         function endGame() {
@@ -434,22 +472,21 @@
             startTimer();
         }
 
-        // 4. Three.jsのレンダリングループ
         function animate() {
             requestAnimationFrame(animate);
-            // 落下アニメーションなどをスムーズに見せるため毎フレームレンダリング
+            updateParticles(); // エフェクトの更新
             renderer.render(scene, camera);
         }
 
-        // PC用キーボード操作のバインド
+        // PCキーボード用（テストプレイがしやすいようにバインド）
         window.addEventListener('keydown', (e) => {
             if (isGameOver) return;
             switch(e.key) {
                 case 'ArrowLeft':  movePiece(-1, 0); break;
                 case 'ArrowRight': movePiece(1, 0); break;
                 case 'ArrowDown':  movePiece(0, 1); break;
-                case 'ArrowUp':    movePiece(0, 0, true); break; // 上キーで回転
-                case ' ':          dropInstant(); break; // スペースで即落下
+                case 'ArrowUp':    movePiece(0, 0, true); break; 
+                case ' ':          handleActionB(); break; 
             }
         });
     </script>
