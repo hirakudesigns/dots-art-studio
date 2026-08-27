@@ -722,24 +722,34 @@
         }
 
         function magicConvert() {
-            const tempCanvas = document.createElement('canvas'); tempCanvas.width = tempCanvas.height = 32;
-            const tCtx = tempCanvas.getContext('2d');
-            tCtx.imageSmoothingEnabled = false; tCtx.drawImage(sCanvas, 0, 0, 32, 32);
-            
-            const imgData = tCtx.getImageData(0, 0, 32, 32); const data = imgData.data;
-            for (let i = 0; i < data.length; i += 4) {
-                let r = data[i], g = data[i + 1], b = data[i + 2], alpha = data[i + 3];
-                if (alpha > 40) { 
-                    data[i + 3] = 255; const avg = (r + g + b) / 3;
-                    const isGrayScale = Math.max(r, g, b) - Math.min(r, g, b) < 25; 
-                    if (avg > 180 && isGrayScale) { data[i + 3] = 0; }
-                } else { data[i + 3] = 0; }
-            }
-            dCtx.clearRect(0, 0, 32, 32); dCtx.putImageData(imgData, 0, 0);
-            
-            syncCurrentDotToStore();
-            saveHistory(3); autoSaveToStorage(); switchStep(3);
+    const tempCanvas = document.createElement('canvas'); 
+    tempCanvas.width = tempCanvas.height = 32;
+    const tCtx = tempCanvas.getContext('2d');
+    tCtx.imageSmoothingEnabled = false; 
+    tCtx.drawImage(sCanvas, 0, 0, 32, 32);
+    
+    const imgData = tCtx.getImageData(0, 0, 32, 32); 
+    const data = imgData.data;
+
+    for (let i = 0; i < data.length; i += 4) {
+        let alpha = data[i + 3];
+        
+        // 描画されている部分（不透明度が一定以上のピクセル）はすべてそのままドット化
+        if (alpha > 40) { 
+            data[i + 3] = 255; // 不透明にして色を保持（白もそのまま保持されます）
+        } else { 
+            data[i + 3] = 0;   // 未描画領域のみ透明化
         }
+    }
+    
+    dCtx.clearRect(0, 0, 32, 32); 
+    dCtx.putImageData(imgData, 0, 0);
+    
+    syncCurrentDotToStore();
+    saveHistory(3); 
+    autoSaveToStorage(); 
+    switchStep(3);
+}
 
         function executeCanvasBucket(ctx, startX, startY, fillHex, width, height) {
             const imageData = ctx.getImageData(0, 0, width, height), data = imageData.data;
