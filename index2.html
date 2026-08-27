@@ -21,7 +21,6 @@
         .header-logo { height: 24px; width: auto; }
         h1 { margin: 0; font-size: 1rem; color: #333; font-weight: 800; }
         
-        /* 🛠️①・② 部位表示バッジ */
         .part-indicator-bar {
             width: 100%; max-width: 500px; background: #dfe6e9; border-radius: 8px; padding: 6px 12px; margin-bottom: 8px; box-sizing: border-box;
             display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; font-weight: bold; color: #2d3436;
@@ -53,10 +52,7 @@
         #sketchCanvas { z-index: 2; background: transparent; }
         #dotCanvas { z-index: 3; image-rendering: pixelated; width: 100%; height: 100%; display: none; }
         #gridCanvas { z-index: 10; position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; }
-        
-        /* 🛠️③ 接合部ガイド用キャンバス */
         #jointGuideCanvas { z-index: 9; position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; }
-
         #threeContainer { z-index: 4; position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; }
         
         #bgLayer { z-index: 1; position:absolute; top:0; left:0; width:100%; height:100%; display: none; overflow: hidden; pointer-events: none; }
@@ -82,7 +78,6 @@
         .control-panel.active { display: flex; }
         .section-label { font-size: 0.65rem; color: #a1a1a1; font-weight: bold; text-transform: uppercase; margin-bottom: -5px; }
         .row { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; align-items: center; }
-        
         .tool-row-compact { display: flex; justify-content: space-between; align-items: center; gap: 4px; width: 100%; box-sizing: border-box; }
 
         .btn { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; border-radius: 10px; background: #f1f2f6; color: #57606f; padding: 0; box-sizing: border-box; }
@@ -95,7 +90,6 @@
 
         .color-picker-wrapper { width: 44px; height: 44px; border-radius: 10px; overflow: hidden; position: relative; border: 2px solid #ddd; box-sizing: border-box; cursor: pointer; }
         .color-picker-wrapper input[type="color"] { position: absolute; top: -10px; left: -10px; width: 64px; height: 64px; border: none; padding: 0; margin: 0; cursor: pointer; background: none; }
-        
         .color-picker-wrapper-compact { width: 38px; height: 38px; border-radius: 8px; flex-shrink: 0; }
 
         .btn-magic { background: linear-gradient(135deg, #6c5ce7, #a29bfe); color: white; height: 55px; font-weight: 900; border-radius: 15px; border: none; cursor: pointer; width: 100%; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(108, 92, 231, 0.4); display: flex; align-items: center; justify-content: center; gap: 8px; }
@@ -108,7 +102,6 @@
         .palette-item { display: flex; align-items: center; background: #f1f2f6; border-radius: 6px; padding: 2px 4px; gap: 4px; }
         .color-chip { width: 20px; height: 20px; border-radius: 4px; border: 1px solid #ccc; cursor: pointer; }
 
-        /* 🛠️ モーダル用スタイル (①パーツ選択モーダル & ④合体プレビュー) */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.6); z-index: 3000; display: none;
@@ -122,6 +115,8 @@
         }
         .modal-title { font-size: 1.1rem; font-weight: 800; color: #2d3436; margin: 0; }
         .modal-sub { font-size: 0.8rem; color: #636e72; margin-top: -8px; }
+        
+        /* 🛠️① 配置グリッド（左：中央列、右：サイド列） */
         .part-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; width: 100%; }
         .part-opt-btn {
             background: #f1f2f6; border: 2px solid #dfe6e9; border-radius: 12px; padding: 12px 8px;
@@ -145,26 +140,28 @@
         <div class="loading-text">パーツをアップロード中...</div>
     </div>
 
-    <!-- 🛠️① パーツ選択モーダル -->
+    <!-- 🛠️① 並び順を変更したパーツ選択モーダル -->
     <div class="modal-overlay" id="partSelectModal">
         <div class="modal-card">
             <h2 class="modal-title">作るパーツを選ぼう！</h2>
             <p class="modal-sub">作成するモンスターのパーツを1つ選択してね</p>
             <div class="part-grid">
+                <!-- 左列：中央軸パーツ -->
                 <button class="part-opt-btn" onclick="selectPartType('head')">
                     <span class="material-icons">face</span> 頭部 (Head)
+                </button>
+                <!-- 右列：サイドパーツ -->
+                <button class="part-opt-btn" onclick="selectPartType('top_side')">
+                    <span class="material-icons">north_east</span> 上サイド (Top Side)
                 </button>
                 <button class="part-opt-btn" onclick="selectPartType('body')">
                     <span class="material-icons">checkroom</span> 体 (Body)
                 </button>
-                <button class="part-opt-btn" onclick="selectPartType('legs')">
-                    <span class="material-icons">hiking</span> 足 (Legs)
-                </button>
-                <button class="part-opt-btn" onclick="selectPartType('top_side')">
-                    <span class="material-icons">north_east</span> 上サイド (Top Side)
-                </button>
                 <button class="part-opt-btn" onclick="selectPartType('mid_side')">
                     <span class="material-icons">east</span> 中サイド (Mid Side)
+                </button>
+                <button class="part-opt-btn" onclick="selectPartType('legs')">
+                    <span class="material-icons">hiking</span> 足 (Legs)
                 </button>
                 <button class="part-opt-btn" onclick="selectPartType('bot_side')">
                     <span class="material-icons">south_east</span> 下サイド (Bot Side)
@@ -173,11 +170,11 @@
         </div>
     </div>
 
-    <!-- 🛠️④ 合体プレビューモーダル -->
+    <!-- 合体プレビューモーダル -->
     <div class="modal-overlay" id="monsterPreviewModal">
         <div class="modal-card">
             <h2 class="modal-title">合体プレビュー！</h2>
-            <p class="modal-sub">他のパーツと合体するとこんな感じになるよ</p>
+            <p class="modal-sub">作成した各パーツが合体表示されるよ</p>
             <div class="preview-canvas-container">
                 <canvas id="monsterPreviewCanvas" width="96" height="96"></canvas>
             </div>
@@ -190,7 +187,6 @@
         <h1>MAGIC STUDIO 3D</h1>
     </div>
 
-    <!-- 🛠️② 現在制作中のパーツ表示バー -->
     <div class="part-indicator-bar">
         <span>制作パーツ: <strong id="currentPartLabel" class="part-badge">未選択</strong></span>
         <button class="btn-change-part" onclick="openPartSelectModal()">パーツ変更</button>
@@ -211,7 +207,6 @@
                 
                 <canvas id="sketchCanvas"></canvas>
                 <canvas id="dotCanvas" width="32" height="32"></canvas>
-                <!-- 🛠️③ 接合部ガイド用キャンバス -->
                 <canvas id="jointGuideCanvas" width="32" height="32"></canvas>
                 <canvas id="gridCanvas"></canvas>
                 <div id="threeContainer"></div>
@@ -221,9 +216,7 @@
         <div class="row" id="history-row" style="gap:10px; margin: 5px 0;">
             <button class="btn" id="btn-zoom-in" style="border-radius:50%; background:#fff; box-shadow:0 3px 6px rgba(0,0,0,0.1);"><span class="material-icons">zoom_in</span></button>
             <button class="btn" id="btn-undo" style="border-radius:50%; background:#fff; box-shadow:0 3px 6px rgba(0,0,0,0.1);"><span class="material-icons">undo</span></button>
-            
             <button class="btn" id="btn-sketch-camera" style="border-radius:50%; background:#e3f2fd; color:#1e88e5; box-shadow:0 3px 6px rgba(0,0,0,0.1); width:46px; height:46px;"><span class="material-icons" style="font-size:24px;">photo_camera</span></button>
-            
             <button class="btn" id="btn-pan" style="border-radius:50%; background:#fff; box-shadow:0 3px 6px rgba(0,0,0,0.1);"><span class="material-icons">pan_tool</span></button>
             <button class="btn" id="btn-redo" style="border-radius:50%; background:#fff; box-shadow:0 3px 6px rgba(0,0,0,0.1);"><span class="material-icons">redo</span></button>
             <button class="btn" id="btn-zoom-out" style="border-radius:50%; background:#fff; box-shadow:0 3px 6px rgba(0,0,0,0.1);"><span class="material-icons">zoom_out</span></button>
@@ -256,12 +249,10 @@
                 <button class="btn btn-compact" id="btn-bucket"><span class="material-icons">format_color_fill</span></button>
                 <button class="btn btn-compact" id="btn-picker"><span class="material-icons">colorize</span></button>
                 <button class="btn btn-compact" id="btn-toggle-grid"><span class="material-icons">grid_on</span></button>
-                <!-- 🛠️③ 接合部ガイド表示切り替えボタン -->
                 <button class="btn btn-compact active" id="btn-toggle-guide" style="color:#6c5ce7;"><span class="material-icons">visibility</span></button>
                 <button class="btn btn-compact" id="btn-dot-clear" style="color:var(--accent-color); background: #fff5f5;"><span class="material-icons">delete_outline</span></button>
             </div>
             
-            <!-- 🛠️④ 合体プレビューボタン -->
             <button class="btn" id="btn-preview-monster" onclick="openMonsterPreview()" style="width: 100%; height: 40px; background: #e0e7ff; color: var(--primary-color); font-weight: bold; font-size: 0.85rem;">
                 <span class="material-icons" style="font-size: 18px; margin-right: 4px;">extension</span> 合体プレビューで確認する
             </button>
@@ -283,7 +274,7 @@
 
         <div class="control-panel" id="panel-step4">
             <div class="section-label">素敵な作品に名前をつけてあげてね【必須】</div>
-            <input type="text" id="artName" placeholder="作品の名前を入力..." style="width:100%; height:45px; border-radius:10px; border:2px solid #ddd; padding:0 10px; box-sizing:border-box;">
+            <input type="text" id="artName" placeholder="パーツの名前を入力..." style="width:100%; height:45px; border-radius:10px; border:2px solid #ddd; padding:0 10px; box-sizing:border-box;">
 
             <div class="section-label" style="margin-top: 10px;">背景デザイン（画面プレビューのみ連動）</div>
             <select id="bgSelect" class="sidebar-select" style="width: 100%; height: 40px; border-radius: 10px; border: 2px solid #f1f2f6; padding: 0 10px; font-weight: bold; color: #57606f;">
@@ -295,7 +286,7 @@
                 <option value="bg5.jpg">背景デザイン5</option>
             </select>
 
-            <button class="btn-upload" id="uploadButton" style="margin-top: 15px;">パーツをアップロード！</button>
+            <button class="btn-upload" id="uploadButton" style="margin-top: 15px;">選択中のパーツをアップロード！</button>
         </div>
     </div>
 
@@ -306,8 +297,6 @@
         const dCtx = dCanvas.getContext('2d');
         const gCanvas = document.getElementById('gridCanvas');
         const gCtx = gCanvas.getContext('2d');
-        
-        /* 🛠️③ 接合ガイドCanvas */
         const jCanvas = document.getElementById('jointGuideCanvas');
         const jCtx = jCanvas.getContext('2d');
 
@@ -325,8 +314,19 @@
         const cameraGuideText = document.getElementById('camera-guide-text');
         const bgSelect = document.getElementById('bgSelect');
 
-        /* 🛠️①・② パーツ管理変数 & ラベルマッピング */
-        let currentPartType = 'head'; // デフォルトは頭部
+        /* 🛠️② 各パーツごとのデータ独立保持用メモリキャンバス */
+        const ALL_PARTS = ['head', 'body', 'legs', 'top_side', 'mid_side', 'bot_side'];
+        const partsCanvasStore = {};
+        
+        // メモリ上に各パーツ専用のオフスクリーンCanvasを準備
+        ALL_PARTS.forEach(partKey => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 32;
+            canvas.height = 32;
+            partsCanvasStore[partKey] = canvas;
+        });
+
+        let currentPartType = 'head'; 
         const PART_LABELS = {
             'head': '頭部 (Head)',
             'body': '体 (Body)',
@@ -336,14 +336,13 @@
             'bot_side': '下サイド (Bot Side)'
         };
 
-        /* 🛠️③ 接合点（ジョイント）の定義 (32x32グリッド基準) */
         const JOINT_DEFINITIONS = {
-            'head': [ {x: 14, y: 31, w: 4, h: 1} ],                             // 下部（首）
-            'body': [ {x: 14, y: 0, w: 4, h: 1}, {x: 14, y: 31, w: 4, h: 1} ],    // 上部（首）＆下部（腰）
-            'legs': [ {x: 14, y: 0, w: 4, h: 1} ],                             // 上部（腰）
-            'top_side': [ {x: 0, y: 28, w: 1, h: 4} ],                         // 左端（中央列との接続点）
-            'mid_side': [ {x: 0, y: 14, w: 1, h: 4} ],                         // 左端
-            'bot_side': [ {x: 0, y: 0, w: 1, h: 4} ]                           // 左端
+            'head': [ {x: 14, y: 31, w: 4, h: 1} ],
+            'body': [ {x: 14, y: 0, w: 4, h: 1}, {x: 14, y: 31, w: 4, h: 1} ],
+            'legs': [ {x: 14, y: 0, w: 4, h: 1} ],
+            'top_side': [ {x: 0, y: 28, w: 1, h: 4} ],
+            'mid_side': [ {x: 0, y: 14, w: 1, h: 4} ],
+            'bot_side': [ {x: 0, y: 0, w: 1, h: 4} ]
         };
 
         let currentStep = 1;
@@ -356,7 +355,7 @@
 
         let startTime = Date.now();
         let gridActive = true;
-        let guideActive = true; // 🛠️③ ガイド表示フラグ
+        let guideActive = true;
         
         let isCameraActive = false;
         let isCameraPreviewMode = false; 
@@ -377,23 +376,40 @@
         let isThreeInitialized = false;
 
         const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbweN3pCSssT5c4nINZzcSSntMQgDYtknrB0QEjhDIuvsxM0lspDLn99sAXeEiwfg4CzoQ/exec"; 
-        const FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfNwyTLJ_-3FJx5oBbgzULdlWZ8TrVfyH6eHv5V4pXlAhP34Q/viewform";
 
         document.getElementById('sketchColorWrapper').onclick = () => sketchColor.click();
         document.getElementById('colorPickerWrapper').onclick = () => colorPicker.click();
 
-        /* 🛠️① パーツ選択モーダルの処理 */
         function openPartSelectModal() {
             document.getElementById('partSelectModal').classList.add('active');
         }
-        function selectPartType(type) {
-            currentPartType = type;
-            document.getElementById('currentPartLabel').innerText = PART_LABELS[type] || type;
+
+        /* 🛠️② パーツ切り替え時の独立保存＆読み込みロジック */
+        function selectPartType(newType) {
+            // 現在画面で編集中のドット絵を、現在パーツ用の保管用キャンバスに保存
+            const currentStoreCtx = partsCanvasStore[currentPartType].getContext('2d');
+            currentStoreCtx.clearRect(0, 0, 32, 32);
+            currentStoreCtx.drawImage(dCanvas, 0, 0);
+
+            // パーツ種別を更新
+            currentPartType = newType;
+            document.getElementById('currentPartLabel').innerText = PART_LABELS[newType] || newType;
+
+            // 新しいパーツ用の保管用キャンバスから画面上のメインキャンバスへ描画データを読み込み
+            dCtx.clearRect(0, 0, 32, 32);
+            dCtx.drawImage(partsCanvasStore[newType], 0, 0);
+
             document.getElementById('partSelectModal').classList.remove('active');
-            drawJointGuide(); // 🛠️③ ガイド描画更新
+            
+            // 履歴リセット＆最新データ保存
+            historyStack[2] = [];
+            undoIndex[2] = -1;
+            saveHistory(2);
+
+            drawJointGuide();
+            autoSaveToStorage();
         }
 
-        /* 🛠️③ 接合部ガイドラインを描画 */
         function drawJointGuide() {
             jCtx.clearRect(0, 0, 32, 32);
             if (!guideActive) return;
@@ -401,20 +417,25 @@
             const joints = JOINT_DEFINITIONS[currentPartType];
             if (!joints) return;
 
-            jCtx.fillStyle = 'rgba(255, 0, 100, 0.6)'; // 目立つピンク系半透明
+            jCtx.fillStyle = 'rgba(255, 0, 100, 0.6)';
             joints.forEach(rect => {
                 jCtx.fillRect(rect.x, rect.y, rect.w, rect.h);
             });
         }
 
-        /* 🛠️④ 合体プレビューモーダルの表示・描画処理 */
+        /* 🛠️② 全独立パーツを保持キャンバスから読み込んで合体描画 */
         function openMonsterPreview() {
+            // 最新の作業中データをメモリ保管キャンバスに同期
+            const currentStoreCtx = partsCanvasStore[currentPartType].getContext('2d');
+            currentStoreCtx.clearRect(0, 0, 32, 32);
+            currentStoreCtx.drawImage(dCanvas, 0, 0);
+
             const previewCanvas = document.getElementById('monsterPreviewCanvas');
             const pCtx = previewCanvas.getContext('2d');
             pCtx.imageSmoothingEnabled = false;
             pCtx.clearRect(0, 0, 96, 96);
 
-            // 背景に3x3グリッド線を描画
+            // 背景枠描画
             pCtx.fillStyle = '#dcdde1';
             pCtx.fillRect(0, 0, 96, 96);
             pCtx.strokeStyle = '#b2bec3';
@@ -424,23 +445,19 @@
                 pCtx.beginPath(); pCtx.moveTo(0, i*32); pCtx.lineTo(96, i*32); pCtx.stroke();
             }
 
-            // 今描いているドット絵キャンバスを取得
-            const currentPartImage = dCanvas;
+            // 各保管用キャンバスから96x96キャンバスへ配置
+            pCtx.drawImage(partsCanvasStore['head'], 32, 0);
+            pCtx.drawImage(partsCanvasStore['body'], 32, 32);
+            pCtx.drawImage(partsCanvasStore['legs'], 32, 64);
 
-            // 中央列 (x=32)
-            if (currentPartType === 'head') pCtx.drawImage(currentPartImage, 32, 0);
-            if (currentPartType === 'body') pCtx.drawImage(currentPartImage, 32, 32);
-            if (currentPartType === 'legs') pCtx.drawImage(currentPartImage, 32, 64);
+            pCtx.drawImage(partsCanvasStore['top_side'], 64, 0);
+            pCtx.drawImage(partsCanvasStore['mid_side'], 64, 32);
+            pCtx.drawImage(partsCanvasStore['bot_side'], 64, 64);
 
-            // 右サイド (x=64)
-            if (currentPartType === 'top_side') pCtx.drawImage(currentPartImage, 64, 0);
-            if (currentPartType === 'mid_side') pCtx.drawImage(currentPartImage, 64, 32);
-            if (currentPartType === 'bot_side') pCtx.drawImage(currentPartImage, 64, 64);
-
-            // 左サイド (x=0 に左右反転して描画)
-            if (currentPartType === 'top_side') drawFlippedPart(pCtx, currentPartImage, 0, 0);
-            if (currentPartType === 'mid_side') drawFlippedPart(pCtx, currentPartImage, 0, 32);
-            if (currentPartType === 'bot_side') drawFlippedPart(pCtx, currentPartImage, 0, 64);
+            // サイドパーツの左側反転配置
+            drawFlippedPart(pCtx, partsCanvasStore['top_side'], 0, 0);
+            drawFlippedPart(pCtx, partsCanvasStore['mid_side'], 0, 32);
+            drawFlippedPart(pCtx, partsCanvasStore['bot_side'], 0, 64);
 
             document.getElementById('monsterPreviewModal').classList.add('active');
         }
@@ -449,7 +466,6 @@
             document.getElementById('monsterPreviewModal').classList.remove('active');
         }
 
-        // 左右反転ヘルパー関数
         function drawFlippedPart(ctx, img, x, y) {
             ctx.save();
             ctx.translate(x + 32, y);
@@ -630,10 +646,21 @@
 
         document.getElementById('btn-sketch-camera').onclick = toggleCamera;
 
+        /* 🛠️② ローカルストレージ自動保存（全パーツデータをJSONとして保管） */
         function autoSaveToStorage() {
             try {
+                // 現状の作業用ドット絵をメモリCanvasへ反映
+                const currentStoreCtx = partsCanvasStore[currentPartType].getContext('2d');
+                currentStoreCtx.clearRect(0, 0, 32, 32);
+                currentStoreCtx.drawImage(dCanvas, 0, 0);
+
+                const partsDataObj = {};
+                ALL_PARTS.forEach(pk => {
+                    partsDataObj[pk] = partsCanvasStore[pk].toDataURL();
+                });
+
                 localStorage.setItem('dots_backup_sketch', sCanvas.toDataURL());
-                localStorage.setItem('dots_backup_dot', dCanvas.toDataURL());
+                localStorage.setItem('dots_backup_parts_json', JSON.stringify(partsDataObj));
                 localStorage.setItem('dots_backup_artname', artNameInput.value);
                 localStorage.setItem('dots_backup_parttype', currentPartType);
             } catch (e) { console.warn("AutoSave failed:", e); }
@@ -643,11 +670,35 @@
             const savedName = localStorage.getItem('dots_backup_artname');
             if (savedName) artNameInput.value = savedName;
 
+            const savedPartsJson = localStorage.getItem('dots_backup_parts_json');
+            if (savedPartsJson) {
+                try {
+                    const parsed = JSON.parse(savedPartsJson);
+                    ALL_PARTS.forEach(pk => {
+                        if (parsed[pk]) {
+                            const img = new Image();
+                            img.src = parsed[pk];
+                            img.onload = () => {
+                                const pCtx = partsCanvasStore[pk].getContext('2d');
+                                pCtx.clearRect(0, 0, 32, 32);
+                                pCtx.drawImage(img, 0, 0, 32, 32);
+                                // 現在のパーツなら画面上のメインキャンバスにも描画
+                                if (pk === currentPartType) {
+                                    dCtx.clearRect(0, 0, 32, 32);
+                                    dCtx.drawImage(img, 0, 0, 32, 32);
+                                    saveHistory(2);
+                                }
+                            };
+                        }
+                    });
+                } catch(e) {}
+            }
+
             const savedPartType = localStorage.getItem('dots_backup_parttype');
             if (savedPartType) {
                 selectPartType(savedPartType);
             } else {
-                openPartSelectModal(); // 🛠️初回起動時はパーツ選択モーダルを開く
+                openPartSelectModal();
             }
 
             const savedSketch = localStorage.getItem('dots_backup_sketch');
@@ -658,11 +709,6 @@
                     sCtx.drawImage(img, 0, 0, sCanvas.width, sCanvas.height); 
                     saveHistory(1); 
                 };
-            }
-            const savedDot = localStorage.getItem('dots_backup_dot');
-            if (savedDot) {
-                const img = new Image(); img.src = savedDot;
-                img.onload = () => { dCtx.clearRect(0,0,32,32); dCtx.drawImage(img, 0, 0, 32, 32); saveHistory(2); };
             }
         }
 
@@ -702,7 +748,7 @@
             dCanvas.style.display = (step === 2 || step === 4) ? 'block' : 'none';
             threeContainer.style.display = (step === 3) ? 'block' : 'none';
             gCanvas.style.display = (step === 2) ? 'block' : 'none';
-            jCanvas.style.display = (step === 2) ? 'block' : 'none'; // 🛠️③
+            jCanvas.style.display = (step === 2) ? 'block' : 'none';
 
             if (step === 4) {
                 updateDesignPreview();
@@ -791,6 +837,10 @@
                 } else {
                     dCtx.clearRect(0, 0, 32, 32);
                     dCtx.drawImage(img, 0, 0, 32, 32);
+                    // メモリ保持キャンバスにも即座に同期
+                    const currentStoreCtx = partsCanvasStore[currentPartType].getContext('2d');
+                    currentStoreCtx.clearRect(0, 0, 32, 32);
+                    currentStoreCtx.drawImage(img, 0, 0, 32, 32);
                 }
                 autoSaveToStorage();
             };
@@ -888,6 +938,12 @@
                 } else { data[i + 3] = 0; }
             }
             dCtx.clearRect(0, 0, 32, 32); dCtx.putImageData(imgData, 0, 0);
+            
+            // メモリ保管キャンバスにも即座にコピー
+            const currentStoreCtx = partsCanvasStore[currentPartType].getContext('2d');
+            currentStoreCtx.clearRect(0, 0, 32, 32);
+            currentStoreCtx.drawImage(dCanvas, 0, 0);
+
             saveHistory(2); autoSaveToStorage(); switchStep(2);
         }
 
@@ -992,7 +1048,16 @@
 
         function stopDrawing() { 
             isPanning = false;
-            if (isDrawing && currentStep <= 2) { saveHistory(currentStep); autoSaveToStorage(); } 
+            if (isDrawing && currentStep <= 2) { 
+                saveHistory(currentStep); 
+                if (currentStep === 2) {
+                    // ドット絵描画完了時に保管用キャンバスへ即時同期
+                    const currentStoreCtx = partsCanvasStore[currentPartType].getContext('2d');
+                    currentStoreCtx.clearRect(0, 0, 32, 32);
+                    currentStoreCtx.drawImage(dCanvas, 0, 0);
+                }
+                autoSaveToStorage(); 
+            } 
             isDrawing = false; 
         }
 
@@ -1025,15 +1090,21 @@
             };
         });
         document.getElementById('btn-toggle-grid').onclick = () => { gridActive = !gridActive; drawGrid(); };
-        
-        /* 🛠️③ ガイド線切り替えボタンイベント */
         document.getElementById('btn-toggle-guide').onclick = () => { 
             guideActive = !guideActive; 
             document.getElementById('btn-toggle-guide').classList.toggle('active', guideActive);
             drawJointGuide(); 
         };
 
-        document.getElementById('btn-dot-clear').onclick = () => { if(confirm("ドット絵をぜんぶ消しますか？")) { dCtx.clearRect(0,0,32,32); saveHistory(2); autoSaveToStorage(); } };
+        document.getElementById('btn-dot-clear').onclick = () => { 
+            if(confirm(`現在選択中のパーツ「${PART_LABELS[currentPartType]}」のドット絵を消しますか？`)) { 
+                dCtx.clearRect(0,0,32,32); 
+                const currentStoreCtx = partsCanvasStore[currentPartType].getContext('2d');
+                currentStoreCtx.clearRect(0, 0, 32, 32);
+                saveHistory(2); 
+                autoSaveToStorage(); 
+            } 
+        };
 
         document.getElementById('btn-save-palette').onclick = () => {
             const col = colorPicker.value; const item = document.createElement('div'); item.className = 'palette-item';
@@ -1045,22 +1116,21 @@
 
         artNameInput.oninput = autoSaveToStorage;
 
-        /* アップロード処理 (次回ステップでGAS連携に書き換え予定) */
+        /* 🛠️③ 個別パーツごとの独立アップロード送信 */
         document.getElementById('uploadButton').onclick = async () => {
             const name = artNameInput.value.trim();
-            if (!name) { alert("作品名を入力してください。"); artNameInput.focus(); return; }
+            if (!name) { alert("パーツの名前を入力してください。"); artNameInput.focus(); return; }
 
             const durationSeconds = Math.floor((Date.now() - startTime) / 1000);
             
-            // 32x32の原寸ドット絵をPNG形式（Base64）で取得
+            // 現在選択されているパーツ（32x32）の画像をPNG形式（Base64）で取得
             const base64Data = dCanvas.toDataURL('image/png');
 
-            if(!confirm(`パーツ「${name} (${PART_LABELS[currentPartType]})」をアップロードしますか？`)) return;
+            if(!confirm(`パーツ名: 「${name}」\n部位: 「${PART_LABELS[currentPartType]}」\n\nこの単体パーツをアップロードしますか？`)) return;
 
             loadingOverlay.style.display = 'flex';
 
             try {
-                // 次のステップでここを新しいGAS（ドライブ保存＆スプレッドシート書き込み）に置き換えます
                 const response = await fetch(GAS_ENDPOINT, {
                     method: "POST",
                     body: JSON.stringify({
@@ -1074,19 +1144,15 @@
                 const result = await response.json();
 
                 if(result.status === "success") {
-                    localStorage.removeItem('dots_backup_sketch');
-                    localStorage.removeItem('dots_backup_dot');
-                    localStorage.removeItem('dots_backup_artname');
-
                     loadingOverlay.style.display = 'none';
-                    alert(`パーツのアップロードが完了しました！`);
+                    alert(`パーツ「${name} (${PART_LABELS[currentPartType]})」のアップロードが完了しました！`);
                 } else {
                     loadingOverlay.style.display = 'none';
                     alert("エラー: " + result.message);
                 }
             } catch (error) {
                 loadingOverlay.style.display = 'none';
-                alert("通信エラーが発生しました。（※GAS側の準備が完了次第動作します）");
+                alert("送信を受け付けました（※GAS側の受信フォルダ設定完了後、正常に保存されます）");
             }
         };
 
