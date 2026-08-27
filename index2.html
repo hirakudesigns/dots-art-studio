@@ -3,10 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DOTS ART STUDIO - Monster Parts Edition</title>
+    <title>DOTS ART STUDIO - Monster Builder</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/controls/OrbitControls.js"></script>
     <style>
         :root { 
             --primary-color: #6c5ce7; 
@@ -26,10 +24,9 @@
             display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; font-weight: bold; color: #2d3436;
         }
         .part-badge { background: var(--primary-color); color: #fff; padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; }
-        .btn-change-part { background: #b2bec3; border: none; color: #fff; padding: 3px 8px; border-radius: 6px; font-size: 0.7rem; cursor: pointer; }
 
         .step-tabs { display: flex; width: 100%; max-width: 500px; background: #e4e7eb; border-radius: 12px; padding: 4px; margin-bottom: 10px; box-sizing: border-box; }
-        .tab { flex: 1; text-align: center; padding: 8px 0; font-size: 0.7rem; font-weight: bold; color: #747d8c; border-radius: 8px; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+        .tab { flex: 1; text-align: center; padding: 8px 0; font-size: 0.65rem; font-weight: bold; color: #747d8c; border-radius: 8px; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; align-items: center; gap: 2px; }
         .tab.active { background: var(--card-bg); color: var(--primary-color); box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
         .tab-num { font-size: 0.55rem; opacity: 0.7; }
 
@@ -53,7 +50,6 @@
         #dotCanvas { z-index: 3; image-rendering: pixelated; width: 100%; height: 100%; display: none; }
         #gridCanvas { z-index: 10; position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; }
         #jointGuideCanvas { z-index: 9; position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; }
-        #threeContainer { z-index: 4; position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; }
         
         #bgLayer { z-index: 1; position:absolute; top:0; left:0; width:100%; height:100%; display: none; overflow: hidden; pointer-events: none; }
         #bgVideo { width: 100%; height: 100%; object-fit: cover; }
@@ -86,13 +82,12 @@
         
         .btn-compact { flex: 1; min-width: 34px; height: 38px; border-radius: 8px; }
         .btn-compact .material-icons { font-size: 20px; }
-        .btn-compact img { width: 20px; height: 20px; }
 
         .color-picker-wrapper { width: 44px; height: 44px; border-radius: 10px; overflow: hidden; position: relative; border: 2px solid #ddd; box-sizing: border-box; cursor: pointer; }
         .color-picker-wrapper input[type="color"] { position: absolute; top: -10px; left: -10px; width: 64px; height: 64px; border: none; padding: 0; margin: 0; cursor: pointer; background: none; }
         .color-picker-wrapper-compact { width: 38px; height: 38px; border-radius: 8px; flex-shrink: 0; }
 
-        .btn-magic { background: linear-gradient(135deg, #6c5ce7, #a29bfe); color: white; height: 55px; font-weight: 900; border-radius: 15px; border: none; cursor: pointer; width: 100%; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(108, 92, 231, 0.4); display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-magic { background: linear-gradient(135deg, #6c5ce7, #a29bfe); color: white; height: 50px; font-weight: 900; border-radius: 15px; border: none; cursor: pointer; width: 100%; font-size: 1rem; box-shadow: 0 4px 15px rgba(108, 92, 231, 0.4); display: flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-upload { background: var(--primary-color); color: white; height: 55px; font-weight: 900; border-radius: 15px; border: none; cursor: pointer; width: 100%; font-size: 1.1rem; }
 
         #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(108, 92, 231, 0.85); z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; }
@@ -102,33 +97,25 @@
         .palette-item { display: flex; align-items: center; background: #f1f2f6; border-radius: 6px; padding: 2px 4px; gap: 4px; }
         .color-chip { width: 20px; height: 20px; border-radius: 4px; border: 1px solid #ccc; cursor: pointer; }
 
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.6); z-index: 3000; display: none;
-            align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;
-        }
-        .modal-overlay.active { display: flex; }
-        .modal-card {
-            background: #fff; width: 100%; max-width: 400px; border-radius: 20px; padding: 20px;
-            box-sizing: border-box; display: flex; flex-direction: column; gap: 15px; align-items: center;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2); text-align: center;
-        }
-        .modal-title { font-size: 1.1rem; font-weight: 800; color: #2d3436; margin: 0; }
-        .modal-sub { font-size: 0.8rem; color: #636e72; margin-top: -8px; }
-        
-        /* 🛠️① 配置グリッド（左：中央列、右：サイド列） */
+        /* STEP1 パーツ選択パネル専用スタイル */
         .part-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; width: 100%; }
         .part-opt-btn {
             background: #f1f2f6; border: 2px solid #dfe6e9; border-radius: 12px; padding: 12px 8px;
             font-size: 0.85rem; font-weight: bold; color: #2d3436; cursor: pointer; transition: 0.2s;
-            display: flex; flex-direction: column; align-items: center; gap: 4px;
+            display: flex; flex-direction: column; align-items: center; gap: 4px; position: relative;
         }
-        .part-opt-btn:hover, .part-opt-btn.selected {
+        .part-opt-btn.active-part {
             background: #e0e7ff; border-color: var(--primary-color); color: var(--primary-color);
         }
+        .part-status-dot {
+            position: absolute; top: 6px; right: 6px; width: 8px; height: 8px; border-radius: 50%; background: #ccc;
+        }
+        .part-status-dot.has-data { background: #00b894; }
+
+        /* 全体合体プレビュー表示エリア */
         .preview-canvas-container {
-            width: 280px; height: 280px; background: #e0e0e0; border-radius: 12px;
-            overflow: hidden; border: 2px solid #ccc; position: relative;
+            width: 100%; max-width: 360px; aspect-ratio: 1/1; background: #e0e0e0; border-radius: 12px;
+            overflow: hidden; border: 4px solid var(--card-bg); position: relative; box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
         #monsterPreviewCanvas { width: 100%; height: 100%; image-rendering: pixelated; }
     </style>
@@ -137,69 +124,29 @@
 
     <div id="loadingOverlay">
         <div class="spinner"></div>
-        <div class="loading-text">パーツをアップロード中...</div>
-    </div>
-
-    <!-- 🛠️① 並び順を変更したパーツ選択モーダル -->
-    <div class="modal-overlay" id="partSelectModal">
-        <div class="modal-card">
-            <h2 class="modal-title">作るパーツを選ぼう！</h2>
-            <p class="modal-sub">作成するモンスターのパーツを1つ選択してね</p>
-            <div class="part-grid">
-                <!-- 左列：中央軸パーツ -->
-                <button class="part-opt-btn" onclick="selectPartType('head')">
-                    <span class="material-icons">face</span> 頭部 (Head)
-                </button>
-                <!-- 右列：サイドパーツ -->
-                <button class="part-opt-btn" onclick="selectPartType('top_side')">
-                    <span class="material-icons">north_east</span> 上サイド (Top Side)
-                </button>
-                <button class="part-opt-btn" onclick="selectPartType('body')">
-                    <span class="material-icons">checkroom</span> 体 (Body)
-                </button>
-                <button class="part-opt-btn" onclick="selectPartType('mid_side')">
-                    <span class="material-icons">east</span> 中サイド (Mid Side)
-                </button>
-                <button class="part-opt-btn" onclick="selectPartType('legs')">
-                    <span class="material-icons">hiking</span> 足 (Legs)
-                </button>
-                <button class="part-opt-btn" onclick="selectPartType('bot_side')">
-                    <span class="material-icons">south_east</span> 下サイド (Bot Side)
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 合体プレビューモーダル -->
-    <div class="modal-overlay" id="monsterPreviewModal">
-        <div class="modal-card">
-            <h2 class="modal-title">合体プレビュー！</h2>
-            <p class="modal-sub">作成した各パーツが合体表示されるよ</p>
-            <div class="preview-canvas-container">
-                <canvas id="monsterPreviewCanvas" width="96" height="96"></canvas>
-            </div>
-            <button class="btn-magic" style="margin-top: 5px;" onclick="closeMonsterPreview()">プレビューを閉じる</button>
-        </div>
+        <div class="loading-text">全パーツを送信中...</div>
     </div>
 
     <div class="header-area">
         <img src="DOTS_PROJECT_logo_black.png" alt="DOTS" class="header-logo">
-        <h1>MAGIC STUDIO 3D</h1>
+        <h1>MAGIC STUDIO BUILDER</h1>
     </div>
 
     <div class="part-indicator-bar">
-        <span>制作パーツ: <strong id="currentPartLabel" class="part-badge">未選択</strong></span>
-        <button class="btn-change-part" onclick="openPartSelectModal()">パーツ変更</button>
+        <span>制作中のパーツ: <strong id="currentPartLabel" class="part-badge">頭部 (Head)</strong></span>
+        <span style="font-size:0.7rem; color:#636e72;">STEP1で切り替え可能</span>
     </div>
 
+    <!-- 🛠️② 画面構造の変更（STEP1：パーツえらび） -->
     <div class="step-tabs">
-        <div class="tab active" id="tab-step1" onclick="switchStep(1)"><span class="tab-num">STEP 01</span>らくがき</div>
-        <div class="tab" id="tab-step2" onclick="switchStep(2)"><span class="tab-num">STEP 02</span>ドット変身</div>
-        <div class="tab" id="tab-step3" onclick="switchStep(3)"><span class="tab-num">STEP 03</span>3Dかくにん</div>
+        <div class="tab active" id="tab-step1" onclick="switchStep(1)"><span class="tab-num">STEP 01</span>パーツえらび</div>
+        <div class="tab" id="tab-step2" onclick="switchStep(2)"><span class="tab-num">STEP 02</span>らくがき</div>
+        <div class="tab" id="tab-step3" onclick="switchStep(3)"><span class="tab-num">STEP 03</span>ドット変身</div>
         <div class="tab" id="tab-step4" onclick="switchStep(4)"><span class="tab-num">STEP 04</span>できあがり</div>
     </div>
 
     <div class="app-container">
+        <!-- キャンバス表示エリア（STEP 2, 3用） -->
         <div class="canvas-area" id="canvasArea">
             <div class="canvas-wrapper" id="canvasWrapper">
                 <div id="bgLayer"><video id="bgVideo" autoplay playsinline muted></video></div>
@@ -209,8 +156,12 @@
                 <canvas id="dotCanvas" width="32" height="32"></canvas>
                 <canvas id="jointGuideCanvas" width="32" height="32"></canvas>
                 <canvas id="gridCanvas"></canvas>
-                <div id="threeContainer"></div>
             </div>
+        </div>
+
+        <!-- 全パーツ合体プレビュー表示エリア（STEP 1, 4用） -->
+        <div class="preview-canvas-container" id="previewArea" style="display:none;">
+            <canvas id="monsterPreviewCanvas" width="96" height="96"></canvas>
         </div>
         
         <div class="row" id="history-row" style="gap:10px; margin: 5px 0;">
@@ -222,7 +173,40 @@
             <button class="btn" id="btn-zoom-out" style="border-radius:50%; background:#fff; box-shadow:0 3px 6px rgba(0,0,0,0.1);"><span class="material-icons">zoom_out</span></button>
         </div>
 
+        <!-- STEP 01 パネル: パーツ選択＆合体プレビュー確認 -->
         <div class="control-panel active" id="panel-step1">
+            <div class="section-label">描くパーツを選択してください</div>
+            <div class="part-grid">
+                <button class="part-opt-btn active-part" id="part-btn-head" onclick="selectPartType('head')">
+                    <div class="part-status-dot" id="dot-head"></div>
+                    <span class="material-icons">face</span> 頭部 (Head)
+                </button>
+                <button class="part-opt-btn" id="part-btn-top_side" onclick="selectPartType('top_side')">
+                    <div class="part-status-dot" id="dot-top_side"></div>
+                    <span class="material-icons">north_east</span> 上サイド (Top Side)
+                </button>
+                <button class="part-opt-btn" id="part-btn-body" onclick="selectPartType('body')">
+                    <div class="part-status-dot" id="dot-body"></div>
+                    <span class="material-icons">checkroom</span> 体 (Body)
+                </button>
+                <button class="part-opt-btn" id="part-btn-mid_side" onclick="selectPartType('mid_side')">
+                    <div class="part-status-dot" id="dot-mid_side"></div>
+                    <span class="material-icons">east</span> 中サイド (Mid Side)
+                </button>
+                <button class="part-opt-btn" id="part-btn-legs" onclick="selectPartType('legs')">
+                    <div class="part-status-dot" id="dot-legs"></div>
+                    <span class="material-icons">hiking</span> 足 (Legs)
+                </button>
+                <button class="part-opt-btn" id="part-btn-bot_side" onclick="selectPartType('bot_side')">
+                    <div class="part-status-dot" id="dot-bot_side"></div>
+                    <span class="material-icons">south_east</span> 下サイド (Bot Side)
+                </button>
+            </div>
+            <button class="btn-magic" style="margin-top:5px;" onclick="switchStep(2)">選択したパーツを描く <span class="material-icons">arrow_forward</span></button>
+        </div>
+
+        <!-- STEP 02 パネル: らくがき -->
+        <div class="control-panel" id="panel-step2">
             <div class="section-label">らくがきツール</div>
             <div class="row">
                 <div class="color-picker-wrapper" id="sketchColorWrapper">
@@ -238,7 +222,8 @@
             <button class="btn-magic" onclick="magicConvert()"><span class="material-icons">auto_awesome</span> ドット絵に変身！</button>
         </div>
 
-        <div class="control-panel" id="panel-step2">
+        <!-- STEP 03 パネル: ドット調整 -->
+        <div class="control-panel" id="panel-step3">
             <div class="section-label">ドット絵 調整ツール</div>
             <div class="tool-row-compact">
                 <div class="color-picker-wrapper color-picker-wrapper-compact" id="colorPickerWrapper">
@@ -252,41 +237,21 @@
                 <button class="btn btn-compact active" id="btn-toggle-guide" style="color:#6c5ce7;"><span class="material-icons">visibility</span></button>
                 <button class="btn btn-compact" id="btn-dot-clear" style="color:var(--accent-color); background: #fff5f5;"><span class="material-icons">delete_outline</span></button>
             </div>
-            
-            <button class="btn" id="btn-preview-monster" onclick="openMonsterPreview()" style="width: 100%; height: 40px; background: #e0e7ff; color: var(--primary-color); font-weight: bold; font-size: 0.85rem;">
-                <span class="material-icons" style="font-size: 18px; margin-right: 4px;">extension</span> 合体プレビューで確認する
-            </button>
 
-            <div class="section-label">登録した色（好きな色を登録できるよ）</div>
+            <div class="section-label">登録した色</div>
             <div class="row" style="justify-content: space-between;">
                 <div id="paletteArea" class="row" style="min-height:30px; justify-content:flex-start; gap:6px;"></div>
                 <button class="btn" id="btn-save-palette" style="width:auto; padding:0 8px; font-size:0.7rem; height:34px;">色を登録</button>
             </div>
-            <button class="btn-magic" style="background: var(--primary-color);" onclick="goTo3DStep()"><span class="material-icons">view_in_ar</span>3Dに変身！ </button>
+            <button class="btn-magic" style="background: var(--primary-color);" onclick="switchStep(1)">パーツ一覧に戻る <span class="material-icons">check</span></button>
         </div>
 
-        <div class="control-panel" id="panel-step3">
-            <div class="section-label">君の作品が立体になるとこんな感じ！</div>
-            <p style="font-size:0.8rem; color:#333; text-align:center; margin: 5px 0; font-weight: bold;">色が抜けていないか確認してね！白い部分ちゃんと塗れてるかな？</p>
-            <p style="font-size:0.75rem; color:#747d8c; text-align:center; margin: 0 0 5px 0;">指でグルグル回すと、色々な角度からチェックできるよ！</p>
-            <button class="btn-magic" style="background: var(--primary-color);" onclick="switchStep(4)">これで決定！ <span class="material-icons">arrow_forward</span></button>
-        </div>
-
+        <!-- STEP 04 パネル: 完成・一括アップロード -->
         <div class="control-panel" id="panel-step4">
-            <div class="section-label">素敵な作品に名前をつけてあげてね【必須】</div>
-            <input type="text" id="artName" placeholder="パーツの名前を入力..." style="width:100%; height:45px; border-radius:10px; border:2px solid #ddd; padding:0 10px; box-sizing:border-box;">
+            <div class="section-label">作品名をつけて6パーツを一括保存！【必須】</div>
+            <input type="text" id="artName" placeholder="作品（モンスター）の名前を入力..." style="width:100%; height:45px; border-radius:10px; border:2px solid #ddd; padding:0 10px; box-sizing:border-box;">
 
-            <div class="section-label" style="margin-top: 10px;">背景デザイン（画面プレビューのみ連動）</div>
-            <select id="bgSelect" class="sidebar-select" style="width: 100%; height: 40px; border-radius: 10px; border: 2px solid #f1f2f6; padding: 0 10px; font-weight: bold; color: #57606f;">
-                <option value="">背景なし（透明）</option>
-                <option value="bg1.jpg">背景デザイン1</option>
-                <option value="bg2.jpg">背景デザイン2</option>
-                <option value="bg3.jpg">背景デザイン3</option>
-                <option value="bg4.jpg">背景デザイン4</option>
-                <option value="bg5.jpg">背景デザイン5</option>
-            </select>
-
-            <button class="btn-upload" id="uploadButton" style="margin-top: 15px;">選択中のパーツをアップロード！</button>
+            <button class="btn-upload" id="uploadButton" style="margin-top: 10px;">全6パーツを一括送信！</button>
         </div>
     </div>
 
@@ -301,8 +266,8 @@
         const jCtx = jCanvas.getContext('2d');
 
         const canvasArea = document.getElementById('canvasArea');
+        const previewArea = document.getElementById('previewArea');
         const canvasWrapper = document.getElementById('canvasWrapper');
-        const designPreviewLayer = document.getElementById('designPreviewLayer');
         const bgLayer = document.getElementById('bgLayer');
         const bgVideo = document.getElementById('bgVideo');
         const loadingOverlay = document.getElementById('loadingOverlay');
@@ -310,20 +275,15 @@
         const paletteArea = document.getElementById('paletteArea');
         const colorPicker = document.getElementById('colorPicker');
         const sketchColor = document.getElementById('sketchColor');
-        const threeContainer = document.getElementById('threeContainer');
         const cameraGuideText = document.getElementById('camera-guide-text');
-        const bgSelect = document.getElementById('bgSelect');
 
-        /* 🛠️② 各パーツごとのデータ独立保持用メモリキャンバス */
+        // 各パーツデータ保持メモリ
         const ALL_PARTS = ['head', 'body', 'legs', 'top_side', 'mid_side', 'bot_side'];
         const partsCanvasStore = {};
-        
-        // メモリ上に各パーツ専用のオフスクリーンCanvasを準備
-        ALL_PARTS.forEach(partKey => {
+        ALL_PARTS.forEach(pk => {
             const canvas = document.createElement('canvas');
-            canvas.width = 32;
-            canvas.height = 32;
-            partsCanvasStore[partKey] = canvas;
+            canvas.width = 32; canvas.height = 32;
+            partsCanvasStore[pk] = canvas;
         });
 
         let currentPartType = 'head'; 
@@ -350,8 +310,8 @@
         let sketchMode = 'pen';
         let dotMode = 'pen'; 
         
-        let historyStack = { 1: [], 2: [] };
-        let undoIndex = { 1: -1, 2: -1 };
+        let historyStack = { 2: [], 3: [] };
+        let undoIndex = { 2: -1, 3: -1 };
 
         let startTime = Date.now();
         let gridActive = true;
@@ -371,81 +331,82 @@
         let startPanX = 0;
         let startPanY = 0;
 
-        const VOXEL_HEIGHT = 3.0;
-        let scene, camera, renderer, controls, voxelGroup;
-        let isThreeInitialized = false;
-
         const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbweN3pCSssT5c4nINZzcSSntMQgDYtknrB0QEjhDIuvsxM0lspDLn99sAXeEiwfg4CzoQ/exec"; 
 
         document.getElementById('sketchColorWrapper').onclick = () => sketchColor.click();
         document.getElementById('colorPickerWrapper').onclick = () => colorPicker.click();
 
-        function openPartSelectModal() {
-            document.getElementById('partSelectModal').classList.add('active');
-        }
-
-        /* 🛠️② パーツ切り替え時の独立保存＆読み込みロジック */
         function selectPartType(newType) {
-            // 現在画面で編集中のドット絵を、現在パーツ用の保管用キャンバスに保存
-            const currentStoreCtx = partsCanvasStore[currentPartType].getContext('2d');
-            currentStoreCtx.clearRect(0, 0, 32, 32);
-            currentStoreCtx.drawImage(dCanvas, 0, 0);
+            // 作業ドット絵をメモリに同期
+            syncCurrentDotToStore();
 
-            // パーツ種別を更新
             currentPartType = newType;
             document.getElementById('currentPartLabel').innerText = PART_LABELS[newType] || newType;
 
-            // 新しいパーツ用の保管用キャンバスから画面上のメインキャンバスへ描画データを読み込み
+            // UI選択状態更新
+            ALL_PARTS.forEach(pk => {
+                const btn = document.getElementById(`part-btn-${pk}`);
+                if (btn) btn.classList.toggle('active-part', pk === newType);
+            });
+
+            // メモリからメインドットキャンバスへ展開
             dCtx.clearRect(0, 0, 32, 32);
             dCtx.drawImage(partsCanvasStore[newType], 0, 0);
 
-            document.getElementById('partSelectModal').classList.remove('active');
-            
-            // 履歴リセット＆最新データ保存
-            historyStack[2] = [];
-            undoIndex[2] = -1;
-            saveHistory(2);
-
+            // 履歴初期化
+            historyStack[3] = []; undoIndex[3] = -1;
+            saveHistory(3);
             drawJointGuide();
             autoSaveToStorage();
+            updatePartStatusDots();
+        }
+
+        function syncCurrentDotToStore() {
+            const currentStoreCtx = partsCanvasStore[currentPartType].getContext('2d');
+            currentStoreCtx.clearRect(0, 0, 32, 32);
+            currentStoreCtx.drawImage(dCanvas, 0, 0);
+        }
+
+        function updatePartStatusDots() {
+            ALL_PARTS.forEach(pk => {
+                const dot = document.getElementById(`dot-${pk}`);
+                if (!dot) return;
+                const pCtx = partsCanvasStore[pk].getContext('2d');
+                const imgData = pCtx.getImageData(0, 0, 32, 32).data;
+                let hasPixels = false;
+                for (let i = 3; i < imgData.length; i += 4) {
+                    if (imgData[i] > 0) { hasPixels = true; break; }
+                }
+                dot.classList.toggle('has-data', hasPixels);
+            });
         }
 
         function drawJointGuide() {
             jCtx.clearRect(0, 0, 32, 32);
             if (!guideActive) return;
-
             const joints = JOINT_DEFINITIONS[currentPartType];
             if (!joints) return;
 
             jCtx.fillStyle = 'rgba(255, 0, 100, 0.6)';
-            joints.forEach(rect => {
-                jCtx.fillRect(rect.x, rect.y, rect.w, rect.h);
-            });
+            joints.forEach(rect => { jCtx.fillRect(rect.x, rect.y, rect.w, rect.h); });
         }
 
-        /* 🛠️② 全独立パーツを保持キャンバスから読み込んで合体描画 */
-        function openMonsterPreview() {
-            // 最新の作業中データをメモリ保管キャンバスに同期
-            const currentStoreCtx = partsCanvasStore[currentPartType].getContext('2d');
-            currentStoreCtx.clearRect(0, 0, 32, 32);
-            currentStoreCtx.drawImage(dCanvas, 0, 0);
-
+        function renderMonsterPreview() {
+            syncCurrentDotToStore();
             const previewCanvas = document.getElementById('monsterPreviewCanvas');
             const pCtx = previewCanvas.getContext('2d');
             pCtx.imageSmoothingEnabled = false;
             pCtx.clearRect(0, 0, 96, 96);
 
-            // 背景枠描画
-            pCtx.fillStyle = '#dcdde1';
+            pCtx.fillStyle = '#f8f9fa';
             pCtx.fillRect(0, 0, 96, 96);
-            pCtx.strokeStyle = '#b2bec3';
+            pCtx.strokeStyle = '#dfe6e9';
             pCtx.lineWidth = 1;
             for(let i=1; i<3; i++) {
                 pCtx.beginPath(); pCtx.moveTo(i*32, 0); pCtx.lineTo(i*32, 96); pCtx.stroke();
                 pCtx.beginPath(); pCtx.moveTo(0, i*32); pCtx.lineTo(96, i*32); pCtx.stroke();
             }
 
-            // 各保管用キャンバスから96x96キャンバスへ配置
             pCtx.drawImage(partsCanvasStore['head'], 32, 0);
             pCtx.drawImage(partsCanvasStore['body'], 32, 32);
             pCtx.drawImage(partsCanvasStore['legs'], 32, 64);
@@ -454,16 +415,9 @@
             pCtx.drawImage(partsCanvasStore['mid_side'], 64, 32);
             pCtx.drawImage(partsCanvasStore['bot_side'], 64, 64);
 
-            // サイドパーツの左側反転配置
             drawFlippedPart(pCtx, partsCanvasStore['top_side'], 0, 0);
             drawFlippedPart(pCtx, partsCanvasStore['mid_side'], 0, 32);
             drawFlippedPart(pCtx, partsCanvasStore['bot_side'], 0, 64);
-
-            document.getElementById('monsterPreviewModal').classList.add('active');
-        }
-
-        function closeMonsterPreview() {
-            document.getElementById('monsterPreviewModal').classList.remove('active');
         }
 
         function drawFlippedPart(ctx, img, x, y) {
@@ -484,28 +438,17 @@
                 tempSketch.width = sCanvas.width; tempSketch.height = sCanvas.height;
                 if(sCanvas.width > 0) tempSketch.getContext('2d').drawImage(sCanvas, 0, 0);
 
-                sCanvas.width = newWidth;
-                sCanvas.height = newHeight;
-                sCtx.lineCap = 'round';
-                sCtx.lineJoin = 'round';
-                sCtx.lineWidth = 8; 
+                sCanvas.width = newWidth; sCanvas.height = newHeight;
+                sCtx.lineCap = 'round'; sCtx.lineJoin = 'round'; sCtx.lineWidth = 8; 
 
-                gCanvas.width = newWidth;
-                gCanvas.height = newHeight;
+                gCanvas.width = newWidth; gCanvas.height = newHeight;
 
                 if(tempSketch.width > 0) {
                     sCtx.drawImage(tempSketch, 0, 0, newWidth, newHeight);
                 }
 
-                lastCanvasWidth = newWidth;
-                lastCanvasHeight = newHeight;
-                
-                drawGrid();
-                drawJointGuide();
-                if (isThreeInitialized && renderer) {
-                    renderer.setSize(newWidth, newHeight);
-                    updateCameraAspect();
-                }
+                lastCanvasWidth = newWidth; lastCanvasHeight = newHeight;
+                drawGrid(); drawJointGuide();
             }
         }
 
@@ -513,19 +456,13 @@
             gCtx.clearRect(0, 0, gCanvas.width, gCanvas.height);
             if (!gridActive) return;
 
-            const w = gCanvas.width;
-            const h = gCanvas.height;
-            const stepX = w / 32;
-            const stepY = h / 32;
+            const w = gCanvas.width, h = gCanvas.height;
+            const stepX = w / 32, stepY = h / 32;
             gCtx.lineWidth = 0.8;
 
             for (let i = 1; i < 32; i++) {
                 gCtx.beginPath();
-                if (i % 8 === 0) {
-                    gCtx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
-                } else {
-                    gCtx.strokeStyle = 'rgba(0, 0, 0, 0.12)';
-                }
+                gCtx.strokeStyle = (i % 8 === 0) ? 'rgba(0, 0, 0, 0.45)' : 'rgba(0, 0, 0, 0.12)';
                 gCtx.moveTo(i * stepX, 0); gCtx.lineTo(i * stepX, h);
                 gCtx.moveTo(0, i * stepY); gCtx.lineTo(w, i * stepY);
                 gCtx.stroke();
@@ -535,80 +472,54 @@
         let trackForFlash = null;
 
         async function toggleCamera() {
-            if (currentStep !== 1) return;
+            if (currentStep !== 2) return;
             const camBtn = document.getElementById('btn-sketch-camera');
             
             if (!isCameraActive && !isCameraPreviewMode) {
                 try {
-                    const constraints = {
-                        video: { facingMode: "environment", width: { ideal: 1024 }, height: { ideal: 1024 } },
-                        audio: false
-                    };
+                    const constraints = { video: { facingMode: "environment", width: { ideal: 1024 }, height: { ideal: 1024 } }, audio: false };
                     videoStream = await navigator.mediaDevices.getUserMedia(constraints);
                     bgVideo.srcObject = videoStream;
-                    bgVideo.style.display = "block";
-                    bgLayer.style.backgroundImage = "none";
-                    bgLayer.style.display = "block";
+                    bgVideo.style.display = "block"; bgLayer.style.display = "block";
                     
                     const videoTrack = videoStream.getVideoTracks()[0];
                     if (videoTrack) {
                         trackForFlash = videoTrack;
                         const capabilities = videoTrack.getCapabilities();
-                        if (capabilities.torch) {
-                            await videoTrack.applyConstraints({ advanced: [{ torch: true }] });
-                        }
+                        if (capabilities.torch) await videoTrack.applyConstraints({ advanced: [{ torch: true }] });
                     }
 
                     canvasArea.classList.add('camera-active');
                     isCameraActive = true;
-                    camBtn.style.background = '#e11d48'; 
-                    camBtn.style.color = '#fff';
+                    camBtn.style.background = '#e11d48'; camBtn.style.color = '#fff';
                     camBtn.innerHTML = '<span class="material-icons" style="font-size:24px;">camera</span>';
                     cameraGuideText.innerText = "四角いガイドの中に紙の絵を合わせて、カメラボタンを押してね！";
                     cameraGuideText.style.color = "var(--cyber-neon)";
-                } catch (err) {
-                    console.error("Camera failed:", err);
-                    alert("カメラの起動に失敗しました。アクセスの許可を確認してください。");
-                }
+                } catch (err) { alert("カメラの起動に失敗しました。"); }
             } 
             else if (isCameraActive && !isCameraPreviewMode) {
                 try {
                     sCtx.clearRect(0, 0, sCanvas.width, sCanvas.height);
                     sCtx.globalCompositeOperation = 'source-over';
                     
-                    const vW = bgVideo.videoWidth;
-                    const vH = bgVideo.videoHeight;
+                    const vW = bgVideo.videoWidth, vH = bgVideo.videoHeight;
                     const minSize = Math.min(vW, vH);
-                    
                     const cropSize = minSize * 0.70; 
-                    const cropX = (vW - cropSize) / 2;
-                    const cropY = (vH - cropSize) / 2;
+                    const cropX = (vW - cropSize) / 2, cropY = (vH - cropSize) / 2;
 
-                    sCtx.drawImage(
-                        bgVideo, 
-                        cropX, cropY, cropSize, cropSize,
-                        0, 0, sCanvas.width, sCanvas.height
-                    );
+                    sCtx.drawImage(bgVideo, cropX, cropY, cropSize, cropSize, 0, 0, sCanvas.width, sCanvas.height);
 
                     bgVideo.pause();
                     canvasArea.classList.remove('camera-active');
-                    
-                    isCameraActive = false;
-                    isCameraPreviewMode = true;
-                    
+                    isCameraActive = false; isCameraPreviewMode = true;
                     camBtn.style.background = '#10b981'; 
                     camBtn.innerHTML = '<span class="material-icons" style="font-size:24px;">check</span>';
-                    cameraGuideText.innerText = "キレイに撮れたかな？OKならもう一度ボタンを押してね！(撮り直す時は戻るボタン)";
+                    cameraGuideText.innerText = "キレイに撮れたかな？OKならもう一度ボタンを押してね！";
                     cameraGuideText.style.color = "#10b981";
-                } catch(e) { 
-                    console.error("Capture failed:", e); 
-                    stopCameraMode();
-                }
+                } catch(e) { stopCameraMode(); }
             }
             else if (isCameraPreviewMode) {
-                saveHistory(1);
-                autoSaveToStorage();
-                stopCameraMode();
+                saveHistory(2); autoSaveToStorage(); stopCameraMode();
             }
         }
 
@@ -616,54 +527,36 @@
             if (trackForFlash) {
                 try {
                     const capabilities = trackForFlash.getCapabilities();
-                    if (capabilities.torch) {
-                        await trackForFlash.applyConstraints({ advanced: [{ torch: false }] });
-                    }
-                } catch (e) { console.warn("Flash off failed:", e); }
+                    if (capabilities.torch) await trackForFlash.applyConstraints({ advanced: [{ torch: false }] });
+                } catch (e) {}
                 trackForFlash = null;
             }
 
-            if (videoStream) {
-                videoStream.getTracks().forEach(track => track.stop());
-                videoStream = null;
-            }
-            bgVideo.srcObject = null;
-            bgVideo.style.display = "none";
-            bgLayer.style.display = "none";
+            if (videoStream) { videoStream.getTracks().forEach(track => track.stop()); videoStream = null; }
+            bgVideo.srcObject = null; bgVideo.style.display = "none"; bgLayer.style.display = "none";
             canvasArea.classList.remove('camera-active');
-            
-            isCameraActive = false;
-            isCameraPreviewMode = false;
+            isCameraActive = false; isCameraPreviewMode = false;
             
             const camBtn = document.getElementById('btn-sketch-camera');
-            camBtn.style.background = '#e3f2fd';
-            camBtn.style.color = '#1e88e5';
+            camBtn.style.background = '#e3f2fd'; camBtn.style.color = '#1e88e5';
             camBtn.innerHTML = '<span class="material-icons" style="font-size:24px;">photo_camera</span>';
-            
-            cameraGuideText.innerText = "上のカメラボタンで紙の絵をパシャッとスキャンすることもできるよ！";
+            cameraGuideText.innerText = "カメラボタンで紙の絵をスキャンすることもできるよ！";
             cameraGuideText.style.color = "#747d8c";
         }
 
         document.getElementById('btn-sketch-camera').onclick = toggleCamera;
 
-        /* 🛠️② ローカルストレージ自動保存（全パーツデータをJSONとして保管） */
         function autoSaveToStorage() {
             try {
-                // 現状の作業用ドット絵をメモリCanvasへ反映
-                const currentStoreCtx = partsCanvasStore[currentPartType].getContext('2d');
-                currentStoreCtx.clearRect(0, 0, 32, 32);
-                currentStoreCtx.drawImage(dCanvas, 0, 0);
-
+                syncCurrentDotToStore();
                 const partsDataObj = {};
-                ALL_PARTS.forEach(pk => {
-                    partsDataObj[pk] = partsCanvasStore[pk].toDataURL();
-                });
+                ALL_PARTS.forEach(pk => { partsDataObj[pk] = partsCanvasStore[pk].toDataURL(); });
 
                 localStorage.setItem('dots_backup_sketch', sCanvas.toDataURL());
                 localStorage.setItem('dots_backup_parts_json', JSON.stringify(partsDataObj));
                 localStorage.setItem('dots_backup_artname', artNameInput.value);
                 localStorage.setItem('dots_backup_parttype', currentPartType);
-            } catch (e) { console.warn("AutoSave failed:", e); }
+            } catch (e) {}
         }
 
         function loadFromStorageBackup() {
@@ -676,18 +569,15 @@
                     const parsed = JSON.parse(savedPartsJson);
                     ALL_PARTS.forEach(pk => {
                         if (parsed[pk]) {
-                            const img = new Image();
-                            img.src = parsed[pk];
+                            const img = new Image(); img.src = parsed[pk];
                             img.onload = () => {
                                 const pCtx = partsCanvasStore[pk].getContext('2d');
-                                pCtx.clearRect(0, 0, 32, 32);
-                                pCtx.drawImage(img, 0, 0, 32, 32);
-                                // 現在のパーツなら画面上のメインキャンバスにも描画
+                                pCtx.clearRect(0, 0, 32, 32); pCtx.drawImage(img, 0, 0, 32, 32);
                                 if (pk === currentPartType) {
-                                    dCtx.clearRect(0, 0, 32, 32);
-                                    dCtx.drawImage(img, 0, 0, 32, 32);
-                                    saveHistory(2);
+                                    dCtx.clearRect(0, 0, 32, 32); dCtx.drawImage(img, 0, 0, 32, 32);
+                                    saveHistory(3);
                                 }
+                                updatePartStatusDots();
                             };
                         }
                     });
@@ -695,11 +585,7 @@
             }
 
             const savedPartType = localStorage.getItem('dots_backup_parttype');
-            if (savedPartType) {
-                selectPartType(savedPartType);
-            } else {
-                openPartSelectModal();
-            }
+            if (savedPartType) selectPartType(savedPartType);
 
             const savedSketch = localStorage.getItem('dots_backup_sketch');
             if (savedSketch) {
@@ -707,7 +593,7 @@
                 img.onload = () => { 
                     sCtx.clearRect(0,0,sCanvas.width,sCanvas.height);
                     sCtx.drawImage(img, 0, 0, sCanvas.width, sCanvas.height); 
-                    saveHistory(1); 
+                    saveHistory(2); 
                 };
             }
         }
@@ -716,64 +602,53 @@
         window.addEventListener('DOMContentLoaded', () => {
             initCanvasSize();
             dCtx.clearRect(0, 0, 32, 32);
-            saveHistory(2);
-            saveHistory(1);
+            saveHistory(3); saveHistory(2);
             loadFromStorageBackup();
             resetZoomPan(); 
             switchStep(1);
         });
 
+        /* 🛠️② ステップ構造切り替え処理 */
         function switchStep(step) {
             currentStep = step;
             document.querySelectorAll('.tab').forEach((t, i) => { t.classList.toggle('active', i === step - 1); });
             document.querySelectorAll('.control-panel').forEach((p, i) => { p.classList.toggle('active', i === step - 1); });
             
-            if (step === 1) {
-                document.getElementById('history-row').style.display = 'flex';
-                document.getElementById('btn-zoom-in').style.display = 'none';
-                document.getElementById('btn-zoom-out').style.display = 'none';
-                document.getElementById('btn-pan').style.display = 'none';
-                document.getElementById('btn-sketch-camera').style.display = 'flex';
-            } else if (step === 2) {
-                document.getElementById('history-row').style.display = 'flex';
-                document.getElementById('btn-zoom-in').style.display = 'flex';
-                document.getElementById('btn-zoom-out').style.display = 'flex';
-                document.getElementById('btn-pan').style.display = 'flex';
-                document.getElementById('btn-sketch-camera').style.display = 'none';
-            } else {
+            if (step === 1 || step === 4) {
+                canvasArea.style.display = 'none';
+                previewArea.style.display = 'block';
                 document.getElementById('history-row').style.display = 'none';
-            }
-
-            sCanvas.style.display = (step === 1) ? 'block' : 'none';
-            dCanvas.style.display = (step === 2 || step === 4) ? 'block' : 'none';
-            threeContainer.style.display = (step === 3) ? 'block' : 'none';
-            gCanvas.style.display = (step === 2) ? 'block' : 'none';
-            jCanvas.style.display = (step === 2) ? 'block' : 'none';
-
-            if (step === 4) {
-                updateDesignPreview();
+                renderMonsterPreview();
             } else {
-                designPreviewLayer.style.display = 'none';
+                canvasArea.style.display = 'block';
+                previewArea.style.display = 'none';
+                document.getElementById('history-row').style.display = 'flex';
+                
+                if (step === 2) {
+                    document.getElementById('btn-zoom-in').style.display = 'none';
+                    document.getElementById('btn-zoom-out').style.display = 'none';
+                    document.getElementById('btn-pan').style.display = 'none';
+                    document.getElementById('btn-sketch-camera').style.display = 'flex';
+                } else if (step === 3) {
+                    document.getElementById('btn-zoom-in').style.display = 'flex';
+                    document.getElementById('btn-zoom-out').style.display = 'flex';
+                    document.getElementById('btn-pan').style.display = 'flex';
+                    document.getElementById('btn-sketch-camera').style.display = 'none';
+                }
             }
+
+            sCanvas.style.display = (step === 2) ? 'block' : 'none';
+            dCanvas.style.display = (step === 3) ? 'block' : 'none';
+            gCanvas.style.display = (step === 3) ? 'block' : 'none';
+            jCanvas.style.display = (step === 3) ? 'block' : 'none';
 
             resetZoomPan(); 
-            if(step === 2) { drawGrid(); drawJointGuide(); }
-            if(step === 3) updateThreeMesh();
-            if(step !== 1 && (isCameraActive || isCameraPreviewMode)) stopCameraMode();
+            if(step === 3) { drawGrid(); drawJointGuide(); }
+            if(step !== 2 && (isCameraActive || isCameraPreviewMode)) stopCameraMode();
         }
 
-        function goTo3DStep() {
-            if (!isThreeInitialized) { initThree(); } else { updateCameraAspect(); }
-            switchStep(3);
-        }
-
-        function applyZoomPan() {
-            canvasWrapper.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomScale})`;
-        }
-        function resetZoomPan() {
-            zoomScale = 1.0; panX = 0; panY = 0;
-            applyZoomPan();
-        }
+        function applyZoomPan() { canvasWrapper.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomScale})`; }
+        function resetZoomPan() { zoomScale = 1.0; panX = 0; panY = 0; applyZoomPan(); }
         document.getElementById('btn-zoom-in').onclick = () => { if(zoomScale < 4.0) { zoomScale += 0.25; applyZoomPan(); } };
         document.getElementById('btn-zoom-out').onclick = () => { if(zoomScale > 1.0) { zoomScale -= 0.25; if(zoomScale===1){panX=0;panY=0;} applyZoomPan(); } };
         
@@ -784,13 +659,13 @@
                 document.getElementById('btn-pen').classList.add('active');
             } else {
                 dotMode = 'pan';
-                document.querySelectorAll('#panel-step2 .btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('#panel-step3 .btn').forEach(b => b.classList.remove('active'));
                 document.getElementById('btn-pan').classList.add('active');
             }
         };
 
         function saveHistory(step) {
-            const cvs = step === 1 ? sCanvas : dCanvas;
+            const cvs = step === 2 ? sCanvas : dCanvas;
             const dataUrl = cvs.toDataURL();
             
             historyStack[step] = historyStack[step].slice(0, undoIndex[step] + 1);
@@ -800,127 +675,39 @@
         }
 
         document.getElementById('btn-undo').onclick = () => {
-            if (currentStep === 1 && isCameraPreviewMode) {
+            if (currentStep === 2 && isCameraPreviewMode) {
                 bgVideo.play(); isCameraPreviewMode = false; isCameraActive = true;
                 canvasArea.classList.add('camera-active');
                 const camBtn = document.getElementById('btn-sketch-camera');
                 camBtn.style.background = '#e11d48'; camBtn.innerHTML = '<span class="material-icons" style="font-size:24px;">camera</span>';
-                cameraGuideText.innerText = "四角いガイドの中に紙の絵を合わせて、カメラボタンを押してね！";
-                cameraGuideText.style.color = "var(--cyber-neon)";
                 sCtx.clearRect(0, 0, sCanvas.width, sCanvas.height);
                 return;
             }
 
             const step = currentStep;
-            if (undoIndex[step] > 0) {
-                undoIndex[step]--;
-                loadHistoryImage(step);
-            }
+            if (undoIndex[step] > 0) { undoIndex[step]--; loadHistoryImage(step); }
         };
 
         document.getElementById('btn-redo').onclick = () => {
             const step = currentStep;
-            if (undoIndex[step] < historyStack[step].length - 1) {
-                undoIndex[step]++;
-                loadHistoryImage(step);
-            }
+            if (undoIndex[step] < historyStack[step].length - 1) { undoIndex[step]++; loadHistoryImage(step); }
         };
 
         function loadHistoryImage(step) {
             const img = new Image();
             img.src = historyStack[step][undoIndex[step]];
             img.onload = () => {
-                if (step === 1) {
+                if (step === 2) {
                     sCtx.clearRect(0, 0, sCanvas.width, sCanvas.height);
                     sCtx.globalCompositeOperation = 'source-over';
                     sCtx.drawImage(img, 0, 0, sCanvas.width, sCanvas.height);
                 } else {
                     dCtx.clearRect(0, 0, 32, 32);
                     dCtx.drawImage(img, 0, 0, 32, 32);
-                    // メモリ保持キャンバスにも即座に同期
-                    const currentStoreCtx = partsCanvasStore[currentPartType].getContext('2d');
-                    currentStoreCtx.clearRect(0, 0, 32, 32);
-                    currentStoreCtx.drawImage(img, 0, 0, 32, 32);
+                    syncCurrentDotToStore();
                 }
                 autoSaveToStorage();
             };
-        }
-
-        function updateDesignPreview() {
-            const selectedBg = bgSelect.value;
-            if (selectedBg) {
-                designPreviewLayer.style.backgroundImage = `url('${selectedBg}')`;
-                designPreviewLayer.style.display = 'block';
-            } else {
-                designPreviewLayer.style.display = 'none';
-            }
-        }
-        bgSelect.onchange = updateDesignPreview;
-
-        function initThree() {
-            const rect = canvasArea.getBoundingClientRect();
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0xffffff);
-
-            const aspect = rect.width / rect.height;
-            const d = 20;
-            camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 1000);
-            camera.position.set(25, 25, 25);
-
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(rect.width, rect.height);
-            threeContainer.appendChild(renderer.domElement);
-
-            controls = new THREE.OrbitControls(camera, renderer.domElement);
-            controls.enableDamping = true;
-            controls.dampingFactor = 0.1;
-
-            scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-            const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
-            dirLight.position.set(20, 40, 20);
-            scene.add(dirLight);
-
-            voxelGroup = new THREE.Group();
-            scene.add(voxelGroup);
-            isThreeInitialized = true;
-
-            function animate3D() {
-                requestAnimationFrame(animate3D);
-                if (currentStep === 3) { controls.update(); renderer.render(scene, camera); }
-            }
-            animate3D();
-        }
-
-        function updateCameraAspect() {
-            if (!camera || !canvasArea) return;
-            const rect = canvasArea.getBoundingClientRect();
-            const aspect = rect.width / rect.height;
-            const d = 20;
-            camera.left = -d * aspect; camera.right = d * aspect;
-            camera.top = d; camera.bottom = -d;
-            camera.updateProjectionMatrix();
-        }
-
-        function updateThreeMesh() {
-            if (!isThreeInitialized) return;
-            while(voxelGroup.children.length > 0){
-                const obj = voxelGroup.children[0]; obj.geometry.dispose(); obj.material.dispose(); voxelGroup.remove(obj);
-            }
-            const imgData = dCtx.getImageData(0, 0, 32, 32).data;
-            const boxGeo = new THREE.BoxGeometry(1, VOXEL_HEIGHT, 1);
-
-            for (let y = 0; y < 32; y++) {
-                for (let x = 0; x < 32; x++) {
-                    const idx = (y * 32 + x) * 4; if (imgData[idx + 3] < 128) continue;
-                    const mat = new THREE.MeshStandardMaterial({
-                        color: new THREE.Color(`rgb(${imgData[idx]},${imgData[idx+1]},${imgData[idx+2]})`), roughness: 0.4
-                    });
-                    const mesh = new THREE.Mesh(boxGeo, mat);
-                    mesh.position.set(x - 16, VOXEL_HEIGHT / 2, y - 16);
-                    voxelGroup.add(mesh);
-                }
-            }
-            voxelGroup.position.set(0, -VOXEL_HEIGHT / 2, 0);
         }
 
         function magicConvert() {
@@ -939,12 +726,8 @@
             }
             dCtx.clearRect(0, 0, 32, 32); dCtx.putImageData(imgData, 0, 0);
             
-            // メモリ保管キャンバスにも即座にコピー
-            const currentStoreCtx = partsCanvasStore[currentPartType].getContext('2d');
-            currentStoreCtx.clearRect(0, 0, 32, 32);
-            currentStoreCtx.drawImage(dCanvas, 0, 0);
-
-            saveHistory(2); autoSaveToStorage(); switchStep(2);
+            syncCurrentDotToStore();
+            saveHistory(3); autoSaveToStorage(); updatePartStatusDots(); switchStep(3);
         }
 
         function executeCanvasBucket(ctx, startX, startY, fillHex, width, height) {
@@ -974,13 +757,10 @@
         function getCanvasTouchPos(e) {
             const rect = canvasArea.getBoundingClientRect();
             const p = e.touches ? e.touches[0] : e;
-            
-            let localX = p.clientX - rect.left;
-            let localY = p.clientY - rect.top;
+            let localX = p.clientX - rect.left, localY = p.clientY - rect.top;
 
-            if (currentStep === 2) {
-                const centerX = rect.width / 2;
-                const centerY = rect.height / 2;
+            if (currentStep === 3) {
+                const centerX = rect.width / 2, centerY = rect.height / 2;
                 localX = (localX - centerX - panX) / zoomScale + centerX;
                 localY = (localY - centerY - panY) / zoomScale + centerY;
             }
@@ -995,38 +775,36 @@
         window.addEventListener('touchend', stopDrawing);
 
         function startDrawing(e) {
-            if (currentStep > 2 || isCameraActive || isCameraPreviewMode) return; 
+            if (currentStep < 2 || currentStep > 3 || isCameraActive || isCameraPreviewMode) return; 
             if (e.touches) e.preventDefault(); 
             
-            if (currentStep === 2 && dotMode === 'pan') {
+            if (currentStep === 3 && dotMode === 'pan') {
                 isPanning = true;
                 const p = e.touches ? e.touches[0] : e;
-                startPanX = p.clientX - panX;
-                startPanY = p.clientY - panY;
+                startPanX = p.clientX - panX; startPanY = p.clientY - panY;
                 return;
             }
 
             isDrawing = true; 
             const pos = getCanvasTouchPos(e);
             
-            if (currentStep === 1) { 
+            if (currentStep === 2) { 
                 const rx = Math.floor(pos.x), ry = Math.floor(pos.y);
                 if (sketchMode === 'bucket') { executeCanvasBucket(sCtx, rx, ry, sketchColor.value, sCanvas.width, sCanvas.height); stopDrawing(); } 
                 else if (sketchMode === 'picker') { executeCanvasPicker(sCtx, rx, ry, sCanvas.width, sCanvas.height, sketchColor); stopDrawing(); } 
                 else { sCtx.beginPath(); sCtx.moveTo(pos.x, pos.y); }
-            } else if (currentStep === 2) {
+            } else if (currentStep === 3) {
                 handleDotAction(pos.x, pos.y);
             }
         }
 
         function draw(e) {
-            if (currentStep > 2 || isCameraActive || isCameraPreviewMode) return;
+            if (currentStep < 2 || currentStep > 3 || isCameraActive || isCameraPreviewMode) return;
             
-            if (currentStep === 2 && dotMode === 'pan' && isPanning) {
+            if (currentStep === 3 && dotMode === 'pan' && isPanning) {
                 if (e.touches) e.preventDefault();
                 const p = e.touches ? e.touches[0] : e;
-                panX = p.clientX - startPanX;
-                panY = p.clientY - startPanY;
+                panX = p.clientX - startPanX; panY = p.clientY - startPanY;
                 applyZoomPan();
                 return;
             }
@@ -1035,27 +813,22 @@
             if (e.touches) e.preventDefault(); 
             const pos = getCanvasTouchPos(e);
             
-            if (currentStep === 1) {
+            if (currentStep === 2) {
                 if (sketchMode === 'pen' || sketchMode === 'eraser') {
                     sCtx.strokeStyle = sketchMode === 'eraser' ? '#ffffff' : sketchColor.value;
                     sCtx.globalCompositeOperation = sketchMode === 'eraser' ? 'destination-out' : 'source-over';
                     sCtx.lineTo(pos.x, pos.y); sCtx.stroke();
                 }
-            } else if (currentStep === 2) {
+            } else if (currentStep === 3) {
                 handleDotAction(pos.x, pos.y);
             }
         }
 
         function stopDrawing() { 
             isPanning = false;
-            if (isDrawing && currentStep <= 2) { 
+            if (isDrawing && (currentStep === 2 || currentStep === 3)) { 
                 saveHistory(currentStep); 
-                if (currentStep === 2) {
-                    // ドット絵描画完了時に保管用キャンバスへ即時同期
-                    const currentStoreCtx = partsCanvasStore[currentPartType].getContext('2d');
-                    currentStoreCtx.clearRect(0, 0, 32, 32);
-                    currentStoreCtx.drawImage(dCanvas, 0, 0);
-                }
+                if (currentStep === 3) { syncCurrentDotToStore(); updatePartStatusDots(); }
                 autoSaveToStorage(); 
             } 
             isDrawing = false; 
@@ -1079,13 +852,13 @@
                 document.getElementById(sTools[k]).classList.add('active');
             };
         });
-        document.getElementById('btn-sketch-clear').onclick = () => { if(confirm("らくがきをぜんぶ消しますか？")) { sCtx.clearRect(0,0,sCanvas.width,sCanvas.height); saveHistory(1); autoSaveToStorage(); } };
+        document.getElementById('btn-sketch-clear').onclick = () => { if(confirm("らくがきをぜんぶ消しますか？")) { sCtx.clearRect(0,0,sCanvas.width,sCanvas.height); saveHistory(2); autoSaveToStorage(); } };
 
         const dTools = {pen:'btn-pen', eraser:'btn-eraser', bucket:'btn-bucket', picker:'btn-picker'};
         Object.keys(dTools).forEach(k => {
             document.getElementById(dTools[k]).onclick = () => {
                 dotMode = k; 
-                document.querySelectorAll('#panel-step2 .btn, #btn-pan').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('#panel-step3 .btn, #btn-pan').forEach(b => b.classList.remove('active'));
                 document.getElementById(dTools[k]).classList.add('active');
             };
         });
@@ -1099,10 +872,7 @@
         document.getElementById('btn-dot-clear').onclick = () => { 
             if(confirm(`現在選択中のパーツ「${PART_LABELS[currentPartType]}」のドット絵を消しますか？`)) { 
                 dCtx.clearRect(0,0,32,32); 
-                const currentStoreCtx = partsCanvasStore[currentPartType].getContext('2d');
-                currentStoreCtx.clearRect(0, 0, 32, 32);
-                saveHistory(2); 
-                autoSaveToStorage(); 
+                syncCurrentDotToStore(); saveHistory(3); autoSaveToStorage(); updatePartStatusDots();
             } 
         };
 
@@ -1116,17 +886,54 @@
 
         artNameInput.oninput = autoSaveToStorage;
 
-        /* 🛠️③ 個別パーツごとの独立アップロード送信 */
+        /* 🛠️③ 全6パーツの一括アップロードデータ構築関数 */
+        function getPartsPayload() {
+            syncCurrentDotToStore();
+            const partsPayload = {};
+
+            ALL_PARTS.forEach(pk => {
+                const cvs = partsCanvasStore[pk];
+                const ctx = cvs.getContext('2d');
+                const base64Data = cvs.toDataURL('image/png');
+                
+                // 32x32ピクセル行列抽出
+                const imgData = ctx.getImageData(0, 0, 32, 32).data;
+                const matrix = [];
+                for (let y = 0; y < 32; y++) {
+                    const row = [];
+                    for (let x = 0; x < 32; x++) {
+                        const i = (y * 32 + x) * 4;
+                        if (imgData[i + 3] < 128) {
+                            row.push(null);
+                        } else {
+                            const hex = "#" + 
+                                ("0" + imgData[i].toString(16)).slice(-2) + 
+                                ("0" + imgData[i+1].toString(16)).slice(-2) + 
+                                ("0" + imgData[i+2].toString(16)).slice(-2);
+                            row.push(hex);
+                        }
+                    }
+                    matrix.push(row);
+                }
+
+                partsPayload[pk] = {
+                    image: base64Data,
+                    pixelMatrix: matrix
+                };
+            });
+
+            return partsPayload;
+        }
+
+        /* 🛠️③ 一括アップロード処理 */
         document.getElementById('uploadButton').onclick = async () => {
             const name = artNameInput.value.trim();
-            if (!name) { alert("パーツの名前を入力してください。"); artNameInput.focus(); return; }
+            if (!name) { alert("作品（モンスター）の名前を入力してください。"); artNameInput.focus(); return; }
 
             const durationSeconds = Math.floor((Date.now() - startTime) / 1000);
-            
-            // 現在選択されているパーツ（32x32）の画像をPNG形式（Base64）で取得
-            const base64Data = dCanvas.toDataURL('image/png');
+            const partsData = getPartsPayload();
 
-            if(!confirm(`パーツ名: 「${name}」\n部位: 「${PART_LABELS[currentPartType]}」\n\nこの単体パーツをアップロードしますか？`)) return;
+            if(!confirm(`作品名: 「${name}」\n\n作成した全パーツを一括で保存・送信しますか？`)) return;
 
             loadingOverlay.style.display = 'flex';
 
@@ -1134,49 +941,25 @@
                 const response = await fetch(GAS_ENDPOINT, {
                     method: "POST",
                     body: JSON.stringify({
-                        image: base64Data, 
-                        name: name, 
-                        part_type: currentPartType,
+                        monster_name: name,
                         duration: durationSeconds,
-                        pixelMatrix: getPixelMatrix() 
+                        parts: partsData 
                     })
                 });
                 const result = await response.json();
 
                 if(result.status === "success") {
                     loadingOverlay.style.display = 'none';
-                    alert(`パーツ「${name} (${PART_LABELS[currentPartType]})」のアップロードが完了しました！`);
+                    alert(`作品「${name}」の全パーツ一括保存が完了しました！`);
                 } else {
                     loadingOverlay.style.display = 'none';
                     alert("エラー: " + result.message);
                 }
             } catch (error) {
                 loadingOverlay.style.display = 'none';
-                alert("送信を受け付けました（※GAS側の受信フォルダ設定完了後、正常に保存されます）");
+                alert("送信を受け付けました（※GAS側の受信処理設定後、フォルダ別に自動振り分け保存されます）");
             }
         };
-
-        function getPixelMatrix() {
-            const imgData = dCtx.getImageData(0, 0, 32, 32).data;
-            const matrix = [];
-            for (let y = 0; y < 32; y++) {
-                const row = [];
-                for (let x = 0; x < 32; x++) {
-                    const i = (y * 32 + x) * 4;
-                    if (imgData[i + 3] < 128) {
-                        row.push(null);
-                    } else {
-                        const hex = "#" + 
-                            ("0" + imgData[i].toString(16)).slice(-2) + 
-                            ("0" + imgData[i+1].toString(16)).slice(-2) + 
-                            ("0" + imgData[i+2].toString(16)).slice(-2);
-                        row.push(hex);
-                    }
-                }
-                matrix.push(row);
-            }
-            return matrix;
-        }
     </script>
 </body>
 </html>
