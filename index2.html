@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DOTS ART STUDIO - Magic Editor 3D</title>
+    <title>DOTS ART STUDIO - Monster Parts Edition</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/controls/OrbitControls.js"></script>
@@ -21,6 +21,14 @@
         .header-logo { height: 24px; width: auto; }
         h1 { margin: 0; font-size: 1rem; color: #333; font-weight: 800; }
         
+        /* 🛠️①・② 部位表示バッジ */
+        .part-indicator-bar {
+            width: 100%; max-width: 500px; background: #dfe6e9; border-radius: 8px; padding: 6px 12px; margin-bottom: 8px; box-sizing: border-box;
+            display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; font-weight: bold; color: #2d3436;
+        }
+        .part-badge { background: var(--primary-color); color: #fff; padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; }
+        .btn-change-part { background: #b2bec3; border: none; color: #fff; padding: 3px 8px; border-radius: 6px; font-size: 0.7rem; cursor: pointer; }
+
         .step-tabs { display: flex; width: 100%; max-width: 500px; background: #e4e7eb; border-radius: 12px; padding: 4px; margin-bottom: 10px; box-sizing: border-box; }
         .tab { flex: 1; text-align: center; padding: 8px 0; font-size: 0.7rem; font-weight: bold; color: #747d8c; border-radius: 8px; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; align-items: center; gap: 2px; }
         .tab.active { background: var(--card-bg); color: var(--primary-color); box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
@@ -46,12 +54,14 @@
         #dotCanvas { z-index: 3; image-rendering: pixelated; width: 100%; height: 100%; display: none; }
         #gridCanvas { z-index: 10; position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; }
         
+        /* 🛠️③ 接合部ガイド用キャンバス */
+        #jointGuideCanvas { z-index: 9; position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; }
+
         #threeContainer { z-index: 4; position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; }
         
         #bgLayer { z-index: 1; position:absolute; top:0; left:0; width:100%; height:100%; display: none; overflow: hidden; pointer-events: none; }
         #bgVideo { width: 100%; height: 100%; object-fit: cover; }
 
-        /* 撮影ガイド */
         .canvas-area.camera-active::before {
             content: ''; position: absolute; top: 15%; left: 15%; width: 70%; height: 70%;
             border: 3px dashed rgba(255, 0, 255, 0.6); box-shadow: 0 0 0 2000px rgba(0, 0, 0, 0.4);
@@ -73,14 +83,12 @@
         .section-label { font-size: 0.65rem; color: #a1a1a1; font-weight: bold; text-transform: uppercase; margin-bottom: -5px; }
         .row { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; align-items: center; }
         
-        /* 🛠️ ドット絵調整ツールを1行に収めるための横並び最適化用スタイル */
         .tool-row-compact { display: flex; justify-content: space-between; align-items: center; gap: 4px; width: 100%; box-sizing: border-box; }
 
         .btn { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; border-radius: 10px; background: #f1f2f6; color: #57606f; padding: 0; box-sizing: border-box; }
         .btn.active { background: var(--primary-color); color: white; }
         .btn img { width: 24px; height: 24px; object-fit: contain; }
         
-        /* 🛠️ 1行集約のための縮小版ボタンサイズ定義 */
         .btn-compact { flex: 1; min-width: 34px; height: 38px; border-radius: 8px; }
         .btn-compact .material-icons { font-size: 20px; }
         .btn-compact img { width: 20px; height: 20px; }
@@ -88,7 +96,6 @@
         .color-picker-wrapper { width: 44px; height: 44px; border-radius: 10px; overflow: hidden; position: relative; border: 2px solid #ddd; box-sizing: border-box; cursor: pointer; }
         .color-picker-wrapper input[type="color"] { position: absolute; top: -10px; left: -10px; width: 64px; height: 64px; border: none; padding: 0; margin: 0; cursor: pointer; background: none; }
         
-        /* 🛠️ 1行集約用の縮小版カラーピッカーラッパー */
         .color-picker-wrapper-compact { width: 38px; height: 38px; border-radius: 8px; flex-shrink: 0; }
 
         .btn-magic { background: linear-gradient(135deg, #6c5ce7, #a29bfe); color: white; height: 55px; font-weight: 900; border-radius: 15px; border: none; cursor: pointer; width: 100%; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(108, 92, 231, 0.4); display: flex; align-items: center; justify-content: center; gap: 8px; }
@@ -100,18 +107,93 @@
 
         .palette-item { display: flex; align-items: center; background: #f1f2f6; border-radius: 6px; padding: 2px 4px; gap: 4px; }
         .color-chip { width: 20px; height: 20px; border-radius: 4px; border: 1px solid #ccc; cursor: pointer; }
+
+        /* 🛠️ モーダル用スタイル (①パーツ選択モーダル & ④合体プレビュー) */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); z-index: 3000; display: none;
+            align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-card {
+            background: #fff; width: 100%; max-width: 400px; border-radius: 20px; padding: 20px;
+            box-sizing: border-box; display: flex; flex-direction: column; gap: 15px; align-items: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2); text-align: center;
+        }
+        .modal-title { font-size: 1.1rem; font-weight: 800; color: #2d3436; margin: 0; }
+        .modal-sub { font-size: 0.8rem; color: #636e72; margin-top: -8px; }
+        .part-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; width: 100%; }
+        .part-opt-btn {
+            background: #f1f2f6; border: 2px solid #dfe6e9; border-radius: 12px; padding: 12px 8px;
+            font-size: 0.85rem; font-weight: bold; color: #2d3436; cursor: pointer; transition: 0.2s;
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
+        }
+        .part-opt-btn:hover, .part-opt-btn.selected {
+            background: #e0e7ff; border-color: var(--primary-color); color: var(--primary-color);
+        }
+        .preview-canvas-container {
+            width: 280px; height: 280px; background: #e0e0e0; border-radius: 12px;
+            overflow: hidden; border: 2px solid #ccc; position: relative;
+        }
+        #monsterPreviewCanvas { width: 100%; height: 100%; image-rendering: pixelated; }
     </style>
 </head>
 <body>
 
     <div id="loadingOverlay">
         <div class="spinner"></div>
-        <div class="loading-text">作品をアップロード中...</div>
+        <div class="loading-text">パーツをアップロード中...</div>
+    </div>
+
+    <!-- 🛠️① パーツ選択モーダル -->
+    <div class="modal-overlay" id="partSelectModal">
+        <div class="modal-card">
+            <h2 class="modal-title">作るパーツを選ぼう！</h2>
+            <p class="modal-sub">作成するモンスターのパーツを1つ選択してね</p>
+            <div class="part-grid">
+                <button class="part-opt-btn" onclick="selectPartType('head')">
+                    <span class="material-icons">face</span> 頭部 (Head)
+                </button>
+                <button class="part-opt-btn" onclick="selectPartType('body')">
+                    <span class="material-icons">checkroom</span> 体 (Body)
+                </button>
+                <button class="part-opt-btn" onclick="selectPartType('legs')">
+                    <span class="material-icons">hiking</span> 足 (Legs)
+                </button>
+                <button class="part-opt-btn" onclick="selectPartType('top_side')">
+                    <span class="material-icons">north_east</span> 上サイド (Top Side)
+                </button>
+                <button class="part-opt-btn" onclick="selectPartType('mid_side')">
+                    <span class="material-icons">east</span> 中サイド (Mid Side)
+                </button>
+                <button class="part-opt-btn" onclick="selectPartType('bot_side')">
+                    <span class="material-icons">south_east</span> 下サイド (Bot Side)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🛠️④ 合体プレビューモーダル -->
+    <div class="modal-overlay" id="monsterPreviewModal">
+        <div class="modal-card">
+            <h2 class="modal-title">合体プレビュー！</h2>
+            <p class="modal-sub">他のパーツと合体するとこんな感じになるよ</p>
+            <div class="preview-canvas-container">
+                <canvas id="monsterPreviewCanvas" width="96" height="96"></canvas>
+            </div>
+            <button class="btn-magic" style="margin-top: 5px;" onclick="closeMonsterPreview()">プレビューを閉じる</button>
+        </div>
     </div>
 
     <div class="header-area">
         <img src="DOTS_PROJECT_logo_black.png" alt="DOTS" class="header-logo">
         <h1>MAGIC STUDIO 3D</h1>
+    </div>
+
+    <!-- 🛠️② 現在制作中のパーツ表示バー -->
+    <div class="part-indicator-bar">
+        <span>制作パーツ: <strong id="currentPartLabel" class="part-badge">未選択</strong></span>
+        <button class="btn-change-part" onclick="openPartSelectModal()">パーツ変更</button>
     </div>
 
     <div class="step-tabs">
@@ -129,6 +211,8 @@
                 
                 <canvas id="sketchCanvas"></canvas>
                 <canvas id="dotCanvas" width="32" height="32"></canvas>
+                <!-- 🛠️③ 接合部ガイド用キャンバス -->
+                <canvas id="jointGuideCanvas" width="32" height="32"></canvas>
                 <canvas id="gridCanvas"></canvas>
                 <div id="threeContainer"></div>
             </div>
@@ -172,8 +256,16 @@
                 <button class="btn btn-compact" id="btn-bucket"><span class="material-icons">format_color_fill</span></button>
                 <button class="btn btn-compact" id="btn-picker"><span class="material-icons">colorize</span></button>
                 <button class="btn btn-compact" id="btn-toggle-grid"><span class="material-icons">grid_on</span></button>
+                <!-- 🛠️③ 接合部ガイド表示切り替えボタン -->
+                <button class="btn btn-compact active" id="btn-toggle-guide" style="color:#6c5ce7;"><span class="material-icons">visibility</span></button>
                 <button class="btn btn-compact" id="btn-dot-clear" style="color:var(--accent-color); background: #fff5f5;"><span class="material-icons">delete_outline</span></button>
             </div>
+            
+            <!-- 🛠️④ 合体プレビューボタン -->
+            <button class="btn" id="btn-preview-monster" onclick="openMonsterPreview()" style="width: 100%; height: 40px; background: #e0e7ff; color: var(--primary-color); font-weight: bold; font-size: 0.85rem;">
+                <span class="material-icons" style="font-size: 18px; margin-right: 4px;">extension</span> 合体プレビューで確認する
+            </button>
+
             <div class="section-label">登録した色（好きな色を登録できるよ）</div>
             <div class="row" style="justify-content: space-between;">
                 <div id="paletteArea" class="row" style="min-height:30px; justify-content:flex-start; gap:6px;"></div>
@@ -203,7 +295,7 @@
                 <option value="bg5.jpg">背景デザイン5</option>
             </select>
 
-            <button class="btn-upload" id="uploadButton" style="margin-top: 15px;">作品をアップロード！</button>
+            <button class="btn-upload" id="uploadButton" style="margin-top: 15px;">パーツをアップロード！</button>
         </div>
     </div>
 
@@ -215,6 +307,10 @@
         const gCanvas = document.getElementById('gridCanvas');
         const gCtx = gCanvas.getContext('2d');
         
+        /* 🛠️③ 接合ガイドCanvas */
+        const jCanvas = document.getElementById('jointGuideCanvas');
+        const jCtx = jCanvas.getContext('2d');
+
         const canvasArea = document.getElementById('canvasArea');
         const canvasWrapper = document.getElementById('canvasWrapper');
         const designPreviewLayer = document.getElementById('designPreviewLayer');
@@ -229,6 +325,27 @@
         const cameraGuideText = document.getElementById('camera-guide-text');
         const bgSelect = document.getElementById('bgSelect');
 
+        /* 🛠️①・② パーツ管理変数 & ラベルマッピング */
+        let currentPartType = 'head'; // デフォルトは頭部
+        const PART_LABELS = {
+            'head': '頭部 (Head)',
+            'body': '体 (Body)',
+            'legs': '足 (Legs)',
+            'top_side': '上サイド (Top Side)',
+            'mid_side': '中サイド (Mid Side)',
+            'bot_side': '下サイド (Bot Side)'
+        };
+
+        /* 🛠️③ 接合点（ジョイント）の定義 (32x32グリッド基準) */
+        const JOINT_DEFINITIONS = {
+            'head': [ {x: 14, y: 31, w: 4, h: 1} ],                             // 下部（首）
+            'body': [ {x: 14, y: 0, w: 4, h: 1}, {x: 14, y: 31, w: 4, h: 1} ],    // 上部（首）＆下部（腰）
+            'legs': [ {x: 14, y: 0, w: 4, h: 1} ],                             // 上部（腰）
+            'top_side': [ {x: 0, y: 28, w: 1, h: 4} ],                         // 左端（中央列との接続点）
+            'mid_side': [ {x: 0, y: 14, w: 1, h: 4} ],                         // 左端
+            'bot_side': [ {x: 0, y: 0, w: 1, h: 4} ]                           // 左端
+        };
+
         let currentStep = 1;
         let isDrawing = false;
         let sketchMode = 'pen';
@@ -239,6 +356,7 @@
 
         let startTime = Date.now();
         let gridActive = true;
+        let guideActive = true; // 🛠️③ ガイド表示フラグ
         
         let isCameraActive = false;
         let isCameraPreviewMode = false; 
@@ -263,6 +381,82 @@
 
         document.getElementById('sketchColorWrapper').onclick = () => sketchColor.click();
         document.getElementById('colorPickerWrapper').onclick = () => colorPicker.click();
+
+        /* 🛠️① パーツ選択モーダルの処理 */
+        function openPartSelectModal() {
+            document.getElementById('partSelectModal').classList.add('active');
+        }
+        function selectPartType(type) {
+            currentPartType = type;
+            document.getElementById('currentPartLabel').innerText = PART_LABELS[type] || type;
+            document.getElementById('partSelectModal').classList.remove('active');
+            drawJointGuide(); // 🛠️③ ガイド描画更新
+        }
+
+        /* 🛠️③ 接合部ガイドラインを描画 */
+        function drawJointGuide() {
+            jCtx.clearRect(0, 0, 32, 32);
+            if (!guideActive) return;
+
+            const joints = JOINT_DEFINITIONS[currentPartType];
+            if (!joints) return;
+
+            jCtx.fillStyle = 'rgba(255, 0, 100, 0.6)'; // 目立つピンク系半透明
+            joints.forEach(rect => {
+                jCtx.fillRect(rect.x, rect.y, rect.w, rect.h);
+            });
+        }
+
+        /* 🛠️④ 合体プレビューモーダルの表示・描画処理 */
+        function openMonsterPreview() {
+            const previewCanvas = document.getElementById('monsterPreviewCanvas');
+            const pCtx = previewCanvas.getContext('2d');
+            pCtx.imageSmoothingEnabled = false;
+            pCtx.clearRect(0, 0, 96, 96);
+
+            // 背景に3x3グリッド線を描画
+            pCtx.fillStyle = '#dcdde1';
+            pCtx.fillRect(0, 0, 96, 96);
+            pCtx.strokeStyle = '#b2bec3';
+            pCtx.lineWidth = 1;
+            for(let i=1; i<3; i++) {
+                pCtx.beginPath(); pCtx.moveTo(i*32, 0); pCtx.lineTo(i*32, 96); pCtx.stroke();
+                pCtx.beginPath(); pCtx.moveTo(0, i*32); pCtx.lineTo(96, i*32); pCtx.stroke();
+            }
+
+            // 今描いているドット絵キャンバスを取得
+            const currentPartImage = dCanvas;
+
+            // 中央列 (x=32)
+            if (currentPartType === 'head') pCtx.drawImage(currentPartImage, 32, 0);
+            if (currentPartType === 'body') pCtx.drawImage(currentPartImage, 32, 32);
+            if (currentPartType === 'legs') pCtx.drawImage(currentPartImage, 32, 64);
+
+            // 右サイド (x=64)
+            if (currentPartType === 'top_side') pCtx.drawImage(currentPartImage, 64, 0);
+            if (currentPartType === 'mid_side') pCtx.drawImage(currentPartImage, 64, 32);
+            if (currentPartType === 'bot_side') pCtx.drawImage(currentPartImage, 64, 64);
+
+            // 左サイド (x=0 に左右反転して描画)
+            if (currentPartType === 'top_side') drawFlippedPart(pCtx, currentPartImage, 0, 0);
+            if (currentPartType === 'mid_side') drawFlippedPart(pCtx, currentPartImage, 0, 32);
+            if (currentPartType === 'bot_side') drawFlippedPart(pCtx, currentPartImage, 0, 64);
+
+            document.getElementById('monsterPreviewModal').classList.add('active');
+        }
+
+        function closeMonsterPreview() {
+            document.getElementById('monsterPreviewModal').classList.remove('active');
+        }
+
+        // 左右反転ヘルパー関数
+        function drawFlippedPart(ctx, img, x, y) {
+            ctx.save();
+            ctx.translate(x + 32, y);
+            ctx.scale(-1, 1);
+            ctx.drawImage(img, 0, 0, 32, 32);
+            ctx.restore();
+        }
 
         function initCanvasSize() {
             const rect = canvasArea.getBoundingClientRect();
@@ -291,6 +485,7 @@
                 lastCanvasHeight = newHeight;
                 
                 drawGrid();
+                drawJointGuide();
                 if (isThreeInitialized && renderer) {
                     renderer.setSize(newWidth, newHeight);
                     updateCameraAspect();
@@ -440,12 +635,20 @@
                 localStorage.setItem('dots_backup_sketch', sCanvas.toDataURL());
                 localStorage.setItem('dots_backup_dot', dCanvas.toDataURL());
                 localStorage.setItem('dots_backup_artname', artNameInput.value);
+                localStorage.setItem('dots_backup_parttype', currentPartType);
             } catch (e) { console.warn("AutoSave failed:", e); }
         }
 
         function loadFromStorageBackup() {
             const savedName = localStorage.getItem('dots_backup_artname');
             if (savedName) artNameInput.value = savedName;
+
+            const savedPartType = localStorage.getItem('dots_backup_parttype');
+            if (savedPartType) {
+                selectPartType(savedPartType);
+            } else {
+                openPartSelectModal(); // 🛠️初回起動時はパーツ選択モーダルを開く
+            }
 
             const savedSketch = localStorage.getItem('dots_backup_sketch');
             if (savedSketch) {
@@ -471,31 +674,27 @@
             saveHistory(1);
             loadFromStorageBackup();
             resetZoomPan(); 
-            switchStep(1); // 初期表示状態でらくがき配置を適用
+            switchStep(1);
         });
 
-        // 🛠️ 修正: モードに応じて中央の共通ナビゲーションバーを「非表示」ではなく「出し分け」に変更
         function switchStep(step) {
             currentStep = step;
             document.querySelectorAll('.tab').forEach((t, i) => { t.classList.toggle('active', i === step - 1); });
             document.querySelectorAll('.control-panel').forEach((p, i) => { p.classList.toggle('active', i === step - 1); });
             
             if (step === 1) {
-                // らくがきモード：「undo」「カメラ」「redo」だけの配置
                 document.getElementById('history-row').style.display = 'flex';
                 document.getElementById('btn-zoom-in').style.display = 'none';
                 document.getElementById('btn-zoom-out').style.display = 'none';
                 document.getElementById('btn-pan').style.display = 'none';
                 document.getElementById('btn-sketch-camera').style.display = 'flex';
             } else if (step === 2) {
-                // ドットモード：「+」「undo」「手のひら」「redo」「-」のフル配置
                 document.getElementById('history-row').style.display = 'flex';
                 document.getElementById('btn-zoom-in').style.display = 'flex';
                 document.getElementById('btn-zoom-out').style.display = 'flex';
                 document.getElementById('btn-pan').style.display = 'flex';
                 document.getElementById('btn-sketch-camera').style.display = 'none';
             } else {
-                // 確認・完成：ナビゲーションバーは非表示
                 document.getElementById('history-row').style.display = 'none';
             }
 
@@ -503,6 +702,7 @@
             dCanvas.style.display = (step === 2 || step === 4) ? 'block' : 'none';
             threeContainer.style.display = (step === 3) ? 'block' : 'none';
             gCanvas.style.display = (step === 2) ? 'block' : 'none';
+            jCanvas.style.display = (step === 2) ? 'block' : 'none'; // 🛠️③
 
             if (step === 4) {
                 updateDesignPreview();
@@ -511,7 +711,7 @@
             }
 
             resetZoomPan(); 
-            if(step === 2) drawGrid();
+            if(step === 2) { drawGrid(); drawJointGuide(); }
             if(step === 3) updateThreeMesh();
             if(step !== 1 && (isCameraActive || isCameraPreviewMode)) stopCameraMode();
         }
@@ -826,6 +1026,13 @@
         });
         document.getElementById('btn-toggle-grid').onclick = () => { gridActive = !gridActive; drawGrid(); };
         
+        /* 🛠️③ ガイド線切り替えボタンイベント */
+        document.getElementById('btn-toggle-guide').onclick = () => { 
+            guideActive = !guideActive; 
+            document.getElementById('btn-toggle-guide').classList.toggle('active', guideActive);
+            drawJointGuide(); 
+        };
+
         document.getElementById('btn-dot-clear').onclick = () => { if(confirm("ドット絵をぜんぶ消しますか？")) { dCtx.clearRect(0,0,32,32); saveHistory(2); autoSaveToStorage(); } };
 
         document.getElementById('btn-save-palette').onclick = () => {
@@ -838,31 +1045,28 @@
 
         artNameInput.oninput = autoSaveToStorage;
 
+        /* アップロード処理 (次回ステップでGAS連携に書き換え予定) */
         document.getElementById('uploadButton').onclick = async () => {
             const name = artNameInput.value.trim();
             if (!name) { alert("作品名を入力してください。"); artNameInput.focus(); return; }
 
             const durationSeconds = Math.floor((Date.now() - startTime) / 1000);
             
-            const uploadCanvas = document.createElement('canvas');
-            uploadCanvas.width = uploadCanvas.height = 512;
-            const uctx = uploadCanvas.getContext('2d');
-            uctx.imageSmoothingEnabled = false; 
-            uctx.drawImage(dCanvas, 0, 0, 512, 512);
-            
-            const base64Data = uploadCanvas.toDataURL('image/png').split(',')[1];
+            // 32x32の原寸ドット絵をPNG形式（Base64）で取得
+            const base64Data = dCanvas.toDataURL('image/png');
 
-            if(!confirm(`「${name}」をアップロードして、アンケートに進みますか？`)) return;
+            if(!confirm(`パーツ「${name} (${PART_LABELS[currentPartType]})」をアップロードしますか？`)) return;
 
             loadingOverlay.style.display = 'flex';
 
             try {
+                // 次のステップでここを新しいGAS（ドライブ保存＆スプレッドシート書き込み）に置き換えます
                 const response = await fetch(GAS_ENDPOINT, {
                     method: "POST",
                     body: JSON.stringify({
                         image: base64Data, 
                         name: name, 
-                        location: "WEB_MAGIC_3D_MULTIOUT", 
+                        part_type: currentPartType,
                         duration: durationSeconds,
                         pixelMatrix: getPixelMatrix() 
                     })
@@ -874,25 +1078,15 @@
                     localStorage.removeItem('dots_backup_dot');
                     localStorage.removeItem('dots_backup_artname');
 
-                    localStorage.setItem('dots_latest_serial', result.serial);
-                    localStorage.setItem('dots_latest_name', name);
-                    localStorage.setItem('dots_latest_matrix', dCanvas.toDataURL());
-
                     loadingOverlay.style.display = 'none';
-                    alert(`アップロードが完了しました！\nOKを押すとアンケート画面に移動します。`);
-                    
-                    const params = new URLSearchParams();
-                    params.append("entry.46158305", name);      
-                    params.append("entry.1524592109", result.serial);  
-                    window.location.href = `${FORM_URL}?${params.toString()}`;
-                    
+                    alert(`パーツのアップロードが完了しました！`);
                 } else {
                     loadingOverlay.style.display = 'none';
                     alert("エラー: " + result.message);
                 }
             } catch (error) {
                 loadingOverlay.style.display = 'none';
-                alert("通信エラーが発生しました。");
+                alert("通信エラーが発生しました。（※GAS側の準備が完了次第動作します）");
             }
         };
 
