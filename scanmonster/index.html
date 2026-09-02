@@ -1,1 +1,983 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SCAN!MONSTERS LABO.</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        :root { 
+            --primary-color: #7d5fff; 
+            --accent-cyan: #00f3ff;
+            --bg-color: #12131c;
+            --card-bg: #1e1f2e; 
+            --card-border: #2e3048;
+            --text-color: #f1f2f6;
+            --accent-color: #ff4d4d; 
+            --save-green: #00b894;
+        }
+        body { font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 10px; min-height: 100vh; -webkit-text-size-adjust: 100%; }
+        .header-area { width: 100%; max-width: 500px; display: flex; justify-content: center; align-items: center; padding: 5px 0; gap: 10px; }
+        .header-logo { height: 24px; width: auto; filter: brightness(0) invert(1); }
+        h1 { margin: 0; font-size: 1.1rem; color: var(--accent-cyan); font-weight: 900; letter-spacing: 1px; text-shadow: 0 0 8px rgba(0, 243, 255, 0.4); }
+        
+        .part-indicator-bar {
+            width: 100%; max-width: 500px; background: #1a1b28; border: 1px solid var(--card-border); border-radius: 8px; padding: 6px 12px; margin-bottom: 8px; box-sizing: border-box;
+            display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; font-weight: bold; color: #a4b0be;
+        }
+        .part-badge { background: var(--primary-color); color: #fff; padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; border: 1px solid var(--accent-cyan); }
 
+        .step-tabs { display: flex; width: 100%; max-width: 500px; background: #1a1b28; border: 1px solid var(--card-border); border-radius: 12px; padding: 4px; margin-bottom: 10px; box-sizing: border-box; }
+        .tab { flex: 1; text-align: center; padding: 8px 0; font-size: 0.65rem; font-weight: bold; color: #a4b0be; border-radius: 8px; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+        .tab.active { background: var(--card-bg); color: var(--accent-cyan); box-shadow: 0 2px 8px rgba(0,243,255,0.2); border: 1px solid rgba(0, 243, 255, 0.3); }
+        .tab-num { font-size: 0.55rem; opacity: 0.7; }
+
+        .app-container { width: 100%; max-width: 500px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+
+        .canvas-area { 
+            position: relative; 
+            width: 100%; 
+            aspect-ratio: 1 / 1;
+            max-width: 360px;
+            border: 2px solid var(--card-border); 
+            border-radius: 12px; 
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5); 
+            background: #0d0e15; 
+            touch-action: none; 
+            overflow: hidden; 
+        }
+        .canvas-wrapper { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform-origin: center center; transition: transform 0.1s ease-out; }
+        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block; }
+        #sketchCanvas { z-index: 2; background: transparent; }
+        #dotCanvas { z-index: 3; image-rendering: pixelated; width: 100%; height: 100%; display: none; }
+        #gridCanvas { z-index: 10; position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; }
+        #jointGuideCanvas { z-index: 9; position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; }
+        
+        #bgLayer { z-index: 1; position:absolute; top:0; left:0; width:100%; height:100%; display: none; overflow: hidden; pointer-events: none; }
+        #bgVideo { width: 100%; height: 100%; object-fit: cover; }
+
+        .canvas-area.camera-active::before {
+            content: ''; position: absolute; top: 15%; left: 15%; width: 70%; height: 70%;
+            border: 3px dashed var(--accent-cyan); box-shadow: 0 0 0 2000px rgba(0, 0, 0, 0.7);
+            z-index: 5; pointer-events: none; box-sizing: border-box; border-radius: 4px;
+        }
+        .canvas-area.camera-active::after {
+            content: '枠の中に絵をあわせてね'; position: absolute; bottom: 18%; left: 0; width: 100%;
+            text-align: center; color: var(--accent-cyan); font-size: 0.75rem; font-weight: bold;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8); z-index: 6; pointer-events: none;
+        }
+
+        .control-panel { width: 100%; background: var(--card-bg); border: 1px solid var(--card-border); padding: 15px; border-radius: 16px; box-sizing: border-box; display: none; flex-direction: column; gap: 12px; }
+        .control-panel.active { display: flex; }
+        .section-label { font-size: 0.65rem; color: #a4b0be; font-weight: bold; text-transform: uppercase; margin-bottom: -5px; }
+        .row { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; align-items: center; }
+        .tool-row-compact { display: flex; justify-content: space-between; align-items: center; gap: 4px; width: 100%; box-sizing: border-box; }
+
+        .btn { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid var(--card-border); border-radius: 10px; background: #282a3d; color: var(--text-color); padding: 0; box-sizing: border-box; }
+        .btn.active { background: var(--primary-color); color: white; border-color: var(--accent-cyan); box-shadow: 0 0 8px rgba(125, 95, 255, 0.5); }
+        .btn img { width: 24px; height: 24px; filter: invert(1); }
+        
+        .btn-compact { flex: 1; min-width: 34px; height: 38px; border-radius: 8px; }
+        .btn-compact .material-icons { font-size: 20px; }
+
+        .color-picker-wrapper { width: 44px; height: 44px; border-radius: 10px; overflow: hidden; position: relative; border: 1px solid var(--card-border); box-sizing: border-box; cursor: pointer; }
+        .color-picker-wrapper input[type="color"] { position: absolute; top: -10px; left: -10px; width: 64px; height: 64px; border: none; padding: 0; margin: 0; cursor: pointer; background: none; }
+        .color-picker-wrapper-compact { width: 38px; height: 38px; border-radius: 8px; flex-shrink: 0; }
+
+        .btn-magic { background: linear-gradient(135deg, #7d5fff, #00f3ff); color: #0d0e15; height: 50px; font-weight: 900; border-radius: 12px; border: none; cursor: pointer; width: 100%; font-size: 1rem; box-shadow: 0 4px 15px rgba(0, 243, 255, 0.3); display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-upload { background: linear-gradient(135deg, #00b894, #00f3ff); color: #0d0e15; height: 55px; font-weight: 900; border-radius: 12px; border: none; cursor: pointer; width: 100%; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(0, 184, 148, 0.4); }
+
+        #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(18, 19, 28, 0.9); z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; }
+        .spinner { width: 50px; height: 50px; border: 5px solid var(--card-border); border-top: 5px solid var(--accent-cyan); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .palette-item { display: flex; align-items: center; background: #282a3d; border-radius: 6px; padding: 2px 4px; gap: 4px; border: 1px solid var(--card-border); }
+        .color-chip { width: 20px; height: 20px; border-radius: 4px; border: 1px solid #555; cursor: pointer; }
+
+        /* 🛠️③ プレビュー画面＆部位選択オーバーレイエリア */
+        .preview-canvas-container {
+            width: 100%; max-width: 360px; aspect-ratio: 1/1; background: #0d0e15; border-radius: 12px;
+            overflow: hidden; border: 2px solid var(--card-border); position: relative; box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+        }
+        #monsterPreviewCanvas { width: 100%; height: 100%; image-rendering: pixelated; position: absolute; top:0; left:0; z-index: 1; }
+        
+        /* 6部位のインタラクティブオーバーレイ */
+        .parts-overlay-grid {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2;
+            display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);
+            gap: 2px; padding: 2px; box-sizing: border-box;
+        }
+        .part-select-cell {
+            position: relative; border: 1px dashed rgba(255, 255, 255, 0.15); border-radius: 6px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            cursor: pointer; transition: 0.2s; background: rgba(0, 0, 0, 0.2);
+        }
+        .part-select-cell:hover, .part-select-cell.active-part {
+            border-color: var(--accent-cyan); background: rgba(0, 243, 255, 0.15); box-shadow: inset 0 0 10px rgba(0, 243, 255, 0.3);
+        }
+        .part-select-label {
+            font-size: 0.7rem; font-weight: bold; color: #fff; text-shadow: 0 0 4px #000, 0 0 8px #000;
+            background: rgba(0,0,0,0.6); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2);
+            pointer-events: none; display: flex; align-items: center; gap: 2px;
+        }
+        .part-select-cell.has-data .part-select-label {
+            border-color: var(--save-green); color: var(--accent-cyan);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loadingOverlay">
+        <div class="spinner"></div>
+        <div class="loading-text">全パーツを送信中...</div>
+    </div>
+
+    <div class="header-area">
+        <img src="DOTS_PROJECT_logo_black.png" alt="DOTS" class="header-logo">
+        <h1>SCAN!MONSTERS LABO.</h1>
+    </div>
+
+    <div class="part-indicator-bar">
+        <span>対象パーツ: <strong id="currentPartLabel" class="part-badge">頭部 (Head)</strong></span>
+        <span style="font-size:0.7rem; color:#a4b0be;">STEP1で部位をタップ</span>
+    </div>
+
+    <div class="step-tabs">
+        <div class="tab active" id="tab-step1" onclick="switchStep(1)"><span class="tab-num">STEP 01</span>パーツえらび</div>
+        <div class="tab" id="tab-step2" onclick="switchStep(2)"><span class="tab-num">STEP 02</span>らくがき</div>
+        <div class="tab" id="tab-step3" onclick="switchStep(3)"><span class="tab-num">STEP 03</span>ドット変身</div>
+        <div class="tab" id="tab-step4" onclick="switchStep(4)"><span class="tab-num">STEP 04</span>できあがり</div>
+    </div>
+
+    <div class="app-container">
+        <!-- キャンバス描画エリア（STEP 2, 3用） -->
+        <div class="canvas-area" id="canvasArea">
+            <div class="canvas-wrapper" id="canvasWrapper">
+                <div id="bgLayer"><video id="bgVideo" autoplay playsinline muted></video></div>
+                <canvas id="sketchCanvas"></canvas>
+                <canvas id="dotCanvas" width="32" height="32"></canvas>
+                <canvas id="jointGuideCanvas" width="32" height="32"></canvas>
+                <canvas id="gridCanvas"></canvas>
+            </div>
+        </div>
+
+        <!-- 🛠️③ プレビュー＆直感的パーツ選択画面（STEP 1, 4用） -->
+        <div class="preview-canvas-container" id="previewArea" style="display:none;">
+            <canvas id="monsterPreviewCanvas" width="96" height="96"></canvas>
+            
+            <!-- STEP1用のパーツ選択用オーバーレイ（STEP4では非表示） -->
+            <div class="parts-overlay-grid" id="partsOverlayGrid">
+                <!-- 左列 (1行目: 上サイド, 2行目: 中サイド, 3行目: 下サイド - 反転表示エリア) -->
+                <div class="part-select-cell" style="grid-column: 1; grid-row: 1;" onclick="selectPartType('top_side')">
+                    <span class="part-select-label"><span class="material-icons" style="font-size:12px;">flip</span>上サイド</span>
+                </div>
+                <div class="part-select-cell" style="grid-column: 1; grid-row: 2;" onclick="selectPartType('mid_side')">
+                    <span class="part-select-label"><span class="material-icons" style="font-size:12px;">flip</span>中サイド</span>
+                </div>
+                <div class="part-select-cell" style="grid-column: 1; grid-row: 3;" onclick="selectPartType('bot_side')">
+                    <span class="part-select-label"><span class="material-icons" style="font-size:12px;">flip</span>下サイド</span>
+                </div>
+
+                <!-- 中央列 (1行目: 頭部, 2行目: 体, 3行目: 足) -->
+                <div class="part-select-cell" style="grid-column: 2; grid-row: 1;" onclick="selectPartType('head')">
+                    <span class="part-select-label">頭部</span>
+                </div>
+                <div class="part-select-cell" style="grid-column: 2; grid-row: 2;" onclick="selectPartType('body')">
+                    <span class="part-select-label">体</span>
+                </div>
+                <div class="part-select-cell" style="grid-column: 2; grid-row: 3;" onclick="selectPartType('legs')">
+                    <span class="part-select-label">足</span>
+                </div>
+
+                <!-- 右列 (1行目: 上サイド, 2行目: 中サイド, 3行目: 下サイド) -->
+                <div class="part-select-cell" id="cell-top_side" style="grid-column: 3; grid-row: 1;" onclick="selectPartType('top_side')">
+                    <span class="part-select-label" id="label-top_side">上サイド</span>
+                </div>
+                <div class="part-select-cell" id="cell-mid_side" style="grid-column: 3; grid-row: 2;" onclick="selectPartType('mid_side')">
+                    <span class="part-select-label" id="label-mid_side">中サイド</span>
+                </div>
+                <div class="part-select-cell" id="cell-bot_side" style="grid-column: 3; grid-row: 3;" onclick="selectPartType('bot_side')">
+                    <span class="part-select-label" id="label-bot_side">下サイド</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row" id="history-row" style="gap:10px; margin: 5px 0;">
+            <button class="btn" id="btn-zoom-in" style="border-radius:50%;"><span class="material-icons">zoom_in</span></button>
+            <button class="btn" id="btn-undo" style="border-radius:50%;"><span class="material-icons">undo</span></button>
+            <button class="btn" id="btn-sketch-camera" style="border-radius:50%; background:#1e1f2e; color:var(--accent-cyan); border-color:var(--accent-cyan); width:46px; height:46px;"><span class="material-icons" style="font-size:24px;">photo_camera</span></button>
+            <button class="btn" id="btn-pan" style="border-radius:50%;"><span class="material-icons">pan_tool</span></button>
+            <button class="btn" id="btn-redo" style="border-radius:50%;"><span class="material-icons">redo</span></button>
+            <button class="btn" id="btn-zoom-out" style="border-radius:50%;"><span class="material-icons">zoom_out</span></button>
+        </div>
+
+        <!-- STEP 01 パネル -->
+        <div class="control-panel active" id="panel-step1">
+            <div class="section-label">プレビュー上の部位をタップして選択</div>
+            <button class="btn-magic" style="margin-top:5px;" onclick="switchStep(2)">選択したパーツを描く <span class="material-icons">arrow_forward</span></button>
+        </div>
+
+        <!-- STEP 02 パネル -->
+        <div class="control-panel" id="panel-step2">
+            <div class="section-label">らくがきツール</div>
+            <div class="row">
+                <div class="color-picker-wrapper" id="sketchColorWrapper">
+                    <input type="color" id="sketchColor" value="#ffffff">
+                </div>
+                <button class="btn active" id="btn-sketch-pen"><span class="material-icons">edit</span></button>
+                <button class="btn" id="btn-sketch-eraser"><img src="eraser.png" alt="消しゴム"></button>
+                <button class="btn" id="btn-sketch-bucket"><span class="material-icons">format_color_fill</span></button>
+                <button class="btn" id="btn-sketch-picker"><span class="material-icons">colorize</span></button>
+                <button class="btn" id="btn-sketch-clear" style="color:var(--accent-color);"><span class="material-icons">delete_outline</span></button>
+            </div>
+            <p id="camera-guide-text" style="font-size:0.75rem; color:#a4b0be; text-align:center; margin: 5px 0;">紙に描いたらくがきのスキャンもできるよ！</p>
+            <button class="btn-magic" onclick="magicConvert()"><span class="material-icons">auto_awesome</span> ドット絵に変身！</button>
+        </div>
+
+        <!-- STEP 03 パネル -->
+        <div class="control-panel" id="panel-step3">
+            <div class="section-label">ドット絵 調整ツール</div>
+            <div class="tool-row-compact">
+                <div class="color-picker-wrapper color-picker-wrapper-compact" id="colorPickerWrapper">
+                    <input type="color" id="colorPicker" value="#00f3ff">
+                </div>
+                <button class="btn btn-compact active" id="btn-pen"><span class="material-icons">edit</span></button>
+                <button class="btn btn-compact" id="btn-eraser"><img src="eraser.png" alt="消しゴム"></button> 
+                <button class="btn btn-compact" id="btn-bucket"><span class="material-icons">format_color_fill</span></button>
+                <button class="btn btn-compact" id="btn-picker"><span class="material-icons">colorize</span></button>
+                <button class="btn btn-compact" id="btn-toggle-grid"><span class="material-icons">grid_on</span></button>
+                <button class="btn btn-compact active" id="btn-toggle-guide" style="color:var(--accent-cyan);"><span class="material-icons">visibility</span></button>
+                <button class="btn btn-compact" id="btn-dot-clear" style="color:var(--accent-color);"><span class="material-icons">delete_outline</span></button>
+            </div>
+
+            <div class="section-label">登録した色</div>
+            <div class="row" style="justify-content: space-between;">
+                <div id="paletteArea" class="row" style="min-height:30px; justify-content:flex-start; gap:6px;"></div>
+                <button class="btn" id="btn-save-palette" style="width:auto; padding:0 8px; font-size:0.7rem; height:34px;">色を登録</button>
+            </div>
+            <button class="btn-magic" onclick="switchStep(1)">パーツ一覧に戻る <span class="material-icons">check</span></button>
+        </div>
+
+        <!-- STEP 04 パネル -->
+        <div class="control-panel" id="panel-step4">
+            <div class="section-label">作品名をつけて6パーツを一括保存！【必須】</div>
+            <input type="text" id="artName" placeholder="作品（モンスター）の名前を入力..." style="width:100%; height:45px; border-radius:10px; border:1px solid var(--card-border); background:#12131c; color:#fff; padding:0 10px; box-sizing:border-box;">
+
+            <button class="btn-upload" id="uploadButton" style="margin-top: 10px;">全6パーツを一括送信！</button>
+        </div>
+    </div>
+
+    <script>
+        const sCanvas = document.getElementById('sketchCanvas');
+        const sCtx = sCanvas.getContext('2d');
+        const dCanvas = document.getElementById('dotCanvas');
+        const dCtx = dCanvas.getContext('2d');
+        const gCanvas = document.getElementById('gridCanvas');
+        const gCtx = gCanvas.getContext('2d');
+        const jCanvas = document.getElementById('jointGuideCanvas');
+        const jCtx = jCanvas.getContext('2d');
+
+        const canvasArea = document.getElementById('canvasArea');
+        const previewArea = document.getElementById('previewArea');
+        const canvasWrapper = document.getElementById('canvasWrapper');
+        const bgLayer = document.getElementById('bgLayer');
+        const bgVideo = document.getElementById('bgVideo');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const artNameInput = document.getElementById('artName');
+        const paletteArea = document.getElementById('paletteArea');
+        const colorPicker = document.getElementById('colorPicker');
+        const sketchColor = document.getElementById('sketchColor');
+        const cameraGuideText = document.getElementById('camera-guide-text');
+
+        const ALL_PARTS = ['head', 'body', 'legs', 'top_side', 'mid_side', 'bot_side'];
+        const partsCanvasStore = {};
+        ALL_PARTS.forEach(pk => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 32; canvas.height = 32;
+            partsCanvasStore[pk] = canvas;
+        });
+
+        let currentPartType = 'head'; 
+        const PART_LABELS = {
+            'head': '頭部 (Head)',
+            'body': '体 (Body)',
+            'legs': '足 (Legs)',
+            'top_side': '上サイド (Top Side)',
+            'mid_side': '中サイド (Mid Side)',
+            'bot_side': '下サイド (Bot Side)'
+        };
+
+        const JOINT_DEFINITIONS = {
+            'head': [ {x: 14, y: 31, w: 4, h: 1} ],
+            'body': [ {x: 14, y: 0, w: 4, h: 1}, {x: 14, y: 31, w: 4, h: 1} ],
+            'legs': [ {x: 14, y: 0, w: 4, h: 1} ],
+            'top_side': [ {x: 0, y: 28, w: 1, h: 4} ],
+            'mid_side': [ {x: 0, y: 14, w: 1, h: 4} ],
+            'bot_side': [ {x: 0, y: 0, w: 1, h: 4} ]
+        };
+
+        let currentStep = 1;
+        let isDrawing = false;
+        let sketchMode = 'pen';
+        let dotMode = 'pen'; 
+        
+        let historyStack = { 2: [], 3: [] };
+        let undoIndex = { 2: -1, 3: -1 };
+
+        let startTime = Date.now();
+        let gridActive = true;
+        let guideActive = true;
+        
+        let isCameraActive = false;
+        let isCameraPreviewMode = false; 
+        let videoStream = null;
+        
+        let lastCanvasWidth = 0;
+        let lastCanvasHeight = 0;
+
+        let zoomScale = 1.0;
+        let panX = 0;
+        let panY = 0;
+        let isPanning = false;
+        let startPanX = 0;
+        let startPanY = 0;
+
+        const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbwT-bfcyLjMgTtR_V8MpFuzxu-6UjWoO_pcQGIbQ39PVWEd6DiCT8GY9KLlUqEzMNma6A/exec"; 
+
+        document.getElementById('sketchColorWrapper').onclick = () => sketchColor.click();
+        document.getElementById('colorPickerWrapper').onclick = () => colorPicker.click();
+
+        /* 🛠️③ 部位選択処理 */
+        function selectPartType(newType) {
+            syncCurrentDotToStore();
+
+            currentPartType = newType;
+            document.getElementById('currentPartLabel').innerText = PART_LABELS[newType] || newType;
+
+            // DUAL-SIDE設定対応のオーバーレイハイライト更新
+            document.querySelectorAll('.part-select-cell').forEach(cell => cell.classList.remove('active-part'));
+            document.querySelectorAll(`.part-select-cell[onclick*="'${newType}'"]`).forEach(cell => cell.classList.add('active-part'));
+
+            dCtx.clearRect(0, 0, 32, 32);
+            dCtx.drawImage(partsCanvasStore[newType], 0, 0);
+
+            historyStack[3] = []; undoIndex[3] = -1;
+            saveHistory(3);
+            drawJointGuide();
+            autoSaveToStorage();
+            renderMonsterPreview();
+        }
+
+        function syncCurrentDotToStore() {
+            const currentStoreCtx = partsCanvasStore[currentPartType].getContext('2d');
+            currentStoreCtx.clearRect(0, 0, 32, 32);
+            currentStoreCtx.drawImage(dCanvas, 0, 0);
+        }
+
+        function updatePartStatusDots() {
+            ALL_PARTS.forEach(pk => {
+                const cells = document.querySelectorAll(`.part-select-cell[onclick*="'${pk}'"]`);
+                const pCtx = partsCanvasStore[pk].getContext('2d');
+                const imgData = pCtx.getImageData(0, 0, 32, 32).data;
+                let hasPixels = false;
+                for (let i = 3; i < imgData.length; i += 4) {
+                    if (imgData[i] > 0) { hasPixels = true; break; }
+                }
+                cells.forEach(cell => cell.classList.toggle('has-data', hasPixels));
+            });
+        }
+
+        function drawJointGuide() {
+            jCtx.clearRect(0, 0, 32, 32);
+            if (!guideActive) return;
+            const joints = JOINT_DEFINITIONS[currentPartType];
+            if (!joints) return;
+
+            jCtx.fillStyle = 'rgba(0, 243, 255, 0.6)';
+            joints.forEach(rect => { jCtx.fillRect(rect.x, rect.y, rect.w, rect.h); });
+        }
+
+        /* 🛠️③ プレビューレンダリング（背景ダーク） */
+        function renderMonsterPreview() {
+            syncCurrentDotToStore();
+            const previewCanvas = document.getElementById('monsterPreviewCanvas');
+            const pCtx = previewCanvas.getContext('2d');
+            pCtx.imageSmoothingEnabled = false;
+            pCtx.clearRect(0, 0, 96, 96);
+
+            pCtx.fillStyle = '#0d0e15';
+            pCtx.fillRect(0, 0, 96, 96);
+            pCtx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+            pCtx.lineWidth = 1;
+            for(let i=1; i<3; i++) {
+                pCtx.beginPath(); pCtx.moveTo(i*32, 0); pCtx.lineTo(i*32, 96); pCtx.stroke();
+                pCtx.beginPath(); pCtx.moveTo(0, i*32); pCtx.lineTo(96, i*32); pCtx.stroke();
+            }
+
+            pCtx.drawImage(partsCanvasStore['head'], 32, 0);
+            pCtx.drawImage(partsCanvasStore['body'], 32, 32);
+            pCtx.drawImage(partsCanvasStore['legs'], 32, 64);
+
+            pCtx.drawImage(partsCanvasStore['top_side'], 64, 0);
+            pCtx.drawImage(partsCanvasStore['mid_side'], 64, 32);
+            pCtx.drawImage(partsCanvasStore['bot_side'], 64, 64);
+
+            drawFlippedPart(pCtx, partsCanvasStore['top_side'], 0, 0);
+            drawFlippedPart(pCtx, partsCanvasStore['mid_side'], 0, 32);
+            drawFlippedPart(pCtx, partsCanvasStore['bot_side'], 0, 64);
+
+            updatePartStatusDots();
+        }
+
+        function drawFlippedPart(ctx, img, x, y) {
+            ctx.save();
+            ctx.translate(x + 32, y);
+            ctx.scale(-1, 1);
+            ctx.drawImage(img, 0, 0, 32, 32);
+            ctx.restore();
+        }
+
+        function initCanvasSize() {
+            const rect = canvasArea.getBoundingClientRect();
+            const newWidth = Math.floor(rect.width);
+            const newHeight = Math.floor(rect.height);
+
+            if (newWidth !== lastCanvasWidth || newHeight !== lastCanvasHeight) {
+                const tempSketch = document.createElement('canvas');
+                tempSketch.width = sCanvas.width; tempSketch.height = sCanvas.height;
+                if(sCanvas.width > 0) tempSketch.getContext('2d').drawImage(sCanvas, 0, 0);
+
+                sCanvas.width = newWidth; sCanvas.height = newHeight;
+                sCtx.lineCap = 'round'; sCtx.lineJoin = 'round'; sCtx.lineWidth = 8; 
+
+                gCanvas.width = newWidth; gCanvas.height = newHeight;
+
+                if(tempSketch.width > 0) {
+                    sCtx.drawImage(tempSketch, 0, 0, newWidth, newHeight);
+                }
+
+                lastCanvasWidth = newWidth; lastCanvasHeight = newHeight;
+                drawGrid(); drawJointGuide();
+            }
+        }
+
+        function drawGrid() {
+            gCtx.clearRect(0, 0, gCanvas.width, gCanvas.height);
+            if (!gridActive) return;
+
+            const w = gCanvas.width, h = gCanvas.height;
+            const stepX = w / 32, stepY = h / 32;
+            gCtx.lineWidth = 0.8;
+
+            for (let i = 1; i < 32; i++) {
+                gCtx.beginPath();
+                gCtx.strokeStyle = (i % 8 === 0) ? 'rgba(0, 243, 255, 0.4)' : 'rgba(255, 255, 255, 0.08)';
+                gCtx.moveTo(i * stepX, 0); gCtx.lineTo(i * stepX, h);
+                gCtx.moveTo(0, i * stepY); gCtx.lineTo(w, i * stepY);
+                gCtx.stroke();
+            }
+        }
+
+        let trackForFlash = null;
+
+        async function toggleCamera() {
+            if (currentStep !== 2) return;
+            const camBtn = document.getElementById('btn-sketch-camera');
+            
+            if (!isCameraActive && !isCameraPreviewMode) {
+                try {
+                    const constraints = { video: { facingMode: "environment", width: { ideal: 1024 }, height: { ideal: 1024 } }, audio: false };
+                    videoStream = await navigator.mediaDevices.getUserMedia(constraints);
+                    bgVideo.srcObject = videoStream;
+                    bgVideo.style.display = "block"; bgLayer.style.display = "block";
+                    
+                    const videoTrack = videoStream.getVideoTracks()[0];
+                    if (videoTrack) {
+                        trackForFlash = videoTrack;
+                        const capabilities = videoTrack.getCapabilities();
+                        if (capabilities.torch) await videoTrack.applyConstraints({ advanced: [{ torch: true }] });
+                    }
+
+                    canvasArea.classList.add('camera-active');
+                    isCameraActive = true;
+                    camBtn.style.background = '#ff4d4d'; camBtn.style.color = '#fff';
+                    camBtn.innerHTML = '<span class="material-icons" style="font-size:24px;">camera</span>';
+                    cameraGuideText.innerText = "四角いガイドの中に紙の絵を合わせて、カメラボタンを押してね！";
+                    cameraGuideText.style.color = "var(--accent-cyan)";
+                } catch (err) { alert("カメラの起動に失敗しました。"); }
+            } 
+            else if (isCameraActive && !isCameraPreviewMode) {
+                try {
+                    sCtx.clearRect(0, 0, sCanvas.width, sCanvas.height);
+                    sCtx.globalCompositeOperation = 'source-over';
+                    
+                    const vW = bgVideo.videoWidth, vH = bgVideo.videoHeight;
+                    const minSize = Math.min(vW, vH);
+                    const cropSize = minSize * 0.70; 
+                    const cropX = (vW - cropSize) / 2, cropY = (vH - cropSize) / 2;
+
+                    sCtx.drawImage(bgVideo, cropX, cropY, cropSize, cropSize, 0, 0, sCanvas.width, sCanvas.height);
+
+                    bgVideo.pause();
+                    canvasArea.classList.remove('camera-active');
+                    isCameraActive = false; isCameraPreviewMode = true;
+                    camBtn.style.background = '#00b894'; 
+                    camBtn.innerHTML = '<span class="material-icons" style="font-size:24px;">check</span>';
+                    cameraGuideText.innerText = "キレイに撮れたかな？OKならもう一度ボタンを押してね！";
+                    cameraGuideText.style.color = "#00b894";
+                } catch(e) { stopCameraMode(); }
+            }
+            else if (isCameraPreviewMode) {
+                saveHistory(2); autoSaveToStorage(); stopCameraMode();
+            }
+        }
+
+        async function stopCameraMode() {
+            if (trackForFlash) {
+                try {
+                    const capabilities = trackForFlash.getCapabilities();
+                    if (capabilities.torch) await trackForFlash.applyConstraints({ advanced: [{ torch: false }] });
+                } catch (e) {}
+                trackForFlash = null;
+            }
+
+            if (videoStream) { videoStream.getTracks().forEach(track => track.stop()); videoStream = null; }
+            bgVideo.srcObject = null; bgVideo.style.display = "none"; bgLayer.style.display = "none";
+            canvasArea.classList.remove('camera-active');
+            isCameraActive = false; isCameraPreviewMode = false;
+            
+            const camBtn = document.getElementById('btn-sketch-camera');
+            camBtn.style.background = '#1e1f2e'; camBtn.style.color = 'var(--accent-cyan)';
+            camBtn.innerHTML = '<span class="material-icons" style="font-size:24px;">photo_camera</span>';
+            cameraGuideText.innerText = "カメラボタンで紙の絵をスキャンすることもできるよ！";
+            cameraGuideText.style.color = "#a4b0be";
+        }
+
+        document.getElementById('btn-sketch-camera').onclick = toggleCamera;
+
+        function autoSaveToStorage() {
+            try {
+                syncCurrentDotToStore();
+                const partsDataObj = {};
+                ALL_PARTS.forEach(pk => { partsDataObj[pk] = partsCanvasStore[pk].toDataURL(); });
+
+                localStorage.setItem('dots_backup_sketch', sCanvas.toDataURL());
+                localStorage.setItem('dots_backup_parts_json', JSON.stringify(partsDataObj));
+                localStorage.setItem('dots_backup_artname', artNameInput.value);
+                localStorage.setItem('dots_backup_parttype', currentPartType);
+            } catch (e) {}
+        }
+
+        function loadFromStorageBackup() {
+            const savedName = localStorage.getItem('dots_backup_artname');
+            if (savedName) artNameInput.value = savedName;
+
+            const savedPartsJson = localStorage.getItem('dots_backup_parts_json');
+            if (savedPartsJson) {
+                try {
+                    const parsed = JSON.parse(savedPartsJson);
+                    ALL_PARTS.forEach(pk => {
+                        if (parsed[pk]) {
+                            const img = new Image(); img.src = parsed[pk];
+                            img.onload = () => {
+                                const pCtx = partsCanvasStore[pk].getContext('2d');
+                                pCtx.clearRect(0, 0, 32, 32); pCtx.drawImage(img, 0, 0, 32, 32);
+                                if (pk === currentPartType) {
+                                    dCtx.clearRect(0, 0, 32, 32); dCtx.drawImage(img, 0, 0, 32, 32);
+                                    saveHistory(3);
+                                }
+                                renderMonsterPreview();
+                            };
+                        }
+                    });
+                } catch(e) {}
+            }
+
+            const savedPartType = localStorage.getItem('dots_backup_parttype');
+            if (savedPartType) selectPartType(savedPartType);
+
+            const savedSketch = localStorage.getItem('dots_backup_sketch');
+            if (savedSketch) {
+                const img = new Image(); img.src = savedSketch;
+                img.onload = () => { 
+                    sCtx.clearRect(0,0,sCanvas.width,sCanvas.height);
+                    sCtx.drawImage(img, 0, 0, sCanvas.width, sCanvas.height); 
+                    saveHistory(2); 
+                };
+            }
+        }
+
+        window.addEventListener('resize', initCanvasSize);
+        window.addEventListener('DOMContentLoaded', () => {
+            initCanvasSize();
+            dCtx.clearRect(0, 0, 32, 32);
+            saveHistory(3); saveHistory(2);
+            loadFromStorageBackup();
+            resetZoomPan(); 
+            switchStep(1);
+        });
+
+        function switchStep(step) {
+            currentStep = step;
+            document.querySelectorAll('.tab').forEach((t, i) => { t.classList.toggle('active', i === step - 1); });
+            document.querySelectorAll('.control-panel').forEach((p, i) => { p.classList.toggle('active', i === step - 1); });
+            
+            if (step === 1 || step === 4) {
+                canvasArea.style.display = 'none';
+                previewArea.style.display = 'block';
+                document.getElementById('history-row').style.display = 'none';
+                
+                // STEP1では部位選択用のオーバーレイグリッドを表示、STEP4では純粋な完成プレビューとしてグリッド非表示
+                document.getElementById('partsOverlayGrid').style.display = (step === 1) ? 'grid' : 'none';
+                renderMonsterPreview();
+            } else {
+                canvasArea.style.display = 'block';
+                previewArea.style.display = 'none';
+                document.getElementById('history-row').style.display = 'flex';
+                
+                if (step === 2) {
+                    document.getElementById('btn-zoom-in').style.display = 'none';
+                    document.getElementById('btn-zoom-out').style.display = 'none';
+                    document.getElementById('btn-pan').style.display = 'none';
+                    document.getElementById('btn-sketch-camera').style.display = 'flex';
+                } else if (step === 3) {
+                    document.getElementById('btn-zoom-in').style.display = 'flex';
+                    document.getElementById('btn-zoom-out').style.display = 'flex';
+                    document.getElementById('btn-pan').style.display = 'flex';
+                    document.getElementById('btn-sketch-camera').style.display = 'none';
+                }
+            }
+
+            sCanvas.style.display = (step === 2) ? 'block' : 'none';
+            dCanvas.style.display = (step === 3) ? 'block' : 'none';
+            gCanvas.style.display = (step === 3) ? 'block' : 'none';
+            jCanvas.style.display = (step === 3) ? 'block' : 'none';
+
+            resetZoomPan(); 
+            if(step === 3) { drawGrid(); drawJointGuide(); }
+            if(step !== 2 && (isCameraActive || isCameraPreviewMode)) stopCameraMode();
+        }
+
+        function applyZoomPan() { canvasWrapper.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomScale})`; }
+        function resetZoomPan() { zoomScale = 1.0; panX = 0; panY = 0; applyZoomPan(); }
+        document.getElementById('btn-zoom-in').onclick = () => { if(zoomScale < 4.0) { zoomScale += 0.25; applyZoomPan(); } };
+        document.getElementById('btn-zoom-out').onclick = () => { if(zoomScale > 1.0) { zoomScale -= 0.25; if(zoomScale===1){panX=0;panY=0;} applyZoomPan(); } };
+        
+        document.getElementById('btn-pan').onclick = () => {
+            if(dotMode === 'pan') {
+                dotMode = 'pen';
+                document.getElementById('btn-pan').classList.remove('active');
+                document.getElementById('btn-pen').classList.add('active');
+            } else {
+                dotMode = 'pan';
+                document.querySelectorAll('#panel-step3 .btn').forEach(b => b.classList.remove('active'));
+                document.getElementById('btn-pan').classList.add('active');
+            }
+        };
+
+        function saveHistory(step) {
+            const cvs = step === 2 ? sCanvas : dCanvas;
+            const dataUrl = cvs.toDataURL();
+            
+            historyStack[step] = historyStack[step].slice(0, undoIndex[step] + 1);
+            historyStack[step].push(dataUrl);
+            if(historyStack[step].length > 30) historyStack[step].shift();
+            undoIndex[step] = historyStack[step].length - 1;
+        }
+
+        document.getElementById('btn-undo').onclick = () => {
+            if (currentStep === 2 && isCameraPreviewMode) {
+                bgVideo.play(); isCameraPreviewMode = false; isCameraActive = true;
+                canvasArea.classList.add('camera-active');
+                const camBtn = document.getElementById('btn-sketch-camera');
+                camBtn.style.background = '#ff4d4d'; camBtn.innerHTML = '<span class="material-icons" style="font-size:24px;">camera</span>';
+                sCtx.clearRect(0, 0, sCanvas.width, sCanvas.height);
+                return;
+            }
+
+            const step = currentStep;
+            if (undoIndex[step] > 0) { undoIndex[step]--; loadHistoryImage(step); }
+        };
+
+        document.getElementById('btn-redo').onclick = () => {
+            const step = currentStep;
+            if (undoIndex[step] < historyStack[step].length - 1) { undoIndex[step]++; loadHistoryImage(step); }
+        };
+
+        function loadHistoryImage(step) {
+            const img = new Image();
+            img.src = historyStack[step][undoIndex[step]];
+            img.onload = () => {
+                if (step === 2) {
+                    sCtx.clearRect(0, 0, sCanvas.width, sCanvas.height);
+                    sCtx.globalCompositeOperation = 'source-over';
+                    sCtx.drawImage(img, 0, 0, sCanvas.width, sCanvas.height);
+                } else {
+                    dCtx.clearRect(0, 0, 32, 32);
+                    dCtx.drawImage(img, 0, 0, 32, 32);
+                    syncCurrentDotToStore();
+                }
+                autoSaveToStorage();
+            };
+        }
+
+        function magicConvert() {
+    const tempCanvas = document.createElement('canvas'); 
+    tempCanvas.width = tempCanvas.height = 32;
+    const tCtx = tempCanvas.getContext('2d');
+    tCtx.imageSmoothingEnabled = false; 
+    tCtx.drawImage(sCanvas, 0, 0, 32, 32);
+    
+    const imgData = tCtx.getImageData(0, 0, 32, 32); 
+    const data = imgData.data;
+
+    for (let i = 0; i < data.length; i += 4) {
+        let alpha = data[i + 3];
+        
+        // 描画されている部分（不透明度が一定以上のピクセル）はすべてそのままドット化
+        if (alpha > 40) { 
+            data[i + 3] = 255; // 不透明にして色を保持（白もそのまま保持されます）
+        } else { 
+            data[i + 3] = 0;   // 未描画領域のみ透明化
+        }
+    }
+    
+    dCtx.clearRect(0, 0, 32, 32); 
+    dCtx.putImageData(imgData, 0, 0);
+    
+    syncCurrentDotToStore();
+    saveHistory(3); 
+    autoSaveToStorage(); 
+    switchStep(3);
+}
+
+        function executeCanvasBucket(ctx, startX, startY, fillHex, width, height) {
+            const imageData = ctx.getImageData(0, 0, width, height), data = imageData.data;
+            const baseIdx = (startY * width + startX) * 4;
+            const startR = data[baseIdx], startG = data[baseIdx + 1], startB = data[baseIdx + 2], startA = data[baseIdx + 3];
+            const fillR = parseInt(fillHex.slice(1,3), 16), fillG = parseInt(fillHex.slice(3,5), 16), fillB = parseInt(fillHex.slice(5,7), 16), fillA = 255;
+            if (startR === fillR && startG === fillG && startB === fillB && startA === fillA) return;
+            const stack = [[startX, startY]];
+            while (stack.length > 0) {
+                const [x, y] = stack.pop(); const idx = (y * width + x) * 4;
+                if (Math.abs(data[idx] - startR) < 10 && Math.abs(data[idx+1] - startG) < 10 && Math.abs(data[idx+2] - startB) < 10 && Math.abs(data[idx+3] - startA) < 10) {
+                    data[idx] = fillR; data[idx+1] = fillG; data[idx+2] = fillB; data[idx+3] = fillA;
+                    if (x > 0) stack.push([x - 1, y]); if (x < width - 1) stack.push([x + 1, y]);
+                    if (y > 0) stack.push([x, y - 1]); if (y < height - 1) stack.push([x, y + 1]);
+                }
+            }
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        function executeCanvasPicker(ctx, x, y, width, height, targetPicker) {
+            const imgData = ctx.getImageData(x, y, 1, 1).data; if (imgData[3] === 0) return;
+            const hex = "#" + ("000000" + ((imgData[0] << 16) | (imgData[1] << 8) | imgData[2]).toString(16)).slice(-6);
+            targetPicker.value = hex;
+        }
+
+        function getCanvasTouchPos(e) {
+            const rect = canvasArea.getBoundingClientRect();
+            const p = e.touches ? e.touches[0] : e;
+            let localX = p.clientX - rect.left, localY = p.clientY - rect.top;
+
+            if (currentStep === 3) {
+                const centerX = rect.width / 2, centerY = rect.height / 2;
+                localX = (localX - centerX - panX) / zoomScale + centerX;
+                localY = (localY - centerY - panY) / zoomScale + centerY;
+            }
+            return { x: localX, y: localY };
+        }
+        
+        canvasArea.addEventListener('mousedown', startDrawing);
+        canvasArea.addEventListener('touchstart', startDrawing, {passive: false});
+        canvasArea.addEventListener('mousemove', draw);
+        canvasArea.addEventListener('touchmove', draw, {passive: false});
+        window.addEventListener('mouseup', stopDrawing);
+        window.addEventListener('touchend', stopDrawing);
+
+        function startDrawing(e) {
+            if (currentStep < 2 || currentStep > 3 || isCameraActive || isCameraPreviewMode) return; 
+            if (e.touches) e.preventDefault(); 
+            
+            if (currentStep === 3 && dotMode === 'pan') {
+                isPanning = true;
+                const p = e.touches ? e.touches[0] : e;
+                startPanX = p.clientX - panX; startPanY = p.clientY - panY;
+                return;
+            }
+
+            isDrawing = true; 
+            const pos = getCanvasTouchPos(e);
+            
+            if (currentStep === 2) { 
+                const rx = Math.floor(pos.x), ry = Math.floor(pos.y);
+                if (sketchMode === 'bucket') { executeCanvasBucket(sCtx, rx, ry, sketchColor.value, sCanvas.width, sCanvas.height); stopDrawing(); } 
+                else if (sketchMode === 'picker') { executeCanvasPicker(sCtx, rx, ry, sCanvas.width, sCanvas.height, sketchColor); stopDrawing(); } 
+                else { sCtx.beginPath(); sCtx.moveTo(pos.x, pos.y); }
+            } else if (currentStep === 3) {
+                handleDotAction(pos.x, pos.y);
+            }
+        }
+
+        function draw(e) {
+            if (currentStep < 2 || currentStep > 3 || isCameraActive || isCameraPreviewMode) return;
+            
+            if (currentStep === 3 && dotMode === 'pan' && isPanning) {
+                if (e.touches) e.preventDefault();
+                const p = e.touches ? e.touches[0] : e;
+                panX = p.clientX - startPanX; panY = p.clientY - startPanY;
+                applyZoomPan();
+                return;
+            }
+
+            if (!isDrawing) return;
+            if (e.touches) e.preventDefault(); 
+            const pos = getCanvasTouchPos(e);
+            
+            if (currentStep === 2) {
+                if (sketchMode === 'pen' || sketchMode === 'eraser') {
+                    sCtx.strokeStyle = sketchMode === 'eraser' ? '#12131c' : sketchColor.value;
+                    sCtx.globalCompositeOperation = sketchMode === 'eraser' ? 'destination-out' : 'source-over';
+                    sCtx.lineTo(pos.x, pos.y); sCtx.stroke();
+                }
+            } else if (currentStep === 3) {
+                handleDotAction(pos.x, pos.y);
+            }
+        }
+
+        function stopDrawing() { 
+            isPanning = false;
+            if (isDrawing && (currentStep === 2 || currentStep === 3)) { 
+                saveHistory(currentStep); 
+                if (currentStep === 3) { syncCurrentDotToStore(); renderMonsterPreview(); }
+                autoSaveToStorage(); 
+            } 
+            isDrawing = false; 
+        }
+
+        function handleDotAction(clientX, clientY) {
+            const rect = canvasArea.getBoundingClientRect();
+            const x = Math.floor(clientX / (rect.width / 32)), y = Math.floor(clientY / (rect.height / 32));
+            if (x < 0 || x >= 32 || y < 0 || y >= 32) return;
+            
+            if (dotMode === 'pen') { dCtx.fillStyle = colorPicker.value; dCtx.fillRect(x, y, 1, 1); }
+            else if (dotMode === 'eraser') dCtx.clearRect(x, y, 1, 1);
+            else if (dotMode === 'bucket') { executeCanvasBucket(dCtx, x, y, colorPicker.value, 32, 32); isDrawing = false; }
+            else if (dotMode === 'picker') { executeCanvasPicker(dCtx, x, y, 32, 32, colorPicker); isDrawing = false; }
+        }
+
+        const sTools = {pen:'btn-sketch-pen', eraser:'btn-sketch-eraser', bucket:'btn-sketch-bucket', picker:'btn-sketch-picker'};
+        Object.keys(sTools).forEach(k => {
+            document.getElementById(sTools[k]).onclick = () => {
+                sketchMode = k; Object.values(sTools).forEach(id => document.getElementById(id).classList.remove('active'));
+                document.getElementById(sTools[k]).classList.add('active');
+            };
+        });
+        document.getElementById('btn-sketch-clear').onclick = () => { if(confirm("らくがきをぜんぶ消しますか？")) { sCtx.clearRect(0,0,sCanvas.width,sCanvas.height); saveHistory(2); autoSaveToStorage(); } };
+
+        const dTools = {pen:'btn-pen', eraser:'btn-eraser', bucket:'btn-bucket', picker:'btn-picker'};
+        Object.keys(dTools).forEach(k => {
+            document.getElementById(dTools[k]).onclick = () => {
+                dotMode = k; 
+                document.querySelectorAll('#panel-step3 .btn, #btn-pan').forEach(b => b.classList.remove('active'));
+                document.getElementById(dTools[k]).classList.add('active');
+            };
+        });
+        document.getElementById('btn-toggle-grid').onclick = () => { gridActive = !gridActive; drawGrid(); };
+        document.getElementById('btn-toggle-guide').onclick = () => { 
+            guideActive = !guideActive; 
+            document.getElementById('btn-toggle-guide').classList.toggle('active', guideActive);
+            drawJointGuide(); 
+        };
+
+        document.getElementById('btn-dot-clear').onclick = () => { 
+            if(confirm(`現在選択中のパーツ「${PART_LABELS[currentPartType]}」のドット絵を消しますか？`)) { 
+                dCtx.clearRect(0,0,32,32); 
+                syncCurrentDotToStore(); saveHistory(3); autoSaveToStorage(); renderMonsterPreview();
+            } 
+        };
+
+        document.getElementById('btn-save-palette').onclick = () => {
+            const col = colorPicker.value; const item = document.createElement('div'); item.className = 'palette-item';
+            const chip = document.createElement('div'); chip.className = 'color-chip'; chip.style.backgroundColor = col;
+            chip.onclick = () => colorPicker.value = col;
+            const del = document.createElement('div'); del.innerHTML = '×'; del.onclick = () => item.remove();
+            item.appendChild(chip); item.appendChild(del); paletteArea.appendChild(item);
+        };
+
+        artNameInput.oninput = autoSaveToStorage;
+
+        function getPartsPayload() {
+            syncCurrentDotToStore();
+            const partsPayload = {};
+
+            ALL_PARTS.forEach(pk => {
+                const cvs = partsCanvasStore[pk];
+                const ctx = cvs.getContext('2d');
+                const base64Data = cvs.toDataURL('image/png');
+                
+                const imgData = ctx.getImageData(0, 0, 32, 32).data;
+                const matrix = [];
+                for (let y = 0; y < 32; y++) {
+                    const row = [];
+                    for (let x = 0; x < 32; x++) {
+                        const i = (y * 32 + x) * 4;
+                        if (imgData[i + 3] < 128) {
+                            row.push(null);
+                        } else {
+                            const hex = "#" + 
+                                ("0" + imgData[i].toString(16)).slice(-2) + 
+                                ("0" + imgData[i+1].toString(16)).slice(-2) + 
+                                ("0" + imgData[i+2].toString(16)).slice(-2);
+                            row.push(hex);
+                        }
+                    }
+                    matrix.push(row);
+                }
+
+                partsPayload[pk] = {
+                    image: base64Data,
+                    pixelMatrix: matrix
+                };
+            });
+
+            return partsPayload;
+        }
+
+        document.getElementById('uploadButton').onclick = async () => {
+            const name = artNameInput.value.trim();
+            if (!name) { alert("作品（モンスター）の名前を入力してください。"); artNameInput.focus(); return; }
+
+            const durationSeconds = Math.floor((Date.now() - startTime) / 1000);
+            const partsData = getPartsPayload();
+
+            if(!confirm(`作品名: 「${name}」\n\n作成した全パーツを一括で保存・送信しますか？`)) return;
+
+            loadingOverlay.style.display = 'flex';
+
+            try {
+                const response = await fetch(GAS_ENDPOINT, {
+                    method: "POST",
+                    body: JSON.stringify({
+                        monster_name: name,
+                        duration: durationSeconds,
+                        parts: partsData 
+                    })
+                });
+                const result = await response.json();
+
+                if(result.status === "success") {
+                    loadingOverlay.style.display = 'none';
+                    alert(`作品「${name}」の全パーツ一括保存が完了しました！`);
+                } else {
+                    loadingOverlay.style.display = 'none';
+                    alert("エラー: " + result.message);
+                }
+            } catch (error) {
+                loadingOverlay.style.display = 'none';
+                alert("送信を受け付けました（※GAS側の受信処理設定後、フォルダ別に自動振り分け保存されます）");
+            }
+        };
+    </script>
+</body>
+</html>
