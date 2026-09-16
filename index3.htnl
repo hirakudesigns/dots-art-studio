@@ -93,6 +93,9 @@
 
         .btn-magic { background: linear-gradient(135deg, #6c5ce7, #a29bfe); color: white; height: 55px; font-weight: 900; border-radius: 15px; border: none; cursor: pointer; width: 100%; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(108, 92, 231, 0.4); display: flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-upload { background: var(--primary-color); color: white; height: 55px; font-weight: 900; border-radius: 15px; border: none; cursor: pointer; width: 100%; font-size: 1.1rem; }
+        
+        /* PNG保存用のボタン表示用 */
+        .btn-download { background: #00b894; color: white; height: 48px; font-weight: 900; border-radius: 12px; border: none; cursor: pointer; width: 100%; font-size: 1rem; box-shadow: 0 4px 12px rgba(0, 184, 148, 0.3); display: flex; align-items: center; justify-content: center; gap: 8px; }
 
         #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(108, 92, 231, 0.85); z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; }
         .spinner { width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.3); border-top: 5px solid white; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
@@ -172,6 +175,8 @@
                 <button class="btn btn-compact" id="btn-bucket"><span class="material-icons">format_color_fill</span></button>
                 <button class="btn btn-compact" id="btn-picker"><span class="material-icons">colorize</span></button>
                 <button class="btn btn-compact" id="btn-toggle-grid"><span class="material-icons">grid_on</span></button>
+                <!-- 🌟 修正点①: 現状のドット絵を保存するボタンを追加 -->
+                <button class="btn btn-compact" id="btn-save-dots" title="現状を保存" style="color:var(--primary-color); background: #eef2ff;"><span class="material-icons">save_alt</span></button>
                 <button class="btn btn-compact" id="btn-dot-clear" style="color:var(--accent-color); background: #fff5f5;"><span class="material-icons">delete_outline</span></button>
             </div>
             <div class="section-label">登録した色（好きな色を登録できるよ）</div>
@@ -203,7 +208,12 @@
                 <option value="bg5.jpg">背景デザイン5</option>
             </select>
 
-            <button class="btn-upload" id="uploadButton" style="margin-top: 15px;">作品をアップロード！</button>
+            <!-- 🌟 修正点②: 端末保存（PNGダウンロード）ボタンを追加 -->
+            <button class="btn-download" id="downloadPngButton" style="margin-top: 10px;" onclick="downloadPNG()">
+                <span class="material-icons">file_download</span> PNG画像で端末に保存
+            </button>
+
+            <button class="btn-upload" id="uploadButton" style="margin-top: 10px;">作品をアップロード！</button>
         </div>
     </div>
 
@@ -471,31 +481,27 @@
             saveHistory(1);
             loadFromStorageBackup();
             resetZoomPan(); 
-            switchStep(1); // 初期表示状態でらくがき配置を適用
+            switchStep(1); 
         });
 
-        // 🛠️ 修正: モードに応じて中央の共通ナビゲーションバーを「非表示」ではなく「出し分け」に変更
         function switchStep(step) {
             currentStep = step;
             document.querySelectorAll('.tab').forEach((t, i) => { t.classList.toggle('active', i === step - 1); });
             document.querySelectorAll('.control-panel').forEach((p, i) => { p.classList.toggle('active', i === step - 1); });
             
             if (step === 1) {
-                // らくがきモード：「undo」「カメラ」「redo」だけの配置
                 document.getElementById('history-row').style.display = 'flex';
                 document.getElementById('btn-zoom-in').style.display = 'none';
                 document.getElementById('btn-zoom-out').style.display = 'none';
                 document.getElementById('btn-pan').style.display = 'none';
                 document.getElementById('btn-sketch-camera').style.display = 'flex';
             } else if (step === 2) {
-                // ドットモード：「+」「undo」「手のひら」「redo」「-」のフル配置
                 document.getElementById('history-row').style.display = 'flex';
                 document.getElementById('btn-zoom-in').style.display = 'flex';
                 document.getElementById('btn-zoom-out').style.display = 'flex';
                 document.getElementById('btn-pan').style.display = 'flex';
                 document.getElementById('btn-sketch-camera').style.display = 'none';
             } else {
-                // 確認・完成：ナビゲーションバーは非表示
                 document.getElementById('history-row').style.display = 'none';
             }
 
@@ -826,6 +832,12 @@
         });
         document.getElementById('btn-toggle-grid').onclick = () => { gridActive = !gridActive; drawGrid(); };
         
+        // 🌟 修正点①: 保存ボタンのクリック処理（明示的なバックアップ保存）
+        document.getElementById('btn-save-dots').onclick = () => {
+            autoSaveToStorage();
+            alert("現状のドット絵を保存しました！");
+        };
+
         document.getElementById('btn-dot-clear').onclick = () => { if(confirm("ドット絵をぜんぶ消しますか？")) { dCtx.clearRect(0,0,32,32); saveHistory(2); autoSaveToStorage(); } };
 
         document.getElementById('btn-save-palette').onclick = () => {
@@ -837,6 +849,27 @@
         };
 
         artNameInput.oninput = autoSaveToStorage;
+
+        // 🌟 修正点②: ドット絵をPNG形式で自分の端末にダウンロード保存する関数
+        function downloadPNG() {
+            const name = artNameInput.value.trim() || "my_dots_art";
+            
+            // 拡大処理用キャンバスを作成（512x512でドットをクッキリ保存）
+            const saveCanvas = document.createElement('canvas');
+            saveCanvas.width = 512;
+            saveCanvas.height = 512;
+            const sContext = saveCanvas.getContext('2d');
+            
+            // アンチエイリアスを無効化してドット感を綺麗に維持
+            sContext.imageSmoothingEnabled = false;
+            sContext.drawImage(dCanvas, 0, 0, 512, 512);
+
+            // PNGダウンロードの実行
+            const link = document.createElement('a');
+            link.download = `${name}.png`;
+            link.href = saveCanvas.toDataURL('image/png');
+            link.click();
+        }
 
         document.getElementById('uploadButton').onclick = async () => {
             const name = artNameInput.value.trim();
