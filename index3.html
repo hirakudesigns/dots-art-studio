@@ -116,7 +116,7 @@
     <div class="step-tabs">
         <div class="tab active" id="tab-step1" onclick="switchStep(1)"><span class="tab-num">STEP 01</span>らくがき</div>
         <div class="tab" id="tab-step2" onclick="switchStep(2)"><span class="tab-num">STEP 02</span>ドット変身</div>
-        <div class="tab" id="tab-step3" onclick="switchStep(3)"><span class="tab-num">STEP 03</span>3Dかくにn</div>
+        <div class="tab" id="tab-step3" onclick="switchStep(3)"><span class="tab-num">STEP 03</span>3Dかくにん</div>
         <div class="tab" id="tab-step4" onclick="switchStep(4)"><span class="tab-num">STEP 04</span>できあがり</div>
     </div>
 
@@ -172,13 +172,19 @@
                 <button class="btn btn-compact" id="btn-picker"><span class="material-icons">colorize</span></button>
                 <button class="btn btn-compact" id="btn-toggle-grid"><span class="material-icons">grid_on</span></button>
                 <button class="btn btn-compact" id="btn-save-dots" title="現状を保存" style="color:var(--primary-color); background: #eef2ff;"><span class="material-icons">save_alt</span></button>
+                <button class="btn btn-compact" id="btn-load-dots" title="保存データを呼び出す" style="color:#10b981; background: #ecfdf5;"><span class="material-icons">restore</span></button>
                 <button class="btn btn-compact" id="btn-dot-clear" style="color:var(--accent-color); background: #fff5f5;"><span class="material-icons">delete_outline</span></button>
             </div>
 
-            <!-- サムネイル表示エリア -->
-            <div id="saved-preview-container" style="display:none; align-items:center; gap:8px; background:#f8fafc; padding:6px 12px; border-radius:10px; border:1px solid #e2e8f0; margin-top: 4px;">
-                <img id="saved-thumb" src="" alt="保存サムネイル" style="width:32px; height:32px; image-rendering:pixelated; border-radius:4px; border:1px solid #cbd5e1; background:#fff;">
-                <span style="font-size:0.75rem; color:#10b981; font-weight:bold;">保存したドット絵</span>
+            <!-- サムネイル表示エリア（呼び出しボタン付き） -->
+            <div id="saved-preview-container" style="display:none; align-items:center; justify-content:space-between; background:#f8fafc; padding:6px 12px; border-radius:10px; border:1px solid #e2e8f0; margin-top: 4px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <img id="saved-thumb" src="" alt="保存サムネイル" style="width:32px; height:32px; image-rendering:pixelated; border-radius:4px; border:1px solid #cbd5e1; background:#fff;">
+                    <span style="font-size:0.75rem; color:#475569; font-weight:bold;">保存済みデータ</span>
+                </div>
+                <button id="btn-restore-from-thumb" style="font-size:0.7rem; padding:4px 10px; background:#10b981; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:bold; display:flex; align-items:center; gap:2px;">
+                    <span class="material-icons" style="font-size:14px;">restore</span>呼び出す
+                </button>
             </div>
 
             <div class="section-label">登録した色（好きな色を登録できるよ）</div>
@@ -446,21 +452,59 @@
 
         document.getElementById('btn-sketch-camera').onclick = toggleCamera;
 
+        // 【自動バックアップ処理】
         function autoSaveToStorage() {
             try {
-                const dotDataUrl = dCanvas.toDataURL();
                 localStorage.setItem('dots_backup_sketch', sCanvas.toDataURL());
-                localStorage.setItem('dots_backup_dot', dotDataUrl);
+                localStorage.setItem('dots_backup_dot', dCanvas.toDataURL());
                 localStorage.setItem('dots_backup_artname', artNameInput.value);
-
-                const thumbImg = document.getElementById('saved-thumb');
-                const thumbContainer = document.getElementById('saved-preview-container');
-                if (thumbImg && thumbContainer) {
-                    thumbImg.src = dotDataUrl;
-                    thumbContainer.style.display = 'flex';
-                }
             } catch (e) { console.warn("AutoSave failed:", e); }
         }
+
+        // 【手動保存処理】独立したスナップショットとして保存
+        document.getElementById('btn-save-dots').onclick = () => {
+            try {
+                const dotDataUrl = dCanvas.toDataURL();
+                localStorage.setItem('dots_saved_snapshot', dotDataUrl);
+                localStorage.setItem('dots_backup_sketch', sCanvas.toDataURL());
+                localStorage.setItem('dots_backup_artname', artNameInput.value);
+
+                updateSavedThumbnail(dotDataUrl);
+                alert("現状のドット絵を保存しました！");
+            } catch (e) { console.warn("Save failed:", e); }
+        };
+
+        // 【サムネイル表示更新】
+        function updateSavedThumbnail(dataUrl) {
+            const thumbImg = document.getElementById('saved-thumb');
+            const thumbContainer = document.getElementById('saved-preview-container');
+            if (thumbImg && thumbContainer && dataUrl) {
+                thumbImg.src = dataUrl;
+                thumbContainer.style.display = 'flex';
+            }
+        }
+
+        // 【呼び出し（復元）処理】
+        function restoreSavedDots() {
+            const savedDot = localStorage.getItem('dots_saved_snapshot') || localStorage.getItem('dots_backup_dot');
+            if (!savedDot) {
+                alert("保存されているドット絵データがありません。");
+                return;
+            }
+
+            const img = new Image();
+            img.src = savedDot;
+            img.onload = () => {
+                dCtx.clearRect(0, 0, 32, 32);
+                dCtx.drawImage(img, 0, 0, 32, 32);
+                saveHistory(2);
+                autoSaveToStorage();
+                alert("保存したドット絵を呼び出しました！");
+            };
+        }
+
+        document.getElementById('btn-load-dots').onclick = restoreSavedDots;
+        document.getElementById('btn-restore-from-thumb').onclick = restoreSavedDots;
 
         function loadFromStorageBackup() {
             const savedName = localStorage.getItem('dots_backup_artname');
@@ -482,13 +526,6 @@
                     dCtx.clearRect(0,0,32,32); 
                     dCtx.drawImage(img, 0, 0, 32, 32); 
                     saveHistory(2); 
-
-                    const thumbImg = document.getElementById('saved-thumb');
-                    const thumbContainer = document.getElementById('saved-preview-container');
-                    if (thumbImg && thumbContainer) {
-                        thumbImg.src = savedDot;
-                        thumbContainer.style.display = 'flex';
-                    }
                 };
             }
         }
@@ -499,7 +536,15 @@
             dCtx.clearRect(0, 0, 32, 32);
             saveHistory(2);
             saveHistory(1);
+            
             loadFromStorageBackup();
+
+            // 保存済みサムネイルが存在すれば表示
+            const savedSnapshot = localStorage.getItem('dots_saved_snapshot');
+            if (savedSnapshot) {
+                updateSavedThumbnail(savedSnapshot);
+            }
+
             resetZoomPan(); 
             switchStep(1); 
         });
@@ -851,19 +896,13 @@
             };
         });
         document.getElementById('btn-toggle-grid').onclick = () => { gridActive = !gridActive; drawGrid(); };
-        
-        document.getElementById('btn-save-dots').onclick = () => {
-            autoSaveToStorage();
-            alert("現状のドット絵を保存しました！");
-        };
 
+        // 消去ボタン：画面上は消すが、手動保存したデータ／サムネイルは残す
         document.getElementById('btn-dot-clear').onclick = () => { 
-            if(confirm("ドット絵をぜんぶ消しますか？")) { 
+            if(confirm("画面のドット絵を消しますか？（保存したサムネイルデータは消えません）")) { 
                 dCtx.clearRect(0,0,32,32); 
                 saveHistory(2); 
                 autoSaveToStorage(); 
-                const thumbContainer = document.getElementById('saved-preview-container');
-                if(thumbContainer) thumbContainer.style.display = 'none';
             } 
         };
 
@@ -929,6 +968,7 @@
                     localStorage.removeItem('dots_backup_sketch');
                     localStorage.removeItem('dots_backup_dot');
                     localStorage.removeItem('dots_backup_artname');
+                    localStorage.removeItem('dots_saved_snapshot');
 
                     localStorage.setItem('dots_latest_serial', result.serial);
                     localStorage.setItem('dots_latest_name', name);
