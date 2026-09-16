@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DOTS ART STUDIO - Magic Editor 3D</title>
+    <title>DOTS CREATIVE STUDIO</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/controls/OrbitControls.js"></script>
@@ -110,13 +110,13 @@
 
     <div class="header-area">
         <img src="DOTS_PROJECT_logo_black.png" alt="DOTS" class="header-logo">
-        <h1>MAGIC STUDIO 3D</h1>
+        <h1>CREATIVE STUDIO</h1>
     </div>
 
     <div class="step-tabs">
         <div class="tab active" id="tab-step1" onclick="switchStep(1)"><span class="tab-num">STEP 01</span>らくがき</div>
         <div class="tab" id="tab-step2" onclick="switchStep(2)"><span class="tab-num">STEP 02</span>ドット変身</div>
-        <div class="tab" id="tab-step3" onclick="switchStep(3)"><span class="tab-num">STEP 03</span>3Dかくにん</div>
+        <div class="tab" id="tab-step3" onclick="switchStep(3)"><span class="tab-num">STEP 03</span>3Dかくにn</div>
         <div class="tab" id="tab-step4" onclick="switchStep(4)"><span class="tab-num">STEP 04</span>できあがり</div>
     </div>
 
@@ -171,20 +171,27 @@
                 <button class="btn btn-compact" id="btn-bucket"><span class="material-icons">format_color_fill</span></button>
                 <button class="btn btn-compact" id="btn-picker"><span class="material-icons">colorize</span></button>
                 <button class="btn btn-compact" id="btn-toggle-grid"><span class="material-icons">grid_on</span></button>
-                <button class="btn btn-compact" id="btn-save-dots" title="現状を保存" style="color:var(--primary-color); background: #eef2ff;"><span class="material-icons">save_alt</span></button>
-                <button class="btn btn-compact" id="btn-load-dots" title="保存データを呼び出す" style="color:#10b981; background: #ecfdf5;"><span class="material-icons">restore</span></button>
+                <!-- 👇 保存アイコンを「save」（フロッピー）に変更 -->
+                <button class="btn btn-compact" id="btn-save-dots" title="現状を保存" style="color:var(--primary-color); background: #eef2ff;"><span class="material-icons">save</span></button>
                 <button class="btn btn-compact" id="btn-dot-clear" style="color:var(--accent-color); background: #fff5f5;"><span class="material-icons">delete_outline</span></button>
             </div>
 
-            <!-- サムネイル表示エリア（呼び出しボタン付き） -->
+            <!-- サムネイル表示エリア（緑の「▶︎」呼び出しボタン ＆ 「×」削除ボタン） -->
             <div id="saved-preview-container" style="display:none; align-items:center; justify-content:space-between; background:#f8fafc; padding:6px 12px; border-radius:10px; border:1px solid #e2e8f0; margin-top: 4px;">
                 <div style="display:flex; align-items:center; gap:8px;">
                     <img id="saved-thumb" src="" alt="保存サムネイル" style="width:32px; height:32px; image-rendering:pixelated; border-radius:4px; border:1px solid #cbd5e1; background:#fff;">
                     <span style="font-size:0.75rem; color:#475569; font-weight:bold;">保存済みデータ</span>
                 </div>
-                <button id="btn-restore-from-thumb" style="font-size:0.7rem; padding:4px 10px; background:#10b981; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:bold; display:flex; align-items:center; gap:2px;">
-                    <span class="material-icons" style="font-size:14px;">restore</span>呼び出す
-                </button>
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <!-- 👇 緑色の「▶︎」呼び出しボタン -->
+                    <button id="btn-restore-from-thumb" title="保存データを呼び出す" style="width:30px; height:30px; padding:0; background:#10b981; color:white; border:none; border-radius:6px; cursor:pointer; display:flex; align-items:center; justify-content:center;">
+                        <span class="material-icons" style="font-size:18px;">play_arrow</span>
+                    </button>
+                    <!-- 👇 保存データ消去「×」ボタン -->
+                    <button id="btn-delete-saved-thumb" title="保存データを削除" style="width:30px; height:30px; padding:0; background:#ef4444; color:white; border:none; border-radius:6px; cursor:pointer; display:flex; align-items:center; justify-content:center;">
+                        <span class="material-icons" style="font-size:18px;">close</span>
+                    </button>
+                </div>
             </div>
 
             <div class="section-label">登録した色（好きな色を登録できるよ）</div>
@@ -461,7 +468,7 @@
             } catch (e) { console.warn("AutoSave failed:", e); }
         }
 
-        // 【手動保存処理】独立したスナップショットとして保存
+        // 【手動保存処理】
         document.getElementById('btn-save-dots').onclick = () => {
             try {
                 const dotDataUrl = dCanvas.toDataURL();
@@ -503,8 +510,15 @@
             };
         }
 
-        document.getElementById('btn-load-dots').onclick = restoreSavedDots;
         document.getElementById('btn-restore-from-thumb').onclick = restoreSavedDots;
+
+        // 【保存データ削除処理】
+        document.getElementById('btn-delete-saved-thumb').onclick = () => {
+            if (confirm("保存されているサムネイルデータを削除しますか？")) {
+                localStorage.removeItem('dots_saved_snapshot');
+                document.getElementById('saved-preview-container').style.display = 'none';
+            }
+        };
 
         function loadFromStorageBackup() {
             const savedName = localStorage.getItem('dots_backup_artname');
@@ -539,7 +553,6 @@
             
             loadFromStorageBackup();
 
-            // 保存済みサムネイルが存在すれば表示
             const savedSnapshot = localStorage.getItem('dots_saved_snapshot');
             if (savedSnapshot) {
                 updateSavedThumbnail(savedSnapshot);
@@ -897,7 +910,6 @@
         });
         document.getElementById('btn-toggle-grid').onclick = () => { gridActive = !gridActive; drawGrid(); };
 
-        // 消去ボタン：画面上は消すが、手動保存したデータ／サムネイルは残す
         document.getElementById('btn-dot-clear').onclick = () => { 
             if(confirm("画面のドット絵を消しますか？（保存したサムネイルデータは消えません）")) { 
                 dCtx.clearRect(0,0,32,32); 
